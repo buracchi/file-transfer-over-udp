@@ -15,8 +15,13 @@ add_executable (
 	"fts.c"
 )
 
-# add the librareis
+# add the libraries
 
+find_package(Libevent CONFIG REQUIRED)
+
+target_include_directories(server PRIVATE "${LIBEVENT_INCLUDE_DIR}")
+
+target_link_libraries(server PRIVATE libevent::core libevent::extra libevent::pthreads)
 target_link_libraries(server PUBLIC socket2)
 target_link_libraries(server PUBLIC tpool)
 target_link_libraries(server PUBLIC try)

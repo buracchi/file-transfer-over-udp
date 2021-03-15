@@ -46,6 +46,8 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     )
 endif()
 
+include("${VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake")
+
 # Project Configuration
 
 project (
