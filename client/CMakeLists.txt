@@ -13,7 +13,7 @@ add_executable (
 	"main.c"
 )
 
-# add shared librareis
+# add shared libraries
 
 target_link_libraries(client PUBLIC socket2)
 target_link_libraries(client PUBLIC try)
