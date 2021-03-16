@@ -15,8 +15,8 @@ add_executable (
 
 # add shared libraries
 
-target_link_libraries(client PUBLIC socket2)
-target_link_libraries(client PUBLIC try)
-target_link_libraries(client PUBLIC utilities)
+target_link_libraries(client PRIVATE socket2)
+target_link_libraries(client PRIVATE try)
+target_link_libraries(client PRIVATE utilities)
 
 # TODO: Aggiungere i test e, se necessario, installare le destinazioni.

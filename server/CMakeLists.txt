@@ -22,9 +22,10 @@ find_package(Libevent CONFIG REQUIRED)
 target_include_directories(server PRIVATE "${LIBEVENT_INCLUDE_DIR}")
 
 target_link_libraries(server PRIVATE libevent::core libevent::extra libevent::pthreads)
-target_link_libraries(server PUBLIC socket2)
-target_link_libraries(server PUBLIC tpool)
-target_link_libraries(server PUBLIC try)
-target_link_libraries(server PUBLIC utilities)
+target_link_libraries(server PRIVATE pthread)
+target_link_libraries(server PRIVATE socket2)
+target_link_libraries(server PRIVATE tpool)
+target_link_libraries(server PRIVATE try)
+target_link_libraries(server PRIVATE utilities)
 
 # TODO: Aggiungere i test e, se necessario, installare le destinazioni.
