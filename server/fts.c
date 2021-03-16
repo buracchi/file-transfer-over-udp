@@ -81,17 +81,17 @@ static void* handle_request(void* arg) {
 	socket2_t socket = arg;
 	char* buff;
 	socket2_recv(socket, &buff);
-	switch (get_type(buff)) {
+	switch (ftcp_get_type(buff)) {
 	case COMMAND:
-		switch (get_operation(buff)) {
+		switch (ftcp_get_operation(buff)) {
 		case LIST:
 			socket2_send(socket, get_filelist());
 			break;
 		case GET:
-			socket2_send(socket, get_file(get_arg(buff)));
+			socket2_send(socket, get_file(ftcp_get_arg(buff)));
 			break;
 		case PUT:
-			save_file(get_arg(buff));
+			save_file(ftcp_get_arg(buff));
 			socket2_send(socket, "Success");
 			break;
 		default:
