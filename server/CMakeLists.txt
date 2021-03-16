@@ -21,6 +21,7 @@ find_package(Libevent CONFIG REQUIRED)
 
 target_include_directories(server PRIVATE "${LIBEVENT_INCLUDE_DIR}")
 
+target_link_libraries(server PRIVATE ftcp)
 target_link_libraries(server PRIVATE libevent::core libevent::extra libevent::pthreads)
 target_link_libraries(server PRIVATE pthread)
 target_link_libraries(server PRIVATE socket2)
