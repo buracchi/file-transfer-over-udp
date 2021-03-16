@@ -10,9 +10,9 @@ project(
 
 add_executable (
 	server
-	"main.c"
-	"fts.h"
-	"fts.c"
+	"src/main.c"
+	"src/fts.h"
+	"src/fts.c"
 )
 
 # add the libraries

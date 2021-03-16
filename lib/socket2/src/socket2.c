@@ -165,7 +165,7 @@ extern ssize_t socket2_send(const socket2_t handle, const char* buff) {
 	try(b_sent = send(socket2->fd, buff, strlen(buff), 0), -1, fail);
 	return b_sent;
 fail:
-	return 1;
+	return -1;
 }
 
 extern int socket2_listen(const socket2_t handle, int backlog) {

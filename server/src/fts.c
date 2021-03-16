@@ -20,7 +20,7 @@
 
 #ifdef WIN32
 #define evthread_use_threads evthread_use_windows_threads
-#else
+#elif __unix__
 #define evthread_use_threads evthread_use_pthreads
 #endif
 

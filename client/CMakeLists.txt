@@ -10,7 +10,7 @@ project(
 
 add_executable (
 	client
-	"main.c"
+	"src/main.c"
 )
 
 # add shared libraries
