@@ -73,8 +73,7 @@ body:
 }
 
 static int usage() {
-	try(
-		fprintf(
+	try(fprintf(
 			stderr,
 			"Usage: server [-p port] [-d directory]\n\
 			\r\t-p, --port\n\
@@ -84,7 +83,7 @@ static int usage() {
 		) < 0,
 		!0,
 		fail
-		);
+	);
 	return 0;
 fail:
 	return 1;

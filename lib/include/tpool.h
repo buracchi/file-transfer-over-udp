@@ -12,7 +12,7 @@ typedef void* tpool_t;
 *                               Member functions                               *
 *******************************************************************************/
 
-extern tpool_t tpool_create(size_t tnumber);
+extern tpool_t tpool_init(size_t tnumber);
 
 extern int tpool_destroy(const tpool_t handle);
 

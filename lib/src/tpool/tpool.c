@@ -28,7 +28,7 @@ static void* worker_routine(void* arg);
 #define exist_thread_working(tpool) (tpool->working_cnt)
 #define is_job_queue_empty(tpool) queue_is_empty(tpool->job_queue)
 
-extern tpool_t tpool_create(size_t tnumber) {
+extern tpool_t tpool_init(size_t tnumber) {
     struct tpool* tpool;
     try(tpool = malloc(sizeof * tpool), NULL, fail);
     tpool->thread_cnt = tnumber;
