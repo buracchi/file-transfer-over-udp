@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 #include <sys/types.h>
 
 /*******************************************************************************
@@ -98,11 +99,21 @@ extern int socket2_listen(const socket2_t handle, int backlog);
 extern int socket2_get_fd(const socket2_t handle);
 
 /*
+* Set whether the socket is blocking or non blocking.
+*
+* @param	handle	-	the socket object.
+* @param	blocking
+*
+* @return	0 on success; 1 otherwise.
+*/
+extern int socket2_set_blocking(const socket2_t handle, bool blocking);
+
+/*
 * Assigns an ipv4 address to an unnamed socket.
 *
 * @param	handle	-	the socket object.
 *
-* @return	0 on success; NULL otherwise.
+* @return	0 on success; 1 otherwise.
 */
 extern int socket2_ipv4_setaddr(const socket2_t handle, const char* address, const uint16_t port);
 
@@ -112,7 +123,7 @@ extern int socket2_ipv4_setaddr(const socket2_t handle, const char* address, con
 *
 * @param	handle	-	the socket object.
 *
-* @return	0 on success; NULL otherwise.
+* @return	0 on success; 1 otherwise.
 */
 extern int socket2_unix_setaddr(const socket2_t handle, const char* address);
 #endif

@@ -10,6 +10,7 @@
 
 #ifdef __unix__
 #include <unistd.h>
+#include <fcntl.h>
 #include <stddef.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -179,6 +180,25 @@ fail:
 extern int socket2_get_fd(const socket2_t handle) {
 	struct socket2* socket2 = handle;
 	return socket2->fd;
+}
+
+extern int socket2_set_blocking(const socket2_t handle, bool blocking) {
+	struct socket2* socket2 = handle;
+	if (socket2->fd > 0) {
+#ifdef _WIN32
+		unsigned long mode = blocking ? 0 : 1;
+		try(ioctlsocket(fd, FIONBIO, &mode), SOCKET_ERROR, fail);
+		return 0;
+#elif __unix__
+		int flags;
+		try (flags = fcntl(socket2->fd, F_GETFL, 0), -1, fail);
+		flags = blocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
+		try(fcntl(socket2->fd, F_SETFL, flags), !0, fail);
+		return 0;
+#endif
+	}
+fail:
+	return 1;
 }
 
 extern int socket2_ipv4_setaddr(const socket2_t handle, const char* address, const uint16_t port) {
