@@ -11,6 +11,8 @@ project(
 add_executable (
 	client
 	"src/main.c"
+	"src/ftc.h"
+	"src/ftc.c"
 )
 
 # add shared libraries

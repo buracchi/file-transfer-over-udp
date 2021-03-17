@@ -95,10 +95,7 @@ int strtoi(char* str, int* result) {
 	return 0;
 }
 
-int is_directory(char* pathname) {
+bool is_directory(char* pathname) {
 	struct stat dir_stat;
-	if (!stat(pathname, &dir_stat) && S_ISDIR(dir_stat.st_mode)) {
-		return TRUE;
-	}
-	return FALSE;
+	return (!stat(pathname, &dir_stat) && S_ISDIR(dir_stat.st_mode));
 }

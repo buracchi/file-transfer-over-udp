@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdarg.h>
+#include <stdbool.h>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -12,8 +13,7 @@ int asprintf(LPTSTR* str, LPCTSTR format, ...);
 int asprintf(char** str, const char* format, ...);
 #endif
 
-#define TRUE !0
-#define FALSE 0
+#define forever for(;;)
 
 #define max(a, b) a > b ? a : b
 
@@ -23,4 +23,4 @@ int asprintf(char** str, const char* format, ...);
 
 int strtoi(char* str, int* result);
 
-int is_directory(char* pathname);
+bool is_directory(char* pathname);
