@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <signal.h>
-#include <unistd.h>
-#include <sys/sysinfo.h>
 
 #include <event2/event.h>
 #include <event2/thread.h>
@@ -16,11 +14,17 @@
 #include "try.h"
 #include "utilities.h"
 
+#ifdef __unix__
+#include <sys/sysinfo.h>
+#endif
+
 #define BACKLOG 4096
 
 #ifdef WIN32
 #define evthread_use_threads evthread_use_windows_threads
+#define nprocs() 2
 #elif __unix__
+#define nprocs() get_nprocs()
 #define evthread_use_threads evthread_use_pthreads
 #endif
 
@@ -42,7 +46,7 @@ extern int fts_start(int port, char* pathname) {
 	socket2_t socket;
 	base_dir = pathname;
 	try(asprintf((char**)&list_command, "ls %s -p | grep -v /", base_dir), -1, fail);
-	try(thread_pool = tpool_init(get_nprocs()), NULL, fail);
+	try(thread_pool = tpool_init(nprocs()), NULL, fail);
 	try(evthread_use_threads(), -1, fail);
 	try(event_base = event_base_new(), NULL, fail);
 	try(socket = socket2_init(TCP, IPV4), NULL, fail);
@@ -100,12 +104,12 @@ static void* handle_request(void* arg) {
 			reply = handle_put_request(request);
 			break;
 		default:
-			reply = ftcp_message_init(RESPONSE, FAIL, NULL, 0, NULL);
+			reply = ftcp_message_init(RESPONSE, ERROR, NULL, 0, NULL);
 			break;
 		}
 		break;
 	default:
-		reply = ftcp_message_init(RESPONSE, FAIL, NULL, 0, NULL);
+		reply = ftcp_message_init(RESPONSE, ERROR, NULL, 0, NULL);
 		break;
 	}
 	socket2_send(socket, reply);
@@ -146,9 +150,12 @@ static ftcp_message_t handle_get_request(ftcp_message_t request) {
 	fseek(file, 0L, SEEK_END);
 	length = ftell(file);
 	fseek(file, 0L, SEEK_SET);
+	content = malloc(sizeof * content * length);
 	fread(content, 1, length, file);
 	fclose(file);
-	return ftcp_message_init(RESPONSE, SUCCESS, ftcp_get_filename(request), length, content);
+	result = ftcp_message_init(RESPONSE, SUCCESS, ftcp_get_filename(request), length, content);
+	free(content);
+	return result;
 fail:
 	return NULL;
 }
@@ -162,7 +169,8 @@ static ftcp_message_t handle_put_request(ftcp_message_t request) {
 	free(filepath);
 	fwrite(ftcp_get_file_content(request), 1, ftcp_get_file_length(request), file);
 	fclose(file);
-	return ftcp_message_init(RESPONSE, SUCCESS, NULL, 0, NULL);
+	result = ftcp_message_init(RESPONSE, SUCCESS, NULL, 0, NULL);
+	return result;
 fail:
 	return NULL;
 }

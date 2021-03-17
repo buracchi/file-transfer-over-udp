@@ -24,7 +24,7 @@ typedef uint8_t* ftcp_message_t;
 
 enum ftcp_type { INVALID_TYPE, COMMAND, RESPONSE };
 enum ftcp_operation { INVALID_OPERATION, LIST, GET, PUT };
-enum ftcp_result { INVALID_RESULT, SUCCESS, FAIL };
+enum ftcp_result { INVALID_RESULT, SUCCESS, ERROR };
 
 extern ftcp_message_t ftcp_message_init(
 	enum ftcp_type type,

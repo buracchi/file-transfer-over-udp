@@ -11,16 +11,16 @@
 #define DEFAULT_PORT 1234
 
 enum operation {
-	RUN_SERVER, 
-	SHOW_HELP, 
-	FAIL 
+	OP_RUN, 
+	OP_SHOW_HELP, 
+	OP_FAIL 
 };
 
 enum flag {
-	INVALID,
-	HELP,
-	PORT,
-	DIRECTORY
+	F_INVALID,
+	F_HELP,
+	F_PORT,
+	F_DIRECTORY
 };
 
 struct option {
@@ -32,8 +32,7 @@ static int usage();
 static struct option** get_options(int argc, char* argv[]);
 
 extern int main(int argc, char* argv[]) {
-	enum operation operation = RUN_SERVER;
-	int ret = EXIT_SUCCESS;
+	enum operation operation = OP_RUN;
 	int port = DEFAULT_PORT;
 	char directory[PATH_MAX] = {};
 	struct option** options;
@@ -41,17 +40,17 @@ extern int main(int argc, char* argv[]) {
 	try(options = get_options(argc, argv), NULL);
 	for (int i = 0; options[i]; i++) {
 		switch (options[i]->flag) {
-		case PORT:
+		case F_PORT:
 			try(strtoi(options[i]->value, &port), 1);
 			break;
-		case DIRECTORY:
+		case F_DIRECTORY:
 			strncpy(directory, options[i]->value, PATH_MAX - 1);
 			break;
-		case HELP:
-			operation = SHOW_HELP;
+		case F_HELP:
+			operation = OP_SHOW_HELP;
 			goto body;
 		default:
-			operation = FAIL;
+			operation = OP_FAIL;
 			goto body;
 		}
 	}
@@ -59,10 +58,10 @@ body:
 	for (int i = 0; options[i]; free(options[i++]));
 	free(options);
 	switch (operation) {
-	case FAIL:
+	case OP_FAIL:
 		try(usage(), 1);
 		return EXIT_FAILURE;
-	case SHOW_HELP:
+	case OP_SHOW_HELP:
 		try(usage(), 1);
 		return EXIT_SUCCESS;
 	default:
@@ -97,20 +96,20 @@ static struct option** get_options(int argc, char* argv[]) {
 	for (int i = 1; i < argc; i++) {
 		try(options[last_index] = malloc(sizeof(struct option)), NULL, fail_with_resources);
 		if (streq(argv[i], "-h") || streq(argv[i], "--help")) {
-			options[last_index]->flag = HELP;
+			options[last_index]->flag = F_HELP;
 		}
 		else if (argc - (i + 1) > 0 && (streq(argv[i], "-p") || streq(argv[i], "--port"))) {
-			options[last_index]->flag = PORT;
+			options[last_index]->flag = F_PORT;
 			options[last_index]->value = argv[i + 1];
 			i++;
 		}
 		else if (argc - (i + 1) > 0 && (streq(argv[i], "-d") || streq(argv[i], "--directory"))) {
-			options[last_index]->flag = DIRECTORY;
+			options[last_index]->flag = F_DIRECTORY;
 			options[last_index]->value = argv[i + 1];
 			i++;
 		}
 		else {
-			options[last_index]->flag = INVALID;
+			options[last_index]->flag = F_INVALID;
 		}
 		last_index++;
 	}
