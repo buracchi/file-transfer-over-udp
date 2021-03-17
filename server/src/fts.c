@@ -28,19 +28,23 @@ static void fts_close(evutil_socket_t signal, short events, void* arg);
 static void dispatch_request(evutil_socket_t fd, short events, void* arg);
 static void* handle_request(void* arg);
 static const char* get_filelist();
-static const char* get_file(const char* filename);
+static FILE* get_file(const char* filename);
 static void save_file(const char* filename);
 
-static struct event_base* event_base;
 static tpool_t thread_pool;
+static const char* base_dir;
+static const char* list_command;
+static struct event_base* event_base;
 
 extern int fts_start(int port, char* pathname) {
 	struct event* socket_event;
 	struct event* signal_event;
 	socket2_t socket;
+	base_dir = pathname;
+	try(asprintf((char**)&list_command, "ls %s -p | grep -v /", base_dir), -1, fail);
+	try(thread_pool = tpool_init(get_nprocs()), NULL, fail);
 	try(evthread_use_threads(), -1, fail);
 	try(event_base = event_base_new(), NULL, fail);
-	try(thread_pool = tpool_init(get_nprocs()), NULL, fail);
 	try(socket = socket2_init(TCP, IPV4), NULL, fail);
 	try(socket2_ipv4_setaddr(socket, "127.0.0.1", port), 1, fail);
 	try(socket2_set_blocking(socket, false), 1, fail);
@@ -59,6 +63,7 @@ extern int fts_start(int port, char* pathname) {
 	socket2_destroy(socket);
 	try(tpool_wait(thread_pool), 1, fail);
 	try(tpool_destroy(thread_pool), 1, fail);
+	free((char*)list_command);
 	return 0;
 fail:
 	return 1;
@@ -79,21 +84,32 @@ static void dispatch_request(evutil_socket_t fd, short events, void* arg) {
 
 static void* handle_request(void* arg) {
 	socket2_t socket = arg;
-	char* buff;
-	socket2_recv(socket, &buff);
-	switch (ftcp_get_type(buff)) {
+	char* request;
+	char* reply;
+	socket2_recv(socket, &request);
+	switch (ftcp_get_type(request)) {
 	case COMMAND:
-		switch (ftcp_get_operation(buff)) {
-		case LIST:
-			socket2_send(socket, get_filelist());
+		switch (ftcp_get_operation(request)) {
+		case LIST: {
+			reply = (char*) get_filelist();
+			socket2_send(socket, reply);
+			free(reply);
 			break;
-		case GET:
-			socket2_send(socket, get_file(ftcp_get_arg(buff)));
+		}
+		case GET: {
+			FILE* file;
+			// TODO: fail if request contains the '/' character
+			file = get_file(ftcp_get_arg(request));
+			// TODO: implement a socket2_fsend(socket2_t, FILE*)
+			fclose(file);
 			break;
-		case PUT:
-			save_file(ftcp_get_arg(buff));
-			socket2_send(socket, "Success");
+		}
+		case PUT: {
+			save_file(ftcp_get_arg(request));
+			reply = "Success";
+			socket2_send(socket, reply);
 			break;
+		}
 		default:
 			break;
 		}
@@ -103,17 +119,35 @@ static void* handle_request(void* arg) {
 	}
 	socket2_close(socket);
 	socket2_destroy(socket);
-	free(buff);
+	free(request);
 }
 
 static const char* get_filelist() {
-	return "Totally a formatted list of file!\n";
+	FILE* pipe;
+	char* result;
+	try(pipe = popen(list_command, "r"), NULL, fail);
+	try(fscanf(pipe, "%m[\x01-\xFF-]", &result), EOF, fail2);
+	try(pclose(pipe), -1, fail3);
+	return result;
+fail3:
+	free(result);
+fail2:
+	pclose(pipe);
+fail:
+	return NULL;
 }
 
-static const char* get_file(const char* filename) {
-	return "Totally the file you required!\n";
+static FILE* get_file(const char* filename) {
+	FILE* file;
+	char* file_path;
+	try(asprintf(&file_path, "%s/%s", base_dir, filename), -1, fail);
+	file = fopen(file_path, "r");
+	free(file_path);
+	return file;
+fail:
+	return NULL;
 }
 
 static void save_file(const char* filename) {
-	printf("File totally saved!\n");
+	printf("File saved\n");
 }

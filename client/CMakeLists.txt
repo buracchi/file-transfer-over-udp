@@ -15,6 +15,7 @@ add_executable (
 
 # add shared libraries
 
+target_link_libraries(client PRIVATE ftcp)
 target_link_libraries(client PRIVATE socket2)
 target_link_libraries(client PRIVATE try)
 target_link_libraries(client PRIVATE utilities)
