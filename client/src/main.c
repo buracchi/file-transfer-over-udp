@@ -7,19 +7,18 @@
 #include "utilities.h"
 
 extern int main(int argc, char* argv[]) {
-	char message[3] = {0};
-	char* reply;
+	ftcp_message_t request = ftcp_message_init(COMMAND, LIST, NULL, 0, NULL);
+	ftcp_message_t result;
 	socket2_t socket;
-	message[0] = COMMAND;
-	message[1] = LIST;
 	try(socket = socket2_init(TCP, IPV4), NULL);
 	try(socket2_ipv4_setaddr(socket, "127.0.0.1", 1234), 1);
 	try(socket2_connect(socket), 1);
-	try(socket2_send(socket, message), -1);
-	try(socket2_recv(socket, &reply), -1);
+	try(socket2_send(socket, request), -1);
+	try(socket2_recv(socket, (char**)&result), -1);
 	try(socket2_close(socket), 1);
 	socket2_destroy(socket);
-	printf("%s\n", reply);
-	free(reply);
+	printf("%s\n", ftcp_get_filename(result));
+	free(request);
+	free(result);
 	return 0;
 }

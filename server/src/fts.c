@@ -27,9 +27,9 @@
 static void fts_close(evutil_socket_t signal, short events, void* arg);
 static void dispatch_request(evutil_socket_t fd, short events, void* arg);
 static void* handle_request(void* arg);
-static const char* get_filelist();
-static FILE* get_file(const char* filename);
-static void save_file(const char* filename);
+static ftcp_message_t handle_list_request(ftcp_message_t request);
+static ftcp_message_t handle_get_request(ftcp_message_t request);
+static ftcp_message_t handle_put_request(ftcp_message_t request);
 
 static tpool_t thread_pool;
 static const char* base_dir;
@@ -84,70 +84,85 @@ static void dispatch_request(evutil_socket_t fd, short events, void* arg) {
 
 static void* handle_request(void* arg) {
 	socket2_t socket = arg;
-	char* request;
-	char* reply;
-	socket2_recv(socket, &request);
+	ftcp_message_t request;
+	ftcp_message_t reply;
+	socket2_recv(socket, (char**)&request);
 	switch (ftcp_get_type(request)) {
 	case COMMAND:
 		switch (ftcp_get_operation(request)) {
-		case LIST: {
-			reply = (char*) get_filelist();
-			socket2_send(socket, reply);
-			free(reply);
+		case LIST:
+			reply = handle_list_request(request);
 			break;
-		}
-		case GET: {
-			FILE* file;
-			// TODO: fail if request contains the '/' character
-			file = get_file(ftcp_get_arg(request));
-			// TODO: implement a socket2_fsend(socket2_t, FILE*)
-			fclose(file);
+		case GET:
+			reply = handle_get_request(request);
 			break;
-		}
-		case PUT: {
-			save_file(ftcp_get_arg(request));
-			reply = "Success";
-			socket2_send(socket, reply);
+		case PUT:
+			reply = handle_put_request(request);
 			break;
-		}
 		default:
+			reply = ftcp_message_init(RESPONSE, FAIL, NULL, 0, NULL);
 			break;
 		}
 		break;
 	default:
+		reply = ftcp_message_init(RESPONSE, FAIL, NULL, 0, NULL);
 		break;
 	}
+	socket2_send(socket, reply);
 	socket2_close(socket);
 	socket2_destroy(socket);
 	free(request);
+	free(reply);
 }
 
-static const char* get_filelist() {
+static ftcp_message_t handle_list_request(ftcp_message_t request) {
+	ftcp_message_t result;
 	FILE* pipe;
-	char* result;
+	char* filelist;
 	try(pipe = popen(list_command, "r"), NULL, fail);
-	try(fscanf(pipe, "%m[\x01-\xFF-]", &result), EOF, fail2);
+	try(fscanf(pipe, "%m[\x01-\xFF-]", &filelist), EOF, fail2);
 	try(pclose(pipe), -1, fail3);
+	result = ftcp_message_init(RESPONSE, SUCCESS, filelist, 0, NULL);
+	free(filelist);
 	return result;
 fail3:
-	free(result);
+	free(filelist);
 fail2:
 	pclose(pipe);
 fail:
 	return NULL;
 }
 
-static FILE* get_file(const char* filename) {
+// TODO: fail if filename contains the '/' character
+static ftcp_message_t handle_get_request(ftcp_message_t request) {
+	ftcp_message_t result;
 	FILE* file;
-	char* file_path;
-	try(asprintf(&file_path, "%s/%s", base_dir, filename), -1, fail);
-	file = fopen(file_path, "r");
-	free(file_path);
-	return file;
+	char* filepath;
+	uint64_t length;
+	uint8_t* content;
+	try(asprintf(&filepath, "%s/%s", base_dir, ftcp_get_filename(request)), -1, fail);
+	file = fopen(filepath, "r");
+	free(filepath);
+	fseek(file, 0L, SEEK_END);
+	length = ftell(file);
+	fseek(file, 0L, SEEK_SET);
+	fread(content, 1, length, file);
+	fclose(file);
+	return ftcp_message_init(RESPONSE, SUCCESS, ftcp_get_filename(request), length, content);
 fail:
 	return NULL;
 }
 
-static void save_file(const char* filename) {
-	printf("File saved\n");
+static ftcp_message_t handle_put_request(ftcp_message_t request) {
+	ftcp_message_t result;
+	FILE* file;
+	char* filepath;
+	try(asprintf(&filepath, "%s/%s", base_dir, ftcp_get_filename(request)), -1, fail);
+	file = fopen(filepath, "w");
+	free(filepath);
+	fwrite(ftcp_get_file_content(request), 1, ftcp_get_file_length(request), file);
+	fclose(file);
+	return ftcp_message_init(RESPONSE, SUCCESS, NULL, 0, NULL);
+fail:
+	return NULL;
 }
