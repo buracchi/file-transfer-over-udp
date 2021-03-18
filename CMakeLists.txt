@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.8)
 
-include(".cmake/Vcpkg.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/.cmake/Vcpkg.cmake")
 
 # Project Configuration
 
@@ -24,7 +24,7 @@ endif()
 
 # Dependencies
 
-file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/.dependencies DEPENDENCY_LIST)
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/.dependencies" DEPENDENCY_LIST)
 install_dependencies(DEPENDENCY_LIST)
 
 # Code Coverage Configuration
