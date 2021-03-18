@@ -90,7 +90,7 @@ static void* handle_request(void* arg) {
 	socket2_t socket = arg;
 	ftcp_message_t request;
 	ftcp_message_t reply;
-	socket2_recv(socket, (char**)&request);
+	socket2_srecv(socket, (char**)&request);
 	switch (ftcp_get_type(request)) {
 	case COMMAND:
 		switch (ftcp_get_operation(request)) {
@@ -112,7 +112,7 @@ static void* handle_request(void* arg) {
 		reply = ftcp_message_init(RESPONSE, ERROR, NULL, 0, NULL);
 		break;
 	}
-	socket2_send(socket, reply);
+	socket2_send(socket, reply, ftcp_message_length(reply));
 	socket2_close(socket);
 	socket2_destroy(socket);
 	free(request);

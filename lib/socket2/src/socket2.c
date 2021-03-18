@@ -21,6 +21,7 @@
 
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR  -1
+#define CHUNK_SIZE 4096	// MUST be even
 
 struct socket2 {
 	int fd;
@@ -143,31 +144,6 @@ fail:
 	return 1;
 }
 
-extern ssize_t socket2_recv(const socket2_t handle, char** buff) {
-	struct socket2* socket2 = handle;
-	size_t length = 2048;
-	size_t b_recv;
-	char* msg;
-	try(msg = malloc(sizeof * msg * (length)), NULL, fail);
-	memset(msg, 0, sizeof * msg * (length));
-	try(b_recv = recv(socket2->fd, msg, length - 1, 0), -1, fail2);
-	*buff = msg;
-	return b_recv;
-fail2:
-	free(msg);
-fail:
-	return -1;
-}
-
-extern ssize_t socket2_send(const socket2_t handle, const char* buff) {
-	struct socket2* socket2 = handle;
-	int b_sent;
-	try(b_sent = send(socket2->fd, buff, strlen(buff), 0), -1, fail);
-	return b_sent;
-fail:
-	return -1;
-}
-
 extern int socket2_listen(const socket2_t handle, int backlog) {
 	struct socket2* socket2 = handle;
 	try(bind(socket2->fd, socket2->addr, socket2->addrlen), -1, fail);
@@ -175,6 +151,105 @@ extern int socket2_listen(const socket2_t handle, int backlog) {
 	return 0;
 fail:
 	return 1;
+}
+
+extern ssize_t socket2_recv(const socket2_t handle, uint8_t* buff, uint64_t n) {
+	struct socket2* socket2 = handle;
+	ssize_t b_recvd;
+	try(b_recvd = recv(socket2->fd, buff, n, 0), -1, fail);
+	// handle ntoh
+	return b_recvd;
+fail:
+	return -1;
+}
+
+extern ssize_t socket2_srecv(const socket2_t handle, char** buff) {
+	struct socket2* socket2 = handle;
+	ssize_t b_recvd = 0;
+	uint8_t* msg;
+	uint8_t* p_msg;
+	uint8_t* chunk[CHUNK_SIZE];
+	ssize_t cb_recvd;
+	ssize_t tmp;
+	size_t csize = CHUNK_SIZE / 2;
+	bool end = false;
+	try(msg = malloc(sizeof * msg), NULL, fail);
+	do {
+		try(cb_recvd = recv(socket2->fd, chunk, CHUNK_SIZE, MSG_PEEK), -1, fail);
+		for (size_t i = 0; i < CHUNK_SIZE; i++) {
+			if (!((char*)chunk)[i]) {
+				csize = i + 1;
+				end = true;
+				break;
+			}
+		}
+		try(p_msg = realloc(msg, sizeof * msg * (b_recvd + csize)), NULL, fail2);
+		msg = p_msg;
+		try(tmp = recv(socket2->fd, msg + b_recvd, csize, 0), -1, fail2);
+		b_recvd += tmp;
+	} while (!end);
+end:
+	*buff = msg;
+	return b_recvd;
+fail2:
+	free(msg);
+fail:
+	return -1;
+}
+
+extern ssize_t socket2_frecv(const socket2_t handle, FILE* file, long fsize) {
+	struct socket2* socket2 = handle;
+	ssize_t b_recvd = 0;
+	uint8_t* chunk[CHUNK_SIZE];
+	while (b_recvd < fsize) {
+		ssize_t cb_recvd;
+		try(cb_recvd = recv(socket2->fd, chunk, fsize - b_recvd % CHUNK_SIZE, 0), -1, fail);
+		b_recvd += cb_recvd;
+		fwrite(chunk, sizeof * chunk, cb_recvd, file);
+	}
+	return b_recvd;
+fail:
+	return -1;
+}
+
+extern ssize_t socket2_send(const socket2_t handle, const uint8_t* buff, uint64_t n) {
+	struct socket2* socket2 = handle;
+	ssize_t b_sent;
+	// TODO: hton conversion
+	try(b_sent = send(socket2->fd, buff, n, 0), -1, fail);
+	return b_sent;
+fail:
+	return -1;
+}
+
+extern ssize_t socket2_ssend(const socket2_t handle, const char* string) {
+	struct socket2* socket2 = handle;
+	ssize_t b_sent;
+	try(b_sent = send(socket2->fd, string, strlen(string), 0), -1, fail);
+	return b_sent;
+fail:
+	return -1;
+}
+
+extern ssize_t socket2_fsend(const socket2_t handle, FILE* file) {
+	struct socket2* socket2 = handle;
+	ssize_t b_sent = 0;
+	uint8_t* chunk[CHUNK_SIZE];
+	long flen;
+	long cpos;
+	fseek(file, 0L, SEEK_END);
+	flen = ftell(file);
+	fseek(file, 0L, SEEK_SET);
+	do {
+		// TODO: hton conversion
+		long readed;
+		try(readed = fread(chunk, sizeof * chunk, CHUNK_SIZE, file), -1, fail);
+		try(b_sent += send(socket2->fd, chunk, readed, 0), -1, fail);
+		try(cpos = ftell(file), -1, fail);
+	} while (cpos != flen);
+	return b_sent;
+fail:
+	return -1;
 }
 
 extern int socket2_get_fd(const socket2_t handle) {

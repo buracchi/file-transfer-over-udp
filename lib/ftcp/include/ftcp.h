@@ -8,7 +8,7 @@
 * +------------------------------------------------------------------+
 * |                            FTCP Packet                           |
 * +------+------------------+-----------+-------------+--------------+
-* |  1 B |        1 B       |   256 B   |     8 B     |   Variable   |
+* |  1 B |        1 B       |   256 B   |     8 B     | At least 1 B |
 * +------+------------------+-----------+-------------+--------------+
 * | Type | Operation/Result | File name | File length | File content |
 * +------+------------------+-----------+-------------+--------------+
@@ -33,6 +33,8 @@ extern ftcp_message_t ftcp_message_init(
 	uint64_t file_content_lenght,
 	const uint8_t* file_content
 );
+
+extern uint64_t ftcp_message_length(ftcp_message_t ftcp_message);
 
 extern enum ftcp_type ftcp_get_type(ftcp_message_t ftcp_message);
 

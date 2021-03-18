@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <sys/types.h>
@@ -63,27 +64,62 @@ extern int socket2_connect(const socket2_t handle);
 extern int socket2_close(const socket2_t handle);
 
 /*
-* Receive a message from a connected socket
-*
-* @param	handle	-	the socket object.
-* @param	buff	-	pointer wich will contain the malloc'd message
-* 
-* @return	the number of byte read or -1 on error
-*/
-extern ssize_t socket2_recv(const socket2_t handle, char** buff);
-
-/*
-* return number of bytes sended
-*/
-extern ssize_t socket2_send(const socket2_t handle, const char* buff);
-
-/*
-* Bind a name to a socket, listen for socket connections and limit the queue of 
+* Bind a name to a socket, listen for socket connections and limit the queue of
 * incoming connections.
 *
 * @return	1 and set properly errno on error
 */
 extern int socket2_listen(const socket2_t handle, int backlog);
+
+/*
+* Receive a message from a connected socket
+*
+* @param	handle	-	the socket object.
+* @param	buff	-	pointer which will contain the message
+* 
+* @return	the number of byte read or -1 on error
+*/
+extern ssize_t socket2_recv(const socket2_t handle, uint8_t* buff, uint64_t n);
+
+/*
+* Receive a message from a connected socket
+*
+* @param	handle	-	the socket object.
+* @param	buff	-	pointer which will contain the malloc'd string
+*
+* @return	the number of byte read or -1 on error
+*/
+extern ssize_t socket2_srecv(const socket2_t handle, char** buff);
+
+/*
+* Receive a message from a connected socket
+*
+* @param	handle	-	the socket object.
+*
+* @return	the number of byte read or -1 on error
+*/
+extern ssize_t socket2_frecv(const socket2_t handle, FILE* file, long fsize);
+
+/*
+* Send n bytes form a connected socket.
+* 
+* @return number of bytes sent.
+*/
+extern ssize_t socket2_send(const socket2_t handle, const uint8_t* buff, uint64_t n);
+
+/*
+* Send a string form a connected socket.
+*
+* @return number of bytes sent.
+*/
+extern ssize_t socket2_ssend(const socket2_t handle, const char* string);
+
+/*
+* Send a file form a connected socket.
+*
+* @return number of bytes sent.
+*/
+extern ssize_t socket2_fsend(const socket2_t handle, FILE* file);
 
 /*******************************************************************************
 *                             Modifiers functions                              *
