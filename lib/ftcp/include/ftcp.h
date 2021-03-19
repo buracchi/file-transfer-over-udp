@@ -2,46 +2,67 @@
 
 #include <stdint.h>
 
+/*******************************************************************************
+*                     File Transfer Communication Protocol                     *
+*******************************************************************************/
 /*
-* File Transfer Communication Protocol
+* Communication between hosts in the application occurs through the exchange 
+* of FTCP packets.
 * 
-* +------------------------------------------------------------------+
-* |                            FTCP Packet                           |
-* +------+------------------+-----------+-------------+--------------+
-* |  1 B |        1 B       |   256 B   |     8 B     | At least 1 B |
-* +------+------------------+-----------+-------------+--------------+
-* | Type | Operation/Result | File name | File length | File content |
-* +------+------------------+-----------+-------------+--------------+
+* The FTCP packets are subdivided in:
 * 
-* Type: Message type
-* Operation: Message operation
-* File name: NULL terminated string (up to 255 characters)
-* File length: File length (up to 16 EiB)
+*	- Preamble Packets: precede each Data Packet and provide informations to the 
+* 						host about how to process data packets.
+*
+*		+----------------------------------------------------+
+*		|                FTCP Preamble Packet                |
+*		+------+------------------+-----+--------------------+
+*		|  1 B |        1 B       |256 B|         8 B        |
+*		+------+------------------+-----+--------------------+
+*		| Type | Operation/Result | Arg | Data Packet Length |
+*		+------+------------------+-----+--------------------+
+* 
+*						Type:				Message type
+*						Operation/Result:	Message operation
+*						Arg:				Additional argument
+*						Data length:		Data Packet length (up to 16 EiB)
+* 
+*	- Data Packets:		contain an array of bytes that can represent different 
+*						types of data depending on the processing context,
+*						each Data Packet MUST be preceded by a Preamble Packet.
+* 
+*		+----------------------------------------------+
+*		|               FTCP Data Packet               |
+*		+----------------------------------------------+
+*		|             Data Packet Length B             |
+*		+----------------------------------------------+
+*		|                     Data                     |
+*		+----------------------------------------------+
+* 
+*						Data:				Data
 * 
 */
 
-typedef uint8_t* ftcp_message_t;
+typedef uint8_t* ftcp_pp_t;
+typedef uint8_t* ftcp_dp_t;
 
 enum ftcp_type { INVALID_TYPE, COMMAND, RESPONSE };
 enum ftcp_operation { INVALID_OPERATION, LIST, GET, PUT };
 enum ftcp_result { INVALID_RESULT, SUCCESS, ERROR };
 
-extern ftcp_message_t ftcp_message_init(
+extern ftcp_pp_t ftcp_pp_init(
 	enum ftcp_type type,
 	enum ftcp_operation operation,
-	const char* filename, 
-	uint64_t file_content_lenght,
-	const uint8_t* file_content
+	uint8_t arg[256],
+	uint64_t dplen
 );
 
-extern uint64_t ftcp_message_length(ftcp_message_t ftcp_message);
+#define ftcp_pp_size() 266
 
-extern enum ftcp_type ftcp_get_type(ftcp_message_t ftcp_message);
+extern enum ftcp_type ftcp_get_type(ftcp_pp_t ftcp_packet);
 
-extern enum ftcp_operation ftcp_get_operation(ftcp_message_t ftcp_message);
+extern enum ftcp_operation ftcp_get_operation(ftcp_pp_t ftcp_packet);
 
-extern char* ftcp_get_filename(ftcp_message_t ftcp_message);
+extern uint8_t* ftcp_get_arg(ftcp_pp_t ftcp_packet);
 
-extern uint64_t ftcp_get_file_length(ftcp_message_t ftcp_message);
-
-extern uint8_t* ftcp_get_file_content(ftcp_message_t ftcp_message);
+extern uint64_t ftcp_get_dplen(ftcp_pp_t ftcp_packet);

@@ -31,9 +31,10 @@
 static void fts_close(evutil_socket_t signal, short events, void* arg);
 static void dispatch_request(evutil_socket_t fd, short events, void* arg);
 static void* handle_request(void* arg);
-static ftcp_message_t handle_list_request(ftcp_message_t request);
-static ftcp_message_t handle_get_request(ftcp_message_t request);
-static ftcp_message_t handle_put_request(ftcp_message_t request);
+static void handle_list_request(socket2_t socket, ftcp_pp_t request);
+static void handle_get_request(socket2_t socket, ftcp_pp_t request);
+static void handle_put_request(socket2_t socket, ftcp_pp_t request);
+static void handle_invalid_request(socket2_t socket, ftcp_pp_t request);
 
 static tpool_t thread_pool;
 static const char* base_dir;
@@ -88,89 +89,81 @@ static void dispatch_request(evutil_socket_t fd, short events, void* arg) {
 
 static void* handle_request(void* arg) {
 	socket2_t socket = arg;
-	ftcp_message_t request;
-	ftcp_message_t reply;
-	socket2_srecv(socket, (char**)&request);
+	ftcp_pp_t request = malloc(ftcp_pp_size());
+	socket2_recv(socket, request, ftcp_pp_size());
 	switch (ftcp_get_type(request)) {
 	case COMMAND:
 		switch (ftcp_get_operation(request)) {
 		case LIST:
-			reply = handle_list_request(request);
+			handle_list_request(socket, request);
 			break;
 		case GET:
-			reply = handle_get_request(request);
+			handle_get_request(socket, request);
 			break;
 		case PUT:
-			reply = handle_put_request(request);
+			handle_put_request(socket, request);
 			break;
 		default:
-			reply = ftcp_message_init(RESPONSE, ERROR, NULL, 0, NULL);
-			break;
+			handle_invalid_request(socket, request);
 		}
 		break;
 	default:
-		reply = ftcp_message_init(RESPONSE, ERROR, NULL, 0, NULL);
-		break;
+		handle_invalid_request(socket, request);
 	}
-	socket2_send(socket, reply, ftcp_message_length(reply));
 	socket2_close(socket);
 	socket2_destroy(socket);
 	free(request);
-	free(reply);
 }
 
-static ftcp_message_t handle_list_request(ftcp_message_t request) {
-	ftcp_message_t result;
+static void handle_list_request(socket2_t socket, ftcp_pp_t request) {
+	ftcp_pp_t reply;
 	FILE* pipe;
 	char* filelist;
-	try(pipe = popen(list_command, "r"), NULL, fail);
-	try(fscanf(pipe, "%m[\x01-\xFF-]", &filelist), EOF, fail2);
-	try(pclose(pipe), -1, fail3);
-	result = ftcp_message_init(RESPONSE, SUCCESS, filelist, 0, NULL);
-	free(filelist);
-	return result;
-fail3:
-	free(filelist);
-fail2:
+	pipe = popen(list_command, "r");
+	fscanf(pipe, "%m[\x01-\xFF-]", &filelist);
 	pclose(pipe);
-fail:
-	return NULL;
+	reply = ftcp_pp_init(RESPONSE, SUCCESS, NULL, strlen(filelist));
+	socket2_send(socket, reply, ftcp_pp_size());
+	socket2_ssend(socket, filelist);
+	free(filelist);
 }
 
 // TODO: fail if filename contains the '/' character
-static ftcp_message_t handle_get_request(ftcp_message_t request) {
-	ftcp_message_t result;
-	FILE* file;
+static void handle_get_request(socket2_t socket, ftcp_pp_t request) {
+	ftcp_pp_t reply;
 	char* filepath;
-	uint64_t length;
-	uint8_t* content;
-	try(asprintf(&filepath, "%s/%s", base_dir, ftcp_get_filename(request)), -1, fail);
+	FILE* file;
+	uint64_t flen;
+	asprintf(&filepath, "%s/%s", base_dir, ftcp_get_arg(request));
 	file = fopen(filepath, "r");
-	free(filepath);
 	fseek(file, 0L, SEEK_END);
-	length = ftell(file);
+	flen = ftell(file);
 	fseek(file, 0L, SEEK_SET);
-	content = malloc(sizeof * content * length);
-	fread(content, 1, length, file);
+	reply = ftcp_pp_init(RESPONSE, SUCCESS, ftcp_get_arg(request), flen);
+	socket2_send(socket, reply, ftcp_pp_size());
+	socket2_fsend(socket, file);
 	fclose(file);
-	result = ftcp_message_init(RESPONSE, SUCCESS, ftcp_get_filename(request), length, content);
-	free(content);
-	return result;
-fail:
-	return NULL;
+	free(filepath);
+	free(reply);
 }
 
-static ftcp_message_t handle_put_request(ftcp_message_t request) {
-	ftcp_message_t result;
+static void handle_put_request(socket2_t socket, ftcp_pp_t request) {
+	ftcp_pp_t reply;
 	FILE* file;
 	char* filepath;
-	try(asprintf(&filepath, "%s/%s", base_dir, ftcp_get_filename(request)), -1, fail);
+	asprintf(&filepath, "%s/%s", base_dir, ftcp_get_arg(request));
 	file = fopen(filepath, "w");
-	free(filepath);
-	fwrite(ftcp_get_file_content(request), 1, ftcp_get_file_length(request), file);
+	socket2_frecv(socket, file, ftcp_get_dplen(request));
+	reply = ftcp_pp_init(RESPONSE, SUCCESS, NULL, 0);
+	socket2_send(socket, reply, ftcp_pp_size());
 	fclose(file);
-	result = ftcp_message_init(RESPONSE, SUCCESS, NULL, 0, NULL);
-	return result;
-fail:
-	return NULL;
+	free(filepath);
+	free(reply);
+}
+
+static void handle_invalid_request(socket2_t socket, ftcp_pp_t request) {
+	ftcp_pp_t reply;
+	reply = ftcp_pp_init(RESPONSE, ERROR, NULL, 0);
+	socket2_send(socket, reply, ftcp_pp_size());
+	free(reply);
 }

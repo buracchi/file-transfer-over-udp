@@ -168,7 +168,7 @@ extern ssize_t socket2_srecv(const socket2_t handle, char** buff) {
 	ssize_t b_recvd = 0;
 	uint8_t* msg;
 	uint8_t* p_msg;
-	uint8_t* chunk[CHUNK_SIZE];
+	uint8_t chunk[CHUNK_SIZE] = { 0 };
 	ssize_t cb_recvd;
 	ssize_t tmp;
 	size_t csize = CHUNK_SIZE / 2;
@@ -187,6 +187,7 @@ extern ssize_t socket2_srecv(const socket2_t handle, char** buff) {
 		msg = p_msg;
 		try(tmp = recv(socket2->fd, msg + b_recvd, csize, 0), -1, fail2);
 		b_recvd += tmp;
+		msg[b_recvd] = 0;
 	} while (!end);
 end:
 	*buff = msg;
@@ -200,7 +201,7 @@ fail:
 extern ssize_t socket2_frecv(const socket2_t handle, FILE* file, long fsize) {
 	struct socket2* socket2 = handle;
 	ssize_t b_recvd = 0;
-	uint8_t* chunk[CHUNK_SIZE];
+	uint8_t chunk[CHUNK_SIZE] = { 0 };
 	while (b_recvd < fsize) {
 		ssize_t cb_recvd;
 		try(cb_recvd = recv(socket2->fd, chunk, fsize - b_recvd % CHUNK_SIZE, 0), -1, fail);
@@ -234,7 +235,7 @@ fail:
 extern ssize_t socket2_fsend(const socket2_t handle, FILE* file) {
 	struct socket2* socket2 = handle;
 	ssize_t b_sent = 0;
-	uint8_t* chunk[CHUNK_SIZE];
+	uint8_t chunk[CHUNK_SIZE] = {0};
 	long flen;
 	long cpos;
 	fseek(file, 0L, SEEK_END);
