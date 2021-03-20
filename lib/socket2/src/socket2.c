@@ -1,10 +1,10 @@
 #include "socket2.h"
 
-#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "try.h"
 
@@ -202,12 +202,19 @@ extern ssize_t socket2_frecv(const socket2_t handle, FILE* file, long fsize) {
 	struct socket2* socket2 = handle;
 	ssize_t b_recvd = 0;
 	uint8_t chunk[CHUNK_SIZE] = { 0 };
+	FILE* ftmp = tmpfile();
 	while (b_recvd < fsize) {
 		ssize_t cb_recvd;
 		try(cb_recvd = recv(socket2->fd, chunk, fsize - b_recvd % CHUNK_SIZE, 0), -1, fail);
 		b_recvd += cb_recvd;
-		fwrite(chunk, sizeof * chunk, cb_recvd, file);
+		fwrite(chunk, sizeof * chunk, cb_recvd, ftmp);
 	}
+	char c;
+	rewind(ftmp);
+	while ((c = fgetc(ftmp)) != EOF) {
+		fputc(c, file);
+	}
+	fclose(ftmp);
 	return b_recvd;
 fail:
 	return -1;

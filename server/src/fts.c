@@ -151,8 +151,12 @@ static void handle_put_request(socket2_t socket, ftcp_pp_t request) {
 	ftcp_pp_t reply;
 	FILE* file;
 	char* filepath;
+	char FILE_EXIST[256] = { 0 };
 	asprintf(&filepath, "%s/%s", base_dir, ftcp_get_arg(request));
 	file = fopen(filepath, "w");
+	reply = ftcp_pp_init(RESPONSE, SUCCESS, FILE_EXIST, 0);
+	socket2_send(socket, reply, ftcp_pp_size());
+	free(reply);
 	socket2_frecv(socket, file, ftcp_get_dplen(request));
 	reply = ftcp_pp_init(RESPONSE, SUCCESS, NULL, 0);
 	socket2_send(socket, reply, ftcp_pp_size());
