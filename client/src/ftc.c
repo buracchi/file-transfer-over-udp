@@ -11,9 +11,13 @@
 #include "try.h"
 #include "utilities.h"
 
-static int get_input(char** buffer);
-static enum ftcp_operation get_operation(char* buffer);
+enum client_operation { INVALID, EXIT, HELP };
 
+static int get_input(char** buffer);
+static enum client_operation get_client_operation(char* buffer);
+static enum ftcp_operation get_ftcp_operation(char* buffer);
+
+static int help();
 static int require_list(socket2_t socket);
 static int require_download(socket2_t socket, char* filename);
 static int require_upload(socket2_t socket, char* filename);
@@ -23,34 +27,51 @@ static int require_upload(socket2_t socket, char* filename);
 extern int ftc_start(char* url) {
 	socket2_t socket;
 	char* buff;
-	printf("File transfer client\nCommands: list, get, put\n");
+	printf("File Transfer Client\n\nType 'help' to get help.\n\n");
 	forever{
-		printf(">");
+		printf("FTC> ");
 		try(get_input(&buff), -1, fail);
-		try(socket = socket2_init(TCP, IPV4), NULL);
-		try(socket2_ipv4_setaddr(socket, "127.0.0.1", 1234), 1);
-		try(socket2_connect(socket), 1);
-		switch (get_operation(buff)) {
-		case LIST:
-			require_list(socket);
-			break;
-		case GET:
-			require_download(socket, get_arg(buff));
-			break;
-		case PUT:
-			require_upload(socket, get_arg(buff));
+		switch (get_client_operation(buff)) {
+		case EXIT:
+			free(buff);
+			return 0;
+		case HELP:
+			help();
 			break;
 		default:
-			printf("Invalid request\n");
-			break;
+			try(socket = socket2_init(TCP, IPV4), NULL);
+			try(socket2_ipv4_setaddr(socket, "127.0.0.1", 1234), 1);
+			try(socket2_connect(socket), 1);
+			switch (get_ftcp_operation(buff)) {
+			case LIST:
+				require_list(socket);
+				break;
+			case GET:
+				require_download(socket, get_arg(buff));
+				break;
+			case PUT:
+				require_upload(socket, get_arg(buff));
+				break;
+			default:
+				printf("Invalid request\n");
+				break;
+			}
+			try(socket2_close(socket), 1);
+			socket2_destroy(socket);
 		}
-		try(socket2_close(socket), 1);
-		socket2_destroy(socket);
 		free(buff);
 	}
-	return 0;
 fail:
 	return 1;
+}
+
+static int help() {
+	return printf("\nSupported commands:\n\n\
+					\r\t- list\t\t\tlist server available file\n\
+					\r\t- get filename\t\tdownload a file from the server\n\
+					\r\t- put filename\t\tupload a file to the server\n\
+					\r\t- help\t\t\tprint this help\n\
+					\r\t- exit\t\t\tclose client\n");
 }
 
 static int get_input(char** buffer) {
@@ -61,7 +82,17 @@ fail:
 	return 1;
 }
 
-static enum ftcp_operation get_operation(char* buffer) {
+static enum client_operation get_client_operation(char* buffer) {
+	if (streq(buffer, "exit")) {
+		return EXIT;
+	}
+	else if (streq(buffer, "help")) {
+		return HELP;
+	}
+	return INVALID;
+}
+
+static enum ftcp_operation get_ftcp_operation(char* buffer) {
 	if (!strncasecmp(buffer, "list", 4)) {
 		return LIST;
 	}
@@ -74,14 +105,17 @@ static enum ftcp_operation get_operation(char* buffer) {
 	return INVALID_OPERATION;
 }
 
+
 static int require_list(socket2_t socket) {
 	ftcp_pp_t request;
 	ftcp_pp_t response;
 	char* filelist;
 	try(request = ftcp_pp_init(COMMAND, LIST, NULL, 0), NULL, fail);
 	socket2_send(socket, request, ftcp_pp_size());
+	free(request);
 	try(response = malloc(ftcp_pp_size()), NULL, fail);
 	socket2_recv(socket, response, ftcp_pp_size());
+	free(response);
 	socket2_srecv(socket, &filelist);
 	try(printf("%s\n", filelist) < 0, true, fail);
 	free(filelist);
@@ -97,6 +131,7 @@ static int require_download(socket2_t socket, char* filename) {
 	strcpy(filename_buff, filename);
 	try(request = ftcp_pp_init(COMMAND, GET, filename_buff, 0), NULL, fail);
 	socket2_send(socket, request, ftcp_pp_size());
+	free(request);
 	try(response = malloc(ftcp_pp_size()), NULL, fail);
 	socket2_recv(socket, response, ftcp_pp_size());
 	if (ftcp_get_result(response) == FILE_EXIST) {
@@ -105,7 +140,7 @@ static int require_download(socket2_t socket, char* filename) {
 			char choise[2] = { getchar(), 0 };
 			try(getchar() != '\n' || !choise[0], true, fail);
 			if (!streq(choise, "y")) {
-				return 0;
+				goto end;
 			}
 		}
 		FILE* file;
@@ -117,6 +152,8 @@ static int require_download(socket2_t socket, char* filename) {
 	else {
 		printf("Cannot find '%s': No such file\n", filename);
 	}
+end:
+	free(response);
 	return 0;
 fail:
 	return 1;
@@ -135,6 +172,7 @@ static int require_upload(socket2_t socket, char* filename) {
 	fseek(file, 0L, SEEK_SET);
 	try(request = ftcp_pp_init(COMMAND, PUT, filename_buff, flen), NULL, fail);
 	socket2_send(socket, request, ftcp_pp_size());
+	free(request);
 	try(response = malloc(ftcp_pp_size()), NULL, fail);
 	socket2_recv(socket, response, ftcp_pp_size());
 	if (ftcp_get_result(response) == FILE_EXIST) {
@@ -150,6 +188,7 @@ static int require_upload(socket2_t socket, char* filename) {
 	try(printf("File uploaded\n") < 0, true, fail);
 end:
 	fclose(file);
+	free(response);
 	return 0;
 fail:
 	return 1;
