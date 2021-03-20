@@ -16,6 +16,7 @@
 
 #ifdef __unix__
 #include <sys/sysinfo.h>
+#include <unistd.h>
 #endif
 
 #define BACKLOG 4096
@@ -126,6 +127,7 @@ static void handle_list_request(socket2_t socket, ftcp_pp_t request) {
 	socket2_send(socket, reply, ftcp_pp_size());
 	socket2_ssend(socket, filelist);
 	free(filelist);
+	free(reply);
 }
 
 // TODO: fail if filename contains the '/' character
@@ -135,14 +137,20 @@ static void handle_get_request(socket2_t socket, ftcp_pp_t request) {
 	FILE* file;
 	uint64_t flen;
 	asprintf(&filepath, "%s/%s", base_dir, ftcp_get_arg(request));
-	file = fopen(filepath, "r");
-	fseek(file, 0L, SEEK_END);
-	flen = ftell(file);
-	fseek(file, 0L, SEEK_SET);
-	reply = ftcp_pp_init(RESPONSE, SUCCESS, ftcp_get_arg(request), flen);
-	socket2_send(socket, reply, ftcp_pp_size());
-	socket2_fsend(socket, file);
-	fclose(file);
+	if (!access(filepath, F_OK)) {
+		file = fopen(filepath, "r");
+		fseek(file, 0L, SEEK_END);
+		flen = ftell(file);
+		fseek(file, 0L, SEEK_SET);
+		reply = ftcp_pp_init(RESPONSE, FILE_EXIST, ftcp_get_arg(request), flen);
+		socket2_send(socket, reply, ftcp_pp_size());
+		socket2_fsend(socket, file);
+		fclose(file);
+	}
+	else {
+		reply = ftcp_pp_init(RESPONSE, FILE_NOT_EXIST, NULL, 0);
+		socket2_send(socket, reply, ftcp_pp_size());
+	}
 	free(filepath);
 	free(reply);
 }
@@ -151,10 +159,11 @@ static void handle_put_request(socket2_t socket, ftcp_pp_t request) {
 	ftcp_pp_t reply;
 	FILE* file;
 	char* filepath;
-	char FILE_EXIST[256] = { 0 };
+	enum ftcp_result result;
 	asprintf(&filepath, "%s/%s", base_dir, ftcp_get_arg(request));
+	result = access(filepath, F_OK) ? FILE_NOT_EXIST : FILE_EXIST;
 	file = fopen(filepath, "w");
-	reply = ftcp_pp_init(RESPONSE, SUCCESS, FILE_EXIST, 0);
+	reply = ftcp_pp_init(RESPONSE, result, NULL, 0);
 	socket2_send(socket, reply, ftcp_pp_size());
 	free(reply);
 	socket2_frecv(socket, file, ftcp_get_dplen(request));

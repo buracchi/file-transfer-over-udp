@@ -48,7 +48,7 @@ typedef uint8_t* ftcp_dp_t;
 
 enum ftcp_type { INVALID_TYPE, COMMAND, RESPONSE };
 enum ftcp_operation { INVALID_OPERATION, LIST, GET, PUT };
-enum ftcp_result { INVALID_RESULT, SUCCESS, ERROR };
+enum ftcp_result { INVALID_RESULT, SUCCESS, ERROR, FILE_EXIST, FILE_NOT_EXIST };
 
 extern ftcp_pp_t ftcp_pp_init(
 	enum ftcp_type type,
@@ -62,6 +62,8 @@ extern ftcp_pp_t ftcp_pp_init(
 extern enum ftcp_type ftcp_get_type(ftcp_pp_t ftcp_packet);
 
 extern enum ftcp_operation ftcp_get_operation(ftcp_pp_t ftcp_packet);
+
+extern enum ftcp_result ftcp_get_result(ftcp_pp_t ftcp_packet);
 
 extern uint8_t* ftcp_get_arg(ftcp_pp_t ftcp_packet);
 

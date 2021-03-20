@@ -300,7 +300,7 @@ fail:
 extern int socket2_unix_setaddr(const socket2_t handle, const char* address) {
 	struct socket2* socket2 = handle;
 	struct sockaddr_un* paddr_un = (struct sockaddr_un*)socket2->addr;
-	strncpy(paddr_un->sun_path + 1, address, strlen(address));
+	strcpy(paddr_un->sun_path + 1, address);
 	socket2->addrlen = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + 1 + strlen(address));
 	return 0;
 }

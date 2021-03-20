@@ -76,12 +76,12 @@ static enum ftcp_operation get_operation(char* buffer) {
 
 static int require_list(socket2_t socket) {
 	ftcp_pp_t request;
-	ftcp_pp_t result;
+	ftcp_pp_t response;
 	char* filelist;
 	try(request = ftcp_pp_init(COMMAND, LIST, NULL, 0), NULL, fail);
 	socket2_send(socket, request, ftcp_pp_size());
-	try(result = malloc(ftcp_pp_size()), NULL, fail);
-	socket2_recv(socket, result, ftcp_pp_size());
+	try(response = malloc(ftcp_pp_size()), NULL, fail);
+	socket2_recv(socket, response, ftcp_pp_size());
 	socket2_srecv(socket, &filelist);
 	try(printf("%s\n", filelist) < 0, true, fail);
 	free(filelist);
@@ -92,26 +92,31 @@ fail:
 
 static int require_download(socket2_t socket, char* filename) {
 	ftcp_pp_t request;
-	ftcp_pp_t result;
+	ftcp_pp_t response;
 	char filename_buff[256] = { 0 };
 	strcpy(filename_buff, filename);
 	try(request = ftcp_pp_init(COMMAND, GET, filename_buff, 0), NULL, fail);
 	socket2_send(socket, request, ftcp_pp_size());
-	try(result = malloc(ftcp_pp_size()), NULL, fail);
-	socket2_recv(socket, result, ftcp_pp_size());
-	if (!access(filename, F_OK)) {
-		printf("%s already exists. Do you want to replace it? [y/n]\n", filename);
-		char choise[2] = { getchar(), 0 };
-		try(getchar() != '\n' || !choise[0], true, fail);
-		if (!streq(choise, "y")) {
-			return 0;
+	try(response = malloc(ftcp_pp_size()), NULL, fail);
+	socket2_recv(socket, response, ftcp_pp_size());
+	if (ftcp_get_result(response) == FILE_EXIST) {
+		if (!access(filename, F_OK)) {
+			printf("%s already exists. Do you want to replace it? [y/n]\n", filename);
+			char choise[2] = { getchar(), 0 };
+			try(getchar() != '\n' || !choise[0], true, fail);
+			if (!streq(choise, "y")) {
+				return 0;
+			}
 		}
+		FILE* file;
+		file = fopen(filename, "w");
+		socket2_frecv(socket, file, ftcp_get_dplen(response));
+		try(printf("File downloaded\n") < 0, true, fail);
+		fclose(file);
 	}
-	FILE* file;
-	file = fopen(filename, "w");
-	socket2_frecv(socket, file, ftcp_get_dplen(result));
-	try(printf("File downloaded\n") < 0, true, fail);
-	fclose(file);
+	else {
+		printf("Cannot find '%s': No such file\n", filename);
+	}
 	return 0;
 fail:
 	return 1;
@@ -119,7 +124,7 @@ fail:
 
 static int require_upload(socket2_t socket, char* filename) {
 	ftcp_pp_t request;
-	ftcp_pp_t result;
+	ftcp_pp_t response;
 	char filename_buff[256] = { 0 };
 	strcpy(filename_buff, filename);
 	FILE* file;
@@ -130,10 +135,9 @@ static int require_upload(socket2_t socket, char* filename) {
 	fseek(file, 0L, SEEK_SET);
 	try(request = ftcp_pp_init(COMMAND, PUT, filename_buff, flen), NULL, fail);
 	socket2_send(socket, request, ftcp_pp_size());
-	try(result = malloc(ftcp_pp_size()), NULL, fail);
-	socket2_recv(socket, result, ftcp_pp_size());
-	int FILE_EXIST = !ftcp_get_arg(result)[0];
-	if (FILE_EXIST) {
+	try(response = malloc(ftcp_pp_size()), NULL, fail);
+	socket2_recv(socket, response, ftcp_pp_size());
+	if (ftcp_get_result(response) == FILE_EXIST) {
 		printf("%s already exists. Do you want to replace it? [y/n]\n", filename);
 		char choise[2] = { getchar(), 0 };
 		try(getchar() != '\n' || !choise[0], true, fail);
@@ -142,7 +146,7 @@ static int require_upload(socket2_t socket, char* filename) {
 		}
 	}
 	socket2_fsend(socket, file);
-	socket2_recv(socket, result, ftcp_pp_size());
+	socket2_recv(socket, response, ftcp_pp_size());
 	try(printf("File uploaded\n") < 0, true, fail);
 end:
 	fclose(file);

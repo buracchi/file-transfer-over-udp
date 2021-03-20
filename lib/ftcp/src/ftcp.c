@@ -30,6 +30,10 @@ extern inline enum ftcp_operation ftcp_get_operation(ftcp_pp_t ftcp_packet) {
 	return ftcp_packet[1];
 }
 
+extern enum ftcp_result ftcp_get_result(ftcp_pp_t ftcp_packet) {
+	return ftcp_packet[1];
+}
+
 extern inline uint8_t* ftcp_get_arg(ftcp_pp_t ftcp_packet) {
 	return ftcp_packet + 2;
 }
