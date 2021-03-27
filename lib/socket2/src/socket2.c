@@ -31,6 +31,8 @@ struct socket2 {
 	enum network_protocol nproto;
 };
 
+static int set_addr(const socket2_t handle, const char* address, const uint16_t port);
+
 extern socket2_t socket2_init(enum transport_protocol tproto, enum network_protocol nproto) {
 	struct socket2* socket2;
 	socket2 = malloc(sizeof * socket2);
@@ -128,8 +130,9 @@ fail:
 	return NULL;
 }
 
-extern int socket2_connect(const socket2_t handle) {
+extern int socket2_connect(const socket2_t handle, const char* address, const uint16_t port) {
 	struct socket2* socket2 = handle;
+	try(set_addr(socket2, address, port), 1, fail);
 	try(connect(socket2->fd, socket2->addr, socket2->addrlen), SOCKET_ERROR, fail);
 	return 0;
 fail:
@@ -144,13 +147,19 @@ fail:
 	return 1;
 }
 
-extern int socket2_listen(const socket2_t handle, int backlog) {
+extern int socket2_listen(const socket2_t handle, const char* address, const uint16_t port, int backlog) {
 	struct socket2* socket2 = handle;
+	try(set_addr(socket2, address, port), 1, fail);
 	try(bind(socket2->fd, socket2->addr, socket2->addrlen), -1, fail);
 	try(listen(socket2->fd, backlog), -1, fail);
 	return 0;
 fail:
 	return 1;
+}
+
+extern inline ssize_t socket2_peek(const socket2_t handle, uint8_t* buff, uint64_t n) {
+	struct socket2* socket2 = handle;
+	return recv(socket2->fd, buff, n, MSG_PEEK);
 }
 
 extern ssize_t socket2_recv(const socket2_t handle, uint8_t* buff, uint64_t n) {
@@ -175,7 +184,7 @@ extern ssize_t socket2_srecv(const socket2_t handle, char** buff) {
 	bool end = false;
 	try(msg = malloc(sizeof * msg), NULL, fail);
 	do {
-		try(cb_recvd = recv(socket2->fd, chunk, CHUNK_SIZE, MSG_PEEK), -1, fail);
+		try(cb_recvd = socket2_peek(socket2, chunk, CHUNK_SIZE), -1, fail);
 		for (size_t i = 0; i < CHUNK_SIZE; i++) {
 			if (!((char*)chunk)[i]) {
 				csize = i + 1;
@@ -185,7 +194,7 @@ extern ssize_t socket2_srecv(const socket2_t handle, char** buff) {
 		}
 		try(p_msg = realloc(msg, sizeof * msg * (b_recvd + csize)), NULL, fail2);
 		msg = p_msg;
-		try(tmp = recv(socket2->fd, msg + b_recvd, csize, 0), -1, fail2);
+		try(tmp = socket2_recv(socket2, msg + b_recvd, csize), -1, fail2);
 		b_recvd += tmp;
 		msg[b_recvd] = 0;
 	} while (!end);
@@ -205,7 +214,7 @@ extern ssize_t socket2_frecv(const socket2_t handle, FILE* file, long fsize) {
 	FILE* ftmp = tmpfile();
 	while (b_recvd < fsize) {
 		ssize_t cb_recvd;
-		try(cb_recvd = recv(socket2->fd, chunk, fsize - b_recvd % CHUNK_SIZE, 0), -1, fail);
+		try(cb_recvd = socket2_recv(socket2, chunk, fsize - b_recvd % CHUNK_SIZE), -1, fail);
 		b_recvd += cb_recvd;
 		fwrite(chunk, sizeof * chunk, cb_recvd, ftmp);
 	}
@@ -233,7 +242,7 @@ fail:
 extern ssize_t socket2_ssend(const socket2_t handle, const char* string) {
 	struct socket2* socket2 = handle;
 	ssize_t b_sent;
-	try(b_sent = send(socket2->fd, string, strlen(string), 0), -1, fail);
+	try(b_sent = socket2_send(socket2, string, strlen(string)), -1, fail);
 	return b_sent;
 fail:
 	return -1;
@@ -252,7 +261,7 @@ extern ssize_t socket2_fsend(const socket2_t handle, FILE* file) {
 		// TODO: hton conversion
 		long readed;
 		try(readed = fread(chunk, sizeof * chunk, CHUNK_SIZE, file), -1, fail);
-		try(b_sent += send(socket2->fd, chunk, readed, 0), -1, fail);
+		try(b_sent += socket2_send(socket2, chunk, readed), -1, fail);
 		try(cpos = ftell(file), -1, fail);
 	} while (cpos != flen);
 	return b_sent;
@@ -284,24 +293,27 @@ fail:
 	return 1;
 }
 
-extern int socket2_ipv4_setaddr(const socket2_t handle, const char* address, const uint16_t port) {
+static int set_addr(const socket2_t handle, const char* address, const uint16_t port) {
 	struct socket2* socket2 = handle;
-	struct sockaddr_in* paddr_in = (struct sockaddr_in*)socket2->addr;
-	struct in_addr haddr;
-	try(inet_aton(address, &haddr), 0, fail);
-	paddr_in->sin_addr = haddr;
-	paddr_in->sin_port = htons(port);
+	switch (socket2->nproto) {
+	case IPV4: {
+		struct sockaddr_in* paddr_in = (struct sockaddr_in*)socket2->addr;
+		struct in_addr haddr;
+		try(inet_aton(address, &haddr), 0, fail);
+		paddr_in->sin_addr = haddr;
+		paddr_in->sin_port = htons(port);
+		break;
+	}
+	case UNIX: {
+		struct sockaddr_un* paddr_un = (struct sockaddr_un*)socket2->addr;
+		strcpy(paddr_un->sun_path + 1, address);
+		socket2->addrlen = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + 1 + strlen(address));
+		break;
+	}
+	default:
+		goto fail;
+	}
 	return 0;
 fail:
 	return 1;
 }
-
-#ifdef __unix__
-extern int socket2_unix_setaddr(const socket2_t handle, const char* address) {
-	struct socket2* socket2 = handle;
-	struct sockaddr_un* paddr_un = (struct sockaddr_un*)socket2->addr;
-	strcpy(paddr_un->sun_path + 1, address);
-	socket2->addrlen = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + 1 + strlen(address));
-	return 0;
-}
-#endif

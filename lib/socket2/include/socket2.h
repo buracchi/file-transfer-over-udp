@@ -9,7 +9,7 @@
 
 typedef void* socket2_t;
 
-enum transport_protocol {TCP, UDP, RAW};
+enum transport_protocol {TCP, UDP, GBN, RAW};
 enum network_protocol {IPV4, IPV6, UNIX};
 
 /*******************************************************************************
@@ -52,7 +52,7 @@ extern socket2_t socket2_accept(const socket2_t handle);
 *
 * @return	0 on success; 1 otherwise and errno is set to indicate the error.
 */
-extern int socket2_connect(const socket2_t handle);
+extern int socket2_connect(const socket2_t handle, const char* address, const uint16_t port);
 
 /*
 * Close the socket
@@ -69,7 +69,17 @@ extern int socket2_close(const socket2_t handle);
 *
 * @return	1 and set properly errno on error
 */
-extern int socket2_listen(const socket2_t handle, int backlog);
+extern int socket2_listen(const socket2_t handle, const char* address, const uint16_t port, int backlog);
+
+/*
+* Peek a message from a connected socket
+*
+* @param	handle	-	the socket object.
+* @param	buff	-	pointer which will contain the message
+*
+* @return	the number of byte read or -1 on error
+*/
+extern ssize_t socket2_peek(const socket2_t handle, uint8_t* buff, uint64_t n);
 
 /*
 * Receive a message from a connected socket
@@ -143,23 +153,3 @@ extern int socket2_get_fd(const socket2_t handle);
 * @return	0 on success; 1 otherwise.
 */
 extern int socket2_set_blocking(const socket2_t handle, bool blocking);
-
-/*
-* Assigns an ipv4 address to an unnamed socket.
-*
-* @param	handle	-	the socket object.
-*
-* @return	0 on success; 1 otherwise.
-*/
-extern int socket2_ipv4_setaddr(const socket2_t handle, const char* address, const uint16_t port);
-
-#ifdef __unix__
-/*
-* Assigns an unix address to an unnamed socket.
-*
-* @param	handle	-	the socket object.
-*
-* @return	0 on success; 1 otherwise.
-*/
-extern int socket2_unix_setaddr(const socket2_t handle, const char* address);
-#endif

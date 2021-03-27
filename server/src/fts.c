@@ -52,9 +52,8 @@ extern int fts_start(int port, char* pathname) {
 	try(evthread_use_threads(), -1, fail);
 	try(event_base = event_base_new(), NULL, fail);
 	try(socket = socket2_init(TCP, IPV4), NULL, fail);
-	try(socket2_ipv4_setaddr(socket, "127.0.0.1", port), 1, fail);
 	try(socket2_set_blocking(socket, false), 1, fail);
-	try(socket2_listen(socket, BACKLOG), 1, fail);
+	try(socket2_listen(socket, "127.0.0.1", port, BACKLOG), 1, fail);
 	try(socket_event = event_new(event_base, socket2_get_fd(socket), EV_READ | EV_PERSIST, dispatch_request, socket), NULL, fail);
 	try(signal_event = evsignal_new(event_base, SIGINT, fts_close, (void*)event_base), NULL, fail);
 	try(event_add(socket_event, NULL), -1, fail);

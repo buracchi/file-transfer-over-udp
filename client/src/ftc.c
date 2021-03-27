@@ -40,8 +40,7 @@ extern int ftc_start(char* url) {
 			break;
 		default:
 			try(socket = socket2_init(TCP, IPV4), NULL);
-			try(socket2_ipv4_setaddr(socket, "127.0.0.1", 1234), 1);
-			try(socket2_connect(socket), 1);
+			try(socket2_connect(socket, "127.0.0.1", 1234), 1);
 			switch (get_ftcp_operation(buff)) {
 			case LIST:
 				require_list(socket);
