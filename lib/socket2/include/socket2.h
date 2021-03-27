@@ -1,7 +1,12 @@
+#pragma once
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <sys/types.h>
+
+#include "sockaddr2.h"
+#include "nproto.h"
 
 /*******************************************************************************
 *                                 Member types                                 *
@@ -10,7 +15,6 @@
 typedef void* socket2_t;
 
 enum transport_protocol {TCP, UDP, GBN, RAW};
-enum network_protocol {IPV4, IPV6, UNIX};
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -21,7 +25,7 @@ enum network_protocol {IPV4, IPV6, UNIX};
 *
 * @return	the initialized socket on success; NULL otherwise.
 */
-extern socket2_t socket2_init(enum transport_protocol tproto, enum network_protocol nproto);
+extern socket2_t socket2_init(enum transport_protocol tproto, struct nproto* nproto);
 
 /*
 * Destroys the socket object.

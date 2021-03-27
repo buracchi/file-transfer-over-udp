@@ -26,15 +26,12 @@
 
 struct socket2 {
 	int fd;
-	struct sockaddr* addr;
-	socklen_t addrlen;
+	struct sockaddr2* address;
+	struct nproto* nproto;
 	enum transport_protocol tproto;
-	enum network_protocol nproto;
 };
 
-static int set_addr(const socket2_t handle, const char* url);
-
-extern socket2_t socket2_init(enum transport_protocol tproto, enum network_protocol nproto) {
+extern socket2_t socket2_init(enum transport_protocol tproto, struct nproto* nproto) {
 	struct socket2* socket2;
 	socket2 = malloc(sizeof * socket2);
 	if (socket2) {
@@ -54,35 +51,7 @@ extern socket2_t socket2_init(enum transport_protocol tproto, enum network_proto
 		default:
 			goto fail;
 		}
-		switch (nproto) {
-		case IPV4: {
-			struct sockaddr_in* paddr_in;
-			try(socket2->fd = socket(AF_INET, type, 0), INVALID_SOCKET, fail);
-			try(paddr_in = malloc(sizeof * paddr_in), NULL, fail2);
-			memset(paddr_in, 0, sizeof * paddr_in);
-			paddr_in->sin_family = AF_INET;
-			socket2->addr = (struct sockaddr*)paddr_in;
-			socket2->addrlen = sizeof * paddr_in;
-			break;
-		}
-		case IPV6:
-			break;
-#ifdef __unix__
-		case UNIX: {
-			struct sockaddr_un* paddr_un;
-			try(socket2->fd = socket(AF_UNIX, type, 0), INVALID_SOCKET, fail);
-			try(paddr_un = malloc(sizeof * paddr_un), NULL, fail2);
-			memset(paddr_un, 'x', sizeof * paddr_un);
-			paddr_un->sun_family = AF_UNIX;
-			paddr_un->sun_path[0] = '\0';
-			socket2->addr = (struct sockaddr*)paddr_un;
-			socket2->addrlen = 0;
-			break;
-		}
-#endif
-		default:
-			goto fail;
-		}
+		try(socket2->fd = socket(nproto_get_domain(nproto), type, 0), INVALID_SOCKET, fail);
 	}
 	return socket2;
 fail2:
@@ -94,7 +63,8 @@ fail:
 
 extern void socket2_destroy(const socket2_t handle) {
 	struct socket2* socket2 = handle;
-	free(socket2->addr);
+	free(socket2->address->addr);
+	free(socket2->address);	// TODO: add destructor
 	free(socket2);
 }
 
@@ -103,29 +73,16 @@ extern socket2_t socket2_accept(const socket2_t handle) {
 	struct socket2* accepted;
 	accepted = malloc(sizeof * accepted);
 	if (accepted) {
-		switch (socket2->nproto) {
-		case IPV4:
-			accepted->addrlen = sizeof(struct sockaddr_in);
-			break;
-		case IPV6:
-			break;
-#ifdef __unix__
-		case UNIX:
-			accepted->addrlen = sizeof(struct sockaddr_un);
-			break;
-#endif
-		default:
-			goto fail;
-		}
-		try(accepted->addr = malloc(accepted->addrlen), NULL, fail);
-		while ((accepted->fd = accept(socket2->fd, accepted->addr, &accepted->addrlen)) == -1) {
-			try(errno != EMFILE, true, fail2);
+		accepted->nproto = socket2->nproto;
+		accepted->address = malloc(sizeof * accepted->address);
+		accepted->address->addr = malloc(socket2->address->addrlen);
+		accepted->address->addrlen = socket2->address->addrlen;
+		while ((accepted->fd = accept(socket2->fd, accepted->address->addr, &accepted->address->addrlen)) == -1) {
+			try(errno != EMFILE, true, fail);
 			sleep(0.1);
 		}
 	}
 	return accepted;
-fail2:
-	free(accepted->addr);
 fail:
 	free(accepted);
 	return NULL;
@@ -133,9 +90,12 @@ fail:
 
 extern int socket2_connect(const socket2_t handle, const char* url) {
 	struct socket2* socket2 = handle;
-	try(set_addr(socket2, url), 1, fail);
-	try(connect(socket2->fd, socket2->addr, socket2->addrlen), SOCKET_ERROR, fail);
+	try(socket2->address = nproto_get_sockaddr2(socket2->nproto, url), NULL, fail);
+	try(connect(socket2->fd, socket2->address->addr, socket2->address->addrlen), SOCKET_ERROR, fail2);
 	return 0;
+fail2:
+	free(socket2->address->addr);
+	free(socket2->address);	// TODO: implement destructor
 fail:
 	return -1;
 }
@@ -150,10 +110,13 @@ fail:
 
 extern int socket2_listen(const socket2_t handle, const char* url, int backlog) {
 	struct socket2* socket2 = handle;
-	try(set_addr(socket2, url), 1, fail);
-	try(bind(socket2->fd, socket2->addr, socket2->addrlen), -1, fail);
-	try(listen(socket2->fd, backlog), -1, fail);
+	try(socket2->address = nproto_get_sockaddr2(socket2->nproto, url), NULL, fail);
+	try(bind(socket2->fd, socket2->address->addr, socket2->address->addrlen), -1, fail2);
+	try(listen(socket2->fd, backlog), -1, fail2);
 	return 0;
+fail2:
+	free(socket2->address->addr);
+	free(socket2->address);	// TODO: implement destructor
 fail:
 	return 1;
 }
@@ -290,40 +253,6 @@ extern int socket2_set_blocking(const socket2_t handle, bool blocking) {
 		return 0;
 #endif
 	}
-fail:
-	return 1;
-}
-
-static int set_addr(const socket2_t handle, const char* url) {
-	struct socket2* socket2 = handle;
-	switch (socket2->nproto) {
-	case IPV4: {
-		char* buffer, * token, * saveptr;
-		try(buffer = malloc(strlen(url) + 1), NULL, fail);
-		strcpy(buffer, url);
-		uint16_t port;
-		char* address;
-		try(address = strtok_r(buffer, ":", &saveptr), NULL, fail);
-		try(str_to_uint16(strtok_r(NULL, ":", &saveptr), &port), 1, fail);
-		struct sockaddr_in* paddr_in = (struct sockaddr_in*)socket2->addr;
-		struct in_addr haddr;
-		try(inet_aton(address, &haddr), 0, fail);
-		paddr_in->sin_addr = haddr;
-		paddr_in->sin_port = htons(port);
-		free(buffer);
-		break;
-	}
-	case UNIX: {
-		const char* address = url;
-		struct sockaddr_un* paddr_un = (struct sockaddr_un*)socket2->addr;
-		strcpy(paddr_un->sun_path + 1, address);
-		socket2->addrlen = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + 1 + strlen(address));
-		break;
-	}
-	default:
-		goto fail;
-	}
-	return 0;
 fail:
 	return 1;
 }
