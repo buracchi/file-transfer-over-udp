@@ -95,6 +95,28 @@ int strtoi(char* str, int* result) {
 	return 0;
 }
 
+int str_to_uint16(const char* str, uint16_t* result) {
+	char* endptr;
+	long val;
+	errno = 0;    // To distinguish success/failure after call
+	val = strtol(str, &endptr, 10);
+	if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN)) || (errno != 0 && val == 0)) {
+		goto fail;
+	}
+	if (endptr == str) {
+		errno = EINVAL;
+		goto fail;
+	}
+	if (val > UINT16_MAX || val < 0) {
+		errno = ERANGE;
+		goto fail;
+	}
+	*result = (uint16_t)val;
+	return 0;
+fail:
+	return 1;
+}
+
 bool is_directory(char* pathname) {
 	struct stat dir_stat;
 	return (!stat(pathname, &dir_stat) && S_ISDIR(dir_stat.st_mode));

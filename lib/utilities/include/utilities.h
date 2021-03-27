@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdbool.h>
 
 #ifdef _WIN32
@@ -22,5 +23,7 @@ int asprintf(char** str, const char* format, ...);
 #define tostr(statement) __tostr(statement)
 
 int strtoi(char* str, int* result);
+
+int str_to_uint16(const char* str, uint16_t * result);
 
 bool is_directory(char* pathname);

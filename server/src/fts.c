@@ -47,13 +47,15 @@ extern int fts_start(int port, char* pathname) {
 	struct event* signal_event;
 	socket2_t socket;
 	base_dir = pathname;
+	char* url;
+	try(asprintf(&url, "127.0.0.1:%d", port), -1, fail);
 	try(asprintf((char**)&list_command, "ls %s -p | grep -v /", base_dir), -1, fail);
 	try(thread_pool = tpool_init(nprocs()), NULL, fail);
 	try(evthread_use_threads(), -1, fail);
 	try(event_base = event_base_new(), NULL, fail);
 	try(socket = socket2_init(TCP, IPV4), NULL, fail);
 	try(socket2_set_blocking(socket, false), 1, fail);
-	try(socket2_listen(socket, "127.0.0.1", port, BACKLOG), 1, fail);
+	try(socket2_listen(socket, url, BACKLOG), 1, fail);
 	try(socket_event = event_new(event_base, socket2_get_fd(socket), EV_READ | EV_PERSIST, dispatch_request, socket), NULL, fail);
 	try(signal_event = evsignal_new(event_base, SIGINT, fts_close, (void*)event_base), NULL, fail);
 	try(event_add(socket_event, NULL), -1, fail);
@@ -69,6 +71,7 @@ extern int fts_start(int port, char* pathname) {
 	try(tpool_wait(thread_pool), 1, fail);
 	try(tpool_destroy(thread_pool), 1, fail);
 	free((char*)list_command);
+	free(url);
 	return 0;
 fail:
 	return 1;

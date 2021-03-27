@@ -52,7 +52,7 @@ extern socket2_t socket2_accept(const socket2_t handle);
 *
 * @return	0 on success; 1 otherwise and errno is set to indicate the error.
 */
-extern int socket2_connect(const socket2_t handle, const char* address, const uint16_t port);
+extern int socket2_connect(const socket2_t handle, const char* url);
 
 /*
 * Close the socket
@@ -69,7 +69,7 @@ extern int socket2_close(const socket2_t handle);
 *
 * @return	1 and set properly errno on error
 */
-extern int socket2_listen(const socket2_t handle, const char* address, const uint16_t port, int backlog);
+extern int socket2_listen(const socket2_t handle, const char* url, int backlog);
 
 /*
 * Peek a message from a connected socket

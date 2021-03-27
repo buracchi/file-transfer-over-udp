@@ -24,7 +24,7 @@ static int require_upload(socket2_t socket, char* filename);
 
 #define get_arg(buffer) (buffer + 4)
 
-extern int ftc_start(char* url) {
+extern int ftc_start(const char* url) {
 	socket2_t socket;
 	char* buff;
 	printf("File Transfer Client\n\nType 'help' to get help.\n\n");
@@ -40,7 +40,7 @@ extern int ftc_start(char* url) {
 			break;
 		default:
 			try(socket = socket2_init(TCP, IPV4), NULL);
-			try(socket2_connect(socket, "127.0.0.1", 1234), 1);
+			try(socket2_connect(socket, url), 1);
 			switch (get_ftcp_operation(buff)) {
 			case LIST:
 				require_list(socket);

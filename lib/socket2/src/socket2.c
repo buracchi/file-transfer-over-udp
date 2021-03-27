@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "try.h"
+#include "utilities.h"
 
 #ifdef __unix__
 #include <unistd.h>
@@ -31,7 +32,7 @@ struct socket2 {
 	enum network_protocol nproto;
 };
 
-static int set_addr(const socket2_t handle, const char* address, const uint16_t port);
+static int set_addr(const socket2_t handle, const char* url);
 
 extern socket2_t socket2_init(enum transport_protocol tproto, enum network_protocol nproto) {
 	struct socket2* socket2;
@@ -130,9 +131,9 @@ fail:
 	return NULL;
 }
 
-extern int socket2_connect(const socket2_t handle, const char* address, const uint16_t port) {
+extern int socket2_connect(const socket2_t handle, const char* url) {
 	struct socket2* socket2 = handle;
-	try(set_addr(socket2, address, port), 1, fail);
+	try(set_addr(socket2, url), 1, fail);
 	try(connect(socket2->fd, socket2->addr, socket2->addrlen), SOCKET_ERROR, fail);
 	return 0;
 fail:
@@ -147,9 +148,9 @@ fail:
 	return 1;
 }
 
-extern int socket2_listen(const socket2_t handle, const char* address, const uint16_t port, int backlog) {
+extern int socket2_listen(const socket2_t handle, const char* url, int backlog) {
 	struct socket2* socket2 = handle;
-	try(set_addr(socket2, address, port), 1, fail);
+	try(set_addr(socket2, url), 1, fail);
 	try(bind(socket2->fd, socket2->addr, socket2->addrlen), -1, fail);
 	try(listen(socket2->fd, backlog), -1, fail);
 	return 0;
@@ -293,18 +294,27 @@ fail:
 	return 1;
 }
 
-static int set_addr(const socket2_t handle, const char* address, const uint16_t port) {
+static int set_addr(const socket2_t handle, const char* url) {
 	struct socket2* socket2 = handle;
 	switch (socket2->nproto) {
 	case IPV4: {
+		char* buffer, * token, * saveptr;
+		try(buffer = malloc(strlen(url) + 1), NULL, fail);
+		strcpy(buffer, url);
+		uint16_t port;
+		char* address;
+		try(address = strtok_r(buffer, ":", &saveptr), NULL, fail);
+		try(str_to_uint16(strtok_r(NULL, ":", &saveptr), &port), 1, fail);
 		struct sockaddr_in* paddr_in = (struct sockaddr_in*)socket2->addr;
 		struct in_addr haddr;
 		try(inet_aton(address, &haddr), 0, fail);
 		paddr_in->sin_addr = haddr;
 		paddr_in->sin_port = htons(port);
+		free(buffer);
 		break;
 	}
 	case UNIX: {
+		const char* address = url;
 		struct sockaddr_un* paddr_un = (struct sockaddr_un*)socket2->addr;
 		strcpy(paddr_un->sun_path + 1, address);
 		socket2->addrlen = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + 1 + strlen(address));

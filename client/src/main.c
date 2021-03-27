@@ -90,12 +90,12 @@ static struct option** get_options(int argc, char* argv[]) {
 		}
 		else if (argc - (i + 1) > 0 && (streq(argv[i], "-u") || streq(argv[i], "--url"))) {
 			options[last_index]->flag = F_URL;
-			options[last_index]->value = argv[i + 1];
+			options[last_index]->value = argv[i];
 			i++;
 		}
 		else {
 			options[last_index]->flag = F_URL;
-			options[last_index]->value = argv[i + 1];
+			options[last_index]->value = argv[i];
 		}
 		last_index++;
 	}

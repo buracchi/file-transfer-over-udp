@@ -1,3 +1,3 @@
 #pragma once
 
-extern int ftc_start(char* url);
+extern int ftc_start(const char* url);
