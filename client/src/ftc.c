@@ -8,7 +8,8 @@
 
 #include "ftcp.h"
 #include "socket2.h"
-#include "nproto_ipv4.h"
+#include "nproto/nproto_ipv4.h"
+#include "tproto/tproto_tcp.h"
 #include "try.h"
 #include "utilities.h"
 
@@ -28,8 +29,10 @@ static int require_upload(socket2_t socket, char* filename);
 extern int ftc_start(const char* url) {
 	socket2_t socket;
 	struct nproto_ipv4 ipv4;
+	struct tproto_tcp tcp;
 	char* buff;
 	nproto_ipv4_init(&ipv4);
+	tproto_tcp_init(&tcp);
 	printf("File Transfer Client\n\nType 'help' to get help.\n\n");
 	forever{
 		printf("FTC> ");
@@ -42,7 +45,7 @@ extern int ftc_start(const char* url) {
 			help();
 			break;
 		default:
-			try(socket = socket2_init(TCP, &ipv4.super.nproto), NULL);
+			try(socket = socket2_init(&tcp.super.tproto, &ipv4.super.nproto), NULL);
 			try(socket2_connect(socket, url), 1);
 			switch (get_ftcp_operation(buff)) {
 			case LIST:

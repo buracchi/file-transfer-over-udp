@@ -24,34 +24,15 @@
 #define SOCKET_ERROR  -1
 #define CHUNK_SIZE 4096	// MUST be even
 
-struct socket2 {
-	int fd;
-	struct sockaddr2* address;
-	struct nproto* nproto;
-	enum transport_protocol tproto;
-};
-
-extern socket2_t socket2_init(enum transport_protocol tproto, struct nproto* nproto) {
+extern socket2_t socket2_init(struct tproto* tproto, struct nproto* nproto) {
 	struct socket2* socket2;
 	socket2 = malloc(sizeof * socket2);
 	if (socket2) {
+		int domain = nproto_get_domain(nproto);
+		int type = tproto_get_type(tproto);
+		try(socket2->fd = socket(domain, type, 0), INVALID_SOCKET, fail);
 		socket2->tproto = tproto;
 		socket2->nproto = nproto;
-		int type;
-		switch (tproto) {
-		case TCP:
-			type = SOCK_STREAM;
-			break;
-		case UDP:
-			type = SOCK_DGRAM;
-			break;
-		case RAW:
-			type = SOCK_RAW;
-			break;
-		default:
-			goto fail;
-		}
-		try(socket2->fd = socket(nproto_get_domain(nproto), type, 0), INVALID_SOCKET, fail);
 	}
 	return socket2;
 fail2:
@@ -74,6 +55,7 @@ extern socket2_t socket2_accept(const socket2_t handle) {
 	accepted = malloc(sizeof * accepted);
 	if (accepted) {
 		accepted->nproto = socket2->nproto;
+		accepted->tproto = socket2->tproto;
 		accepted->address = malloc(sizeof * accepted->address);
 		accepted->address->addr = malloc(socket2->address->addrlen);
 		accepted->address->addrlen = socket2->address->addrlen;
@@ -123,13 +105,13 @@ fail:
 
 extern inline ssize_t socket2_peek(const socket2_t handle, uint8_t* buff, uint64_t n) {
 	struct socket2* socket2 = handle;
-	return recv(socket2->fd, buff, n, MSG_PEEK);
+	return tproto_peek(socket2->tproto, socket2, buff, n);
 }
 
 extern ssize_t socket2_recv(const socket2_t handle, uint8_t* buff, uint64_t n) {
 	struct socket2* socket2 = handle;
 	ssize_t b_recvd;
-	try(b_recvd = recv(socket2->fd, buff, n, 0), -1, fail);
+	try(b_recvd = tproto_recv(socket2->tproto, socket2, buff, n), -1, fail);
 	// handle ntoh
 	return b_recvd;
 fail:
@@ -197,7 +179,7 @@ extern ssize_t socket2_send(const socket2_t handle, const uint8_t* buff, uint64_
 	struct socket2* socket2 = handle;
 	ssize_t b_sent;
 	// TODO: hton conversion
-	try(b_sent = send(socket2->fd, buff, n, 0), -1, fail);
+	try(b_sent = tproto_send(socket2->tproto, socket2, buff, n), -1, fail);
 	return b_sent;
 fail:
 	return -1;

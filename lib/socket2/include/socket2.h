@@ -5,7 +5,9 @@
 #include <stdbool.h>
 #include <sys/types.h>
 
+#include "struct_socket2.h"
 #include "sockaddr2.h"
+#include "tproto.h"
 #include "nproto.h"
 
 /*******************************************************************************
@@ -13,8 +15,6 @@
 *******************************************************************************/
 
 typedef void* socket2_t;
-
-enum transport_protocol {TCP, UDP, GBN, RAW};
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -25,7 +25,7 @@ enum transport_protocol {TCP, UDP, GBN, RAW};
 *
 * @return	the initialized socket on success; NULL otherwise.
 */
-extern socket2_t socket2_init(enum transport_protocol tproto, struct nproto* nproto);
+extern socket2_t socket2_init(struct tproto* tproto, struct nproto* nproto);
 
 /*
 * Destroys the socket object.

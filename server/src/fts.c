@@ -10,7 +10,8 @@
 
 #include "ftcp.h"
 #include "socket2.h"
-#include "nproto_ipv4.h"
+#include "nproto/nproto_ipv4.h"
+#include "tproto/tproto_tcp.h"
 #include "tpool.h"
 #include "try.h"
 #include "utilities.h"
@@ -46,8 +47,9 @@ static struct event_base* event_base;
 extern int fts_start(int port, char* pathname) {
 	struct event* socket_event;
 	struct event* signal_event;
+	struct nproto_ipv4 ipv4;
+	struct tproto_tcp tcp;
 	socket2_t socket;
-	struct nproto_ipv4 nproto;
 	base_dir = pathname;
 	char* url;
 	try(asprintf(&url, "127.0.0.1:%d", port), -1, fail);
@@ -55,8 +57,9 @@ extern int fts_start(int port, char* pathname) {
 	try(thread_pool = tpool_init(nprocs()), NULL, fail);
 	try(evthread_use_threads(), -1, fail);
 	try(event_base = event_base_new(), NULL, fail);
-	nproto_ipv4_init(&nproto);
-	try(socket = socket2_init(TCP, &nproto.super.nproto), NULL, fail);
+	nproto_ipv4_init(&ipv4);
+	tproto_tcp_init(&tcp);
+	try(socket = socket2_init(&tcp.super.tproto, &ipv4.super.nproto), NULL, fail);
 	try(socket2_set_blocking(socket, false), 1, fail);
 	try(socket2_listen(socket, url, BACKLOG), 1, fail);
 	try(socket_event = event_new(event_base, socket2_get_fd(socket), EV_READ | EV_PERSIST, dispatch_request, socket), NULL, fail);

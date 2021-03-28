@@ -1,4 +1,4 @@
-#include "nproto_ipv4.h"
+#include "nproto/nproto_ipv4.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -22,16 +22,16 @@ extern int nproto_ipv4_init(struct nproto_ipv4* this) {
 }
 
 static struct nproto_ipv4_vtbl* get_nproto_ipv4_vtbl() {
-    struct nproto_ipv4_vtbl b_vtbl_zero = { 0 };
-    if (!memcmp(&b_vtbl_zero, &__nproto_ipv4_ops_vtbl, sizeof * &__nproto_ipv4_ops_vtbl)) {
+    struct nproto_ipv4_vtbl vtbl_zero = { 0 };
+    if (!memcmp(&vtbl_zero, &__nproto_ipv4_ops_vtbl, sizeof * &__nproto_ipv4_ops_vtbl)) {
         __nproto_ipv4_ops_vtbl.destroy = destroy;
     }
     return &__nproto_ipv4_ops_vtbl;
 }
 
 static void nproto_vtbl_init(struct nproto_vtbl** pvtbl) {
-    struct nproto_vtbl nproto_vtbl_zero = { 0 };
-    if (!memcmp(&nproto_vtbl_zero, &__nproto_ops_vtbl, sizeof * &__nproto_ops_vtbl)) {
+    struct nproto_vtbl vtbl_zero = { 0 };
+    if (!memcmp(&vtbl_zero, &__nproto_ops_vtbl, sizeof * &__nproto_ops_vtbl)) {
         __nproto_ops_vtbl.get_sockaddr2 = get_sockaddr2;    // override
     }
     *pvtbl = &__nproto_ops_vtbl;
