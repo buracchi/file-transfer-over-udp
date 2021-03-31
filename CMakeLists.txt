@@ -55,6 +55,7 @@ if(CODE_COVERAGE AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     else()
         target_link_libraries(coverage_config INTERFACE --coverage)
     endif()
+    message("Coverage reporting enabled")
 endif()
 
 # Subproject

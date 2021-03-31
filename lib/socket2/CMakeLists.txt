@@ -26,6 +26,8 @@ target_compile_definitions(socket2 PRIVATE SOCKET2_VERSION=1)
 target_link_libraries(socket2 PRIVATE try)
 target_link_libraries(socket2 PRIVATE utilities)
 
+target_link_libraries(socket2 PUBLIC coverage_config)
+
 if (BUILD_TESTING)
 	add_subdirectory("test")
 endif()

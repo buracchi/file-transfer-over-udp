@@ -61,5 +61,7 @@ jobs:
       uses: codecov/codecov-action@v1.2.2
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        gcov_path_exclude: ${{runner.workspace}}/vcpkg
+        gcov_root_dir: ${{runner.workspace}}/build
+        directory: ${{runner.workspace}}/build
+        verbose: true
         fail_ci_if_error: true
