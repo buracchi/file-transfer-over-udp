@@ -27,6 +27,15 @@ endif()
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/.dependencies" DEPENDENCY_LIST)
 install_dependencies(DEPENDENCY_LIST)
 
+# Test
+
+option (BUILD_TESTING "Build the testing tree." ON)
+
+if (BUILD_TESTING)
+    enable_testing()
+    message("Test enabled")
+endif()
+
 # Code Coverage Configuration
 
 add_library(coverage_config INTERFACE)
@@ -50,6 +59,6 @@ endif()
 
 # Subproject
 
-add_subdirectory ("lib")
-add_subdirectory ("client")
-add_subdirectory ("server")
+add_subdirectory("lib")
+add_subdirectory("client")
+add_subdirectory("server")
