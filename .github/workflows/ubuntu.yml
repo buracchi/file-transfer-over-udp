@@ -61,5 +61,6 @@ jobs:
       uses: codecov/codecov-action@v1.2.2
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
+        gcov_root_dir: ${{runner.workspace}}/build
         directory: ${{runner.workspace}}/build
         fail_ci_if_error: true
