@@ -1,5 +1,8 @@
 # File transfer over UDP
 
+[![Ubuntu](https://github.com/buracchi/file-transfer-over-udp/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/buracchi/file-transfer-over-udp/actions/workflows/ubuntu.yml)
+[![codecov](https://codecov.io/gh/buracchi/file-transfer-over-udp/branch/main/graph/badge.svg?token=H7HN3CELMV)](https://codecov.io/gh/buracchi/file-transfer-over-udp)
+
 Client/server file transfer application using a connectionless network service 
 (SOCK_DGRAM type of the Berkeley sockets API, i.e. UDP as transport layer protocol).
 
