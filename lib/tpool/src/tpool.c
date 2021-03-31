@@ -106,7 +106,7 @@ fail:
 extern int tpool_wait(const tpool_t handle) {
     struct tpool* _this = handle;
     try_pthread_mutex_lock(&(_this->mutex), fail);
-    forever {
+    for (;;) {
         if ((!_this->stop && exist_thread_working(_this)) || (_this->stop && exist_thread_running(_this))) {
             try_pthread_cond_wait(&(_this->none_working_cond), &(_this->mutex), fail);
         }
@@ -123,7 +123,7 @@ fail:
 static void* worker_routine(void* arg) {
     struct tpool* tpool = arg;
     work_t* work = NULL;
-    forever {
+    for (;;) {
         try_pthread_mutex_lock(&(tpool->mutex), exit);
         while (is_job_queue_empty(tpool) && !tpool->stop) {
             try_pthread_cond_wait(&(tpool->work_available_cond), &(tpool->mutex), exit);

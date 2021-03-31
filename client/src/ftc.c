@@ -34,7 +34,7 @@ extern int ftc_start(const char* url) {
 	nproto_ipv4_init(&ipv4);
 	tproto_tcp_init(&tcp);
 	printf("File Transfer Client\n\nType 'help' to get help.\n\n");
-	forever{
+	for (;;) {
 		printf("FTC> ");
 		try(get_input(&buff), -1, fail);
 		switch (get_client_operation(buff)) {

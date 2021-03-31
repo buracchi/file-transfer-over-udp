@@ -16,8 +16,6 @@ int asprintf(LPTSTR* str, LPCTSTR format, ...);
 int asprintf(char** str, const char* format, ...);
 #endif
 
-#define forever for(;;)
-
 #define max(a, b) a > b ? a : b
 
 #define streq(expected, actual) !strncasecmp(actual, expected, max(strlen(expected), strlen(actual)))
