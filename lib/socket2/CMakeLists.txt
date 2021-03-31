@@ -8,10 +8,15 @@ add_library(
 	"include/tproto.h"
 	"include/nproto.h"
 	"include/nproto/nproto_ipv4.h"
-	"src/nproto.h/nproto_ipv4.c"
+	"src/nproto/nproto_ipv4.c"
 	"include/nproto/nproto_unix.h"
-	"src/nproto.h/nproto_unix.c"
- "include/tproto/tproto_tcp.h" "src/tproto.h/tproto_tcp.c" "src/tproto.h/tproto_udp.c")
+	"src/nproto/nproto_unix.c"
+	"include/tproto/tproto_tcp.h"
+	"src/tproto/tproto_tcp.c"
+	"include/tproto/tproto_udp.h"
+	"src/tproto/tproto_udp.c"
+	#"src/tproto/tproto_gbn.c" "include/tproto/tproto_gbn.h" "include/socket2_proxy.h"
+ )
 
 target_include_directories(socket2 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_include_directories(socket2 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")

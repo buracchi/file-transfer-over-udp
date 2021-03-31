@@ -24,42 +24,69 @@
 #define SOCKET_ERROR  -1
 #define CHUNK_SIZE 4096	// MUST be even
 
+static struct socket2_vtbl* get_socket2_vtbl();
+static int _destroy(struct socket2* this);
+static struct socket2* _accept(struct socket2* this);
+static int _connect(struct socket2* this, const char* url);
+static int _close(struct socket2* this);
+static int _listen(struct socket2* this, const char* url, int backlog);
+static ssize_t _peek(struct socket2* this, uint8_t* buff, uint64_t n);
+static ssize_t _recv(struct socket2* this, uint8_t* buff, uint64_t n);
+static ssize_t _send(struct socket2* this, const uint8_t* buff, uint64_t n);
+
 extern socket2_t socket2_init(struct tproto* tproto, struct nproto* nproto) {
-	struct socket2* socket2;
-	socket2 = malloc(sizeof * socket2);
-	if (socket2) {
+	struct socket2* this;
+	this = malloc(sizeof * this);
+	if (this) {
+		memset(this, 0, sizeof * this);
+		this->__ops_vptr = get_socket2_vtbl();
+		this->tproto = tproto;
+		this->nproto = nproto;
 		int domain = nproto_get_domain(nproto);
 		int type = tproto_get_type(tproto);
-		try(socket2->fd = socket(domain, type, 0), INVALID_SOCKET, fail);
-		socket2->tproto = tproto;
-		socket2->nproto = nproto;
+		try(this->fd = socket(domain, type, 0), INVALID_SOCKET, fail);
 	}
-	return socket2;
+	return this;
 fail2:
-	close(socket2->fd);
+	close(this->fd);
 fail:
-	free(socket2);
+	free(this);
 	return NULL;
 }
 
-extern void socket2_destroy(const socket2_t handle) {
-	struct socket2* socket2 = handle;
-	free(socket2->address->addr);
-	free(socket2->address);	// TODO: add destructor
-	free(socket2);
+static struct socket2_vtbl* get_socket2_vtbl() {
+	struct socket2_vtbl vtbl_zero = { 0 };
+	if (!memcmp(&vtbl_zero, &__socket2_ops, sizeof * &__socket2_ops)) {
+		__socket2_ops.destroy = _destroy;
+		__socket2_ops.accept = _accept;
+		__socket2_ops.connect = _connect;
+		__socket2_ops.close = _close;
+		__socket2_ops.listen = _listen;
+		__socket2_ops.peek = _peek;
+		__socket2_ops.recv = _recv;
+		__socket2_ops.send = _send;
+	}
+	return &__socket2_ops;
 }
 
-extern socket2_t socket2_accept(const socket2_t handle) {
-	struct socket2* socket2 = handle;
+static int _destroy(struct socket2* this) {
+	free(this->address->addr);
+	free(this->address);	// TODO: add destructor
+	free(this);
+	return 0;
+}
+
+static struct socket2* _accept(struct socket2* this) {
 	struct socket2* accepted;
 	accepted = malloc(sizeof * accepted);
 	if (accepted) {
-		accepted->nproto = socket2->nproto;
-		accepted->tproto = socket2->tproto;
+		accepted->nproto = this->nproto;
+		accepted->tproto = this->tproto;
 		accepted->address = malloc(sizeof * accepted->address);
-		accepted->address->addr = malloc(socket2->address->addrlen);
-		accepted->address->addrlen = socket2->address->addrlen;
-		while ((accepted->fd = accept(socket2->fd, accepted->address->addr, &accepted->address->addrlen)) == -1) {
+		accepted->address->addr = malloc(this->address->addrlen);
+		accepted->address->addrlen = this->address->addrlen;
+		accepted->__ops_vptr = &__socket2_ops;
+		while ((accepted->fd = accept(this->fd, accepted->address->addr, &accepted->address->addrlen)) == -1) {
 			try(errno != EMFILE, true, fail);
 			sleep(0.1);
 		}
@@ -70,50 +97,51 @@ fail:
 	return NULL;
 }
 
-extern int socket2_connect(const socket2_t handle, const char* url) {
-	struct socket2* socket2 = handle;
-	try(socket2->address = nproto_get_sockaddr2(socket2->nproto, url), NULL, fail);
-	try(connect(socket2->fd, socket2->address->addr, socket2->address->addrlen), SOCKET_ERROR, fail2);
+static int _connect(struct socket2* this, const char* url) {
+	try(this->address = nproto_get_sockaddr2(this->nproto, url), NULL, fail);
+	try(connect(this->fd, this->address->addr, this->address->addrlen), SOCKET_ERROR, fail2);
 	return 0;
 fail2:
-	free(socket2->address->addr);
-	free(socket2->address);	// TODO: implement destructor
+	free(this->address->addr);
+	free(this->address);	// TODO: implement destructor
 fail:
 	return -1;
 }
 
-extern int socket2_close(const socket2_t handle) {
-	struct socket2* socket2 = handle;
-	try(close(socket2->fd), -1, fail);
-	return 0;
-fail:
-	return 1;
+static int _close(struct socket2* this) {
+	return close(this->fd);
 }
 
-extern int socket2_listen(const socket2_t handle, const char* url, int backlog) {
-	struct socket2* socket2 = handle;
-	try(socket2->address = nproto_get_sockaddr2(socket2->nproto, url), NULL, fail);
-	try(bind(socket2->fd, socket2->address->addr, socket2->address->addrlen), -1, fail2);
-	try(listen(socket2->fd, backlog), -1, fail2);
+static int _listen(struct socket2* this, const char* url, int backlog) {
+	try(this->address = nproto_get_sockaddr2(this->nproto, url), NULL, fail);
+	try(bind(this->fd, this->address->addr, this->address->addrlen), -1, fail2);
+	try(listen(this->fd, backlog), -1, fail2);
 	return 0;
 fail2:
-	free(socket2->address->addr);
-	free(socket2->address);	// TODO: implement destructor
+	free(this->address->addr);
+	free(this->address);	// TODO: implement destructor
 fail:
 	return 1;
 }
 
-extern inline ssize_t socket2_peek(const socket2_t handle, uint8_t* buff, uint64_t n) {
-	struct socket2* socket2 = handle;
-	return tproto_peek(socket2->tproto, socket2, buff, n);
+static ssize_t _peek(struct socket2* this, uint8_t* buff, uint64_t n) {
+	return tproto_peek(this->tproto, this, buff, n);
 }
 
-extern ssize_t socket2_recv(const socket2_t handle, uint8_t* buff, uint64_t n) {
-	struct socket2* socket2 = handle;
+static ssize_t _recv(struct socket2* this, uint8_t* buff, uint64_t n) {
 	ssize_t b_recvd;
-	try(b_recvd = tproto_recv(socket2->tproto, socket2, buff, n), -1, fail);
+	try(b_recvd = tproto_recv(this->tproto, this, buff, n), -1, fail);
 	// handle ntoh
 	return b_recvd;
+fail:
+	return -1;
+}
+
+static ssize_t _send(struct socket2* this, const uint8_t* buff, uint64_t n) {
+	ssize_t b_sent;
+	// TODO: hton conversion
+	try(b_sent = tproto_send(this->tproto, this, buff, n), -1, fail);
+	return b_sent;
 fail:
 	return -1;
 }
@@ -171,16 +199,6 @@ extern ssize_t socket2_frecv(const socket2_t handle, FILE* file, long fsize) {
 	}
 	fclose(ftmp);
 	return b_recvd;
-fail:
-	return -1;
-}
-
-extern ssize_t socket2_send(const socket2_t handle, const uint8_t* buff, uint64_t n) {
-	struct socket2* socket2 = handle;
-	ssize_t b_sent;
-	// TODO: hton conversion
-	try(b_sent = tproto_send(socket2->tproto, socket2, buff, n), -1, fail);
-	return b_sent;
 fail:
 	return -1;
 }
