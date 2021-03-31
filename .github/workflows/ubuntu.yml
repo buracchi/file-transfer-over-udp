@@ -64,4 +64,4 @@ jobs:
         gcov_root_dir: ${{runner.workspace}}/build
         directory: ${{runner.workspace}}/build
         verbose: true
-        fail_ci_if_error: true
+        fail_ci_if_error: false
