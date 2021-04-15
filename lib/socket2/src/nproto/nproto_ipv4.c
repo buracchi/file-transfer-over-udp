@@ -44,32 +44,28 @@ static int destroy(struct nproto_ipv4* this) {
 static struct sockaddr2* get_sockaddr2(struct nproto* nproto, const char* url) {
     struct nproto_ipv4* this = container_of(nproto, struct nproto_ipv4, super.nproto);
     struct sockaddr2* sockaddr2;
-    struct sockaddr_in* paddr_in;
+    struct sockaddr_in paddr_in;
     struct in_addr haddr;
     char* buffer, * token, * saveptr;
     try(sockaddr2 = malloc(sizeof * sockaddr2), NULL, fail);
-    try(paddr_in = malloc(sizeof * paddr_in), NULL, fail2);
-    try(buffer = malloc(strlen(url) + 1), NULL, fail3);
+    try(buffer = malloc(strlen(url) + 1), NULL, fail2);
     strcpy(buffer, url);
 
     uint16_t port;
     char* address;
-    try(address = strtok_r(buffer, ":", &saveptr), NULL, fail4);
-    try(str_to_uint16(strtok_r(NULL, ":", &saveptr), &port), 1, fail4);
+    try(address = strtok_r(buffer, ":", &saveptr), NULL, fail3);
+    try(str_to_uint16(strtok_r(NULL, ":", &saveptr), &port), 1, fail3);
     try(inet_aton(address, &haddr), 0, fail);
     free(buffer);
 
-    memset(paddr_in, 0, sizeof * paddr_in);
-    paddr_in->sin_family = AF_INET;
-    paddr_in->sin_addr = haddr;
-    paddr_in->sin_port = htons(port);
-    sockaddr2->addr = (struct sockaddr*)paddr_in;
-    sockaddr2->addrlen = sizeof * paddr_in;
+    memset(&paddr_in, 0, sizeof * &paddr_in);
+    paddr_in.sin_family = AF_INET;
+    paddr_in.sin_addr = haddr;
+    paddr_in.sin_port = htons(port);
+    try(sockaddr2_init(sockaddr2, (struct sockaddr*)&paddr_in, sizeof * &paddr_in), 1, fail3);
     return sockaddr2;
-fail4:
-    free(buffer);
 fail3:
-    free(paddr_in);
+    free(buffer);
 fail2:
     free(sockaddr2);
 fail:

@@ -20,6 +20,7 @@ extern int tproto_tcp_init(struct tproto_tcp* this) {
     tproto_vtbl_init(&this->super.tproto.__ops_vptr);
     this->__ops_vptr = get_tproto_tcp_vtbl();
     this->super.tproto.type = SOCK_STREAM;
+    this->super.tproto.kernel_handled = true;
     return 0;
 }
 

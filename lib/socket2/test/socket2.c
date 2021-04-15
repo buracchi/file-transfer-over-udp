@@ -10,6 +10,7 @@
 #include "tproto/tproto_tcp.h"
 #include "nproto/nproto_ipv4.h"
 #include "try.h"
+#include "utilities.h"
 
 static void before_test();
 static int client();
@@ -48,11 +49,12 @@ int client() {
 	struct socket2* socket;
 	char* buff = malloc(strlen(message) + 1);
 	memset(buff, 0, strlen(message) + 1);
-	try(socket = socket2_init(tproto, nproto), NULL, error);
+	try(socket = new(socket2, tproto, nproto), NULL, error);
 	try(socket2_connect(socket, "127.0.0.1:1234"), 1, error);
 	try(socket2_recv(socket, message, strlen(message)), -1, error);
 	try(socket2_destroy(socket), 1, error);
 	try(strcmp(message, buff) == 0, false, error);
+	delete(socket);
 	return EXIT_SUCCESS;
 error:
 	return EXIT_FAILURE;
@@ -61,12 +63,12 @@ error:
 int server() {
 	struct socket2* server;
 	struct socket2* client;
-	try(server = socket2_init(tproto, nproto), NULL, error);
+	try(server = new(socket2, tproto, nproto), NULL, error);
 	try(socket2_listen(server, "0.0.0.0:1234", 1024),1, error);
 	try(client = socket2_accept(server), NULL, error);
 	try(socket2_send(client, message, strlen(message)), -1, error);
-	try(socket2_destroy(client), 1, error);
-	try(socket2_destroy(server), 1, error);
+	delete(server);
+	delete(client);
 error:
 	return EXIT_FAILURE;
 }

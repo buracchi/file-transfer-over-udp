@@ -20,6 +20,7 @@ extern int tproto_udp_init(struct tproto_udp* this) {
     tproto_vtbl_init(&this->super.tproto.__ops_vptr);
     this->__ops_vptr = get_tproto_udp_vtbl();
     this->super.tproto.type = SOCK_DGRAM;
+    this->super.tproto.kernel_handled = true;
     return 0;
 }
 

@@ -1,19 +1,21 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <sys/types.h>
 
 #include "struct_socket2.h"
 
 struct tproto {
     int type;
+    bool kernel_handled;
     struct tproto_vtbl* __ops_vptr;
 };
 
 static struct tproto_vtbl {
     ssize_t(*peek)(struct tproto* tproto, const struct socket2* socket2, uint8_t* buff, uint64_t n);
-    ssize_t (*recv)(struct tproto* tproto, const struct socket2* socket2, uint8_t* buff, uint64_t n);
-    ssize_t (*send)(struct tproto* tproto, const struct socket2* socket2, const uint8_t* buff, uint64_t n);
+    ssize_t(*recv)(struct tproto* tproto, const struct socket2* socket2, uint8_t* buff, uint64_t n);
+    ssize_t(*send)(struct tproto* tproto, const struct socket2* socket2, const uint8_t* buff, uint64_t n);
 } __tproto_ops_vtbl = { 0 };
 
 static inline int tproto_get_type(struct tproto* tproto) {
@@ -30,4 +32,8 @@ static inline ssize_t tproto_recv(struct tproto* tproto, const struct socket2* s
 
 static inline ssize_t tproto_send(struct tproto* tproto, const struct socket2* socket2, const uint8_t* buff, uint64_t n) {
     return tproto->__ops_vptr->send(tproto, socket2, buff, n);
+}
+
+static inline bool tproto_is_kernel_handled(struct tproto* tproto) {
+    return tproto->kernel_handled;
 }

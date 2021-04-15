@@ -20,14 +20,14 @@ static enum client_operation get_client_operation(char* buffer);
 static enum ftcp_operation get_ftcp_operation(char* buffer);
 
 static int help();
-static int require_list(socket2_t socket);
-static int require_download(socket2_t socket, char* filename);
-static int require_upload(socket2_t socket, char* filename);
+static int require_list(struct socket2* socket);
+static int require_download(struct socket2* socket, char* filename);
+static int require_upload(struct socket2* socket, char* filename);
 
 #define get_arg(buffer) (buffer + 4)
 
 extern int ftc_start(const char* url) {
-	socket2_t socket;
+	struct socket2* socket;
 	struct nproto_ipv4 ipv4;
 	struct tproto_tcp tcp;
 	char* buff;
@@ -45,7 +45,7 @@ extern int ftc_start(const char* url) {
 			help();
 			break;
 		default:
-			try(socket = socket2_init(&tcp.super.tproto, &ipv4.super.nproto), NULL);
+			try(socket = new(socket2, &tcp.super.tproto, &ipv4.super.nproto), NULL);
 			try(socket2_connect(socket, url), 1);
 			switch (get_ftcp_operation(buff)) {
 			case LIST:
@@ -61,8 +61,7 @@ extern int ftc_start(const char* url) {
 				printf("Invalid request\n");
 				break;
 			}
-			try(socket2_close(socket), 1);
-			socket2_destroy(socket);
+			try(delete(socket), 1);
 		}
 		free(buff);
 	}
@@ -111,7 +110,7 @@ static enum ftcp_operation get_ftcp_operation(char* buffer) {
 }
 
 
-static int require_list(socket2_t socket) {
+static int require_list(struct socket2* socket) {
 	ftcp_pp_t request;
 	ftcp_pp_t response;
 	char* filelist;
@@ -129,7 +128,7 @@ fail:
 	return 1;
 }
 
-static int require_download(socket2_t socket, char* filename) {
+static int require_download(struct socket2* socket, char* filename) {
 	ftcp_pp_t request;
 	ftcp_pp_t response;
 	char filename_buff[256] = { 0 };
@@ -164,7 +163,7 @@ fail:
 	return 1;
 }
 
-static int require_upload(socket2_t socket, char* filename) {
+static int require_upload(struct socket2* socket, char* filename) {
 	ftcp_pp_t request;
 	ftcp_pp_t response;
 	char filename_buff[256] = { 0 };

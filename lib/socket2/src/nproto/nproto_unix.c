@@ -44,16 +44,16 @@ static int destroy(struct nproto_unix* this) {
 static struct sockaddr2* get_sockaddr2(struct nproto* nproto, const char* url) {
     struct nproto_unix* this = container_of(nproto, struct nproto_unix, super.nproto);
     struct sockaddr2* sockaddr2;
-    struct sockaddr_un* paddr_un;
+    struct sockaddr_un paddr_un;
+    socklen_t addrlen;
     const char* address = url;
     try(sockaddr2 = malloc(sizeof * sockaddr2), NULL, fail);
-    try(paddr_un = malloc(sizeof * paddr_un), NULL, fail2);
-    memset(paddr_un, 'x', sizeof * paddr_un);
-    paddr_un->sun_family = AF_UNIX;
-    paddr_un->sun_path[0] = '\0';
-    strcpy(paddr_un->sun_path + 1, address);
-    sockaddr2->addr = (struct sockaddr*)paddr_un;
-    sockaddr2->addrlen = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + 1 + strlen(address));
+    memset(&paddr_un, 'x', sizeof * &paddr_un);
+    paddr_un.sun_family = AF_UNIX;
+    paddr_un.sun_path[0] = '\0';
+    strcpy((char*)&paddr_un.sun_path + 1, address);
+    addrlen = offsetof(struct sockaddr_un, sun_path) + 1 + strlen(address);
+    try(sockaddr2_init(sockaddr2, (struct sockaddr*)&paddr_un, addrlen), 1, fail2);
     return sockaddr2;
 fail2:
     free(sockaddr2);

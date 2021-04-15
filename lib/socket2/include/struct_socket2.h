@@ -17,4 +17,4 @@ static struct socket2_vtbl {
 	ssize_t(*peek)(struct socket2*, uint8_t*, uint64_t);
 	ssize_t(*recv)(struct socket2*, uint8_t*, uint64_t);
 	ssize_t(*send)(struct socket2*, const uint8_t*, uint64_t);
-} __socket2_ops = { 0 };
+} __socket2_ops_vtbl = { 0 };

@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "struct_socket2.h"
+
 #include "try.h"
 #include "utilities.h"
 
@@ -28,52 +30,58 @@ static struct socket2_vtbl* get_socket2_vtbl();
 static int _destroy(struct socket2* this);
 static struct socket2* _accept(struct socket2* this);
 static int _connect(struct socket2* this, const char* url);
-static int _close(struct socket2* this);
 static int _listen(struct socket2* this, const char* url, int backlog);
 static ssize_t _peek(struct socket2* this, uint8_t* buff, uint64_t n);
 static ssize_t _recv(struct socket2* this, uint8_t* buff, uint64_t n);
 static ssize_t _send(struct socket2* this, const uint8_t* buff, uint64_t n);
 
-extern socket2_t socket2_init(struct tproto* tproto, struct nproto* nproto) {
-	struct socket2* this;
-	this = malloc(sizeof * this);
-	if (this) {
-		memset(this, 0, sizeof * this);
-		this->__ops_vptr = get_socket2_vtbl();
-		this->tproto = tproto;
-		this->nproto = nproto;
-		int domain = nproto_get_domain(nproto);
-		int type = tproto_get_type(tproto);
-		try(this->fd = socket(domain, type, 0), INVALID_SOCKET, fail);
-	}
-	return this;
+extern int socket2_init(struct socket2* this, struct tproto* tproto, struct nproto* nproto) {
+	memset(this, 0, sizeof * this);
+	this->__ops_vptr = get_socket2_vtbl();
+	this->tproto = tproto;
+	this->nproto = nproto;
+	int domain = nproto_get_domain(nproto);
+	int type = tproto_get_type(tproto);
+	try(this->fd = socket(domain, type, 0), INVALID_SOCKET, fail);
+	return 0;
 fail2:
 	close(this->fd);
 fail:
 	free(this);
-	return NULL;
+	return 1;
+}
+
+extern int socket2_existing_socket_init(struct socket2* this, int fd, struct tproto* tproto, struct nproto* nproto) {
+	memset(this, 0, sizeof * this);
+	this->__ops_vptr = get_socket2_vtbl();
+	this->tproto = tproto;
+	this->nproto = nproto;
+	this->fd = fd;
+	return 0;
 }
 
 static struct socket2_vtbl* get_socket2_vtbl() {
 	struct socket2_vtbl vtbl_zero = { 0 };
-	if (!memcmp(&vtbl_zero, &__socket2_ops, sizeof * &__socket2_ops)) {
-		__socket2_ops.destroy = _destroy;
-		__socket2_ops.accept = _accept;
-		__socket2_ops.connect = _connect;
-		__socket2_ops.close = _close;
-		__socket2_ops.listen = _listen;
-		__socket2_ops.peek = _peek;
-		__socket2_ops.recv = _recv;
-		__socket2_ops.send = _send;
+	if (!memcmp(&vtbl_zero, &__socket2_ops_vtbl, sizeof * &__socket2_ops_vtbl)) {
+		__socket2_ops_vtbl.destroy = _destroy;
+		__socket2_ops_vtbl.accept = _accept;
+		__socket2_ops_vtbl.connect = _connect;
+		__socket2_ops_vtbl.listen = _listen;
+		__socket2_ops_vtbl.peek = _peek;
+		__socket2_ops_vtbl.recv = _recv;
+		__socket2_ops_vtbl.send = _send;
 	}
-	return &__socket2_ops;
+	return &__socket2_ops_vtbl;
 }
 
 static int _destroy(struct socket2* this) {
-	free(this->address->addr);
-	free(this->address);	// TODO: add destructor
-	free(this);
+	try(close(this->fd), -1, fail);
+	if (this->address) {
+		try(delete(this->address), 1, fail);
+	}
 	return 0;
+fail:
+	return 1;
 }
 
 static struct socket2* _accept(struct socket2* this) {
@@ -85,7 +93,8 @@ static struct socket2* _accept(struct socket2* this) {
 		accepted->address = malloc(sizeof * accepted->address);
 		accepted->address->addr = malloc(this->address->addrlen);
 		accepted->address->addrlen = this->address->addrlen;
-		accepted->__ops_vptr = &__socket2_ops;
+		accepted->address->__ops_vptr = this->address->__ops_vptr;
+		accepted->__ops_vptr = &__socket2_ops_vtbl;
 		while ((accepted->fd = accept(this->fd, accepted->address->addr, &accepted->address->addrlen)) == -1) {
 			try(errno != EMFILE, true, fail);
 			sleep(0.1);
@@ -102,24 +111,16 @@ static int _connect(struct socket2* this, const char* url) {
 	try(connect(this->fd, this->address->addr, this->address->addrlen), SOCKET_ERROR, fail2);
 	return 0;
 fail2:
-	free(this->address->addr);
-	free(this->address);	// TODO: implement destructor
+	delete(this->address);
 fail:
 	return -1;
 }
 
-static int _close(struct socket2* this) {
-	return close(this->fd);
-}
-
 static int _listen(struct socket2* this, const char* url, int backlog) {
 	try(this->address = nproto_get_sockaddr2(this->nproto, url), NULL, fail);
-	try(bind(this->fd, this->address->addr, this->address->addrlen), -1, fail2);
-	try(listen(this->fd, backlog), -1, fail2);
+	try(bind(this->fd, this->address->addr, this->address->addrlen), -1, fail);
+	try(listen(this->fd, backlog), -1, fail);
 	return 0;
-fail2:
-	free(this->address->addr);
-	free(this->address);	// TODO: implement destructor
 fail:
 	return 1;
 }
@@ -146,7 +147,7 @@ fail:
 	return -1;
 }
 
-extern ssize_t socket2_srecv(const socket2_t handle, char** buff) {
+extern ssize_t socket2_srecv(struct socket2* handle, char** buff) {
 	struct socket2* socket2 = handle;
 	ssize_t b_recvd = 0;
 	uint8_t* msg;
@@ -181,7 +182,7 @@ fail:
 	return -1;
 }
 
-extern ssize_t socket2_frecv(const socket2_t handle, FILE* file, long fsize) {
+extern ssize_t socket2_frecv(struct socket2* handle, FILE* file, long fsize) {
 	struct socket2* socket2 = handle;
 	ssize_t b_recvd = 0;
 	uint8_t chunk[CHUNK_SIZE] = { 0 };
@@ -203,7 +204,7 @@ fail:
 	return -1;
 }
 
-extern ssize_t socket2_ssend(const socket2_t handle, const char* string) {
+extern ssize_t socket2_ssend(struct socket2* handle, const char* string) {
 	struct socket2* socket2 = handle;
 	ssize_t b_sent;
 	try(b_sent = socket2_send(socket2, string, strlen(string)), -1, fail);
@@ -212,7 +213,7 @@ fail:
 	return -1;
 }
 
-extern ssize_t socket2_fsend(const socket2_t handle, FILE* file) {
+extern ssize_t socket2_fsend(struct socket2* handle, FILE* file) {
 	struct socket2* socket2 = handle;
 	ssize_t b_sent = 0;
 	uint8_t chunk[CHUNK_SIZE] = {0};
@@ -233,12 +234,12 @@ fail:
 	return -1;
 }
 
-extern int socket2_get_fd(const socket2_t handle) {
+extern int socket2_get_fd(struct socket2* handle) {
 	struct socket2* socket2 = handle;
 	return socket2->fd;
 }
 
-extern int socket2_set_blocking(const socket2_t handle, bool blocking) {
+extern int socket2_set_blocking(struct socket2* handle, bool blocking) {
 	struct socket2* socket2 = handle;
 	if (socket2->fd > 0) {
 #ifdef _WIN32

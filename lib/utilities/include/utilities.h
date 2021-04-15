@@ -47,7 +47,12 @@ bool is_directory(char* pathname);
   * @ptr:       the pointer to the object.
   *
   */
-#define delete(ptr, ...) ptr->ops->destroy(ptr); free(ptr);
+#define delete(ptr, ...) ({                                             \
+        int __ret = ptr->__ops_vptr->destroy(ptr);                      \
+        if (!__ret) {                                                   \
+            free(ptr);                                                  \
+        }                                                               \
+        __ret; })
 
   /**
    * container_of - cast a member of a structure out to the containing structure
