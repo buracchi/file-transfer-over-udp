@@ -14,6 +14,7 @@
 #include "nproto/nproto_ipv4.h"
 #include "tproto/tproto_tcp.h"
 #include "tpool.h"
+#include "rwfslock.h"
 #include "try.h"
 #include "utilities.h"
 
@@ -32,31 +33,6 @@
 #define evthread_use_threads evthread_use_pthreads
 #endif
 
-// TODO: Create libraries
-
-struct dictionary { // thread unsafe
-};
-static int dictionary_init(struct dictionary* dictionary, bool(*cmp)(void*, void*));
-static int dictionary_free(struct dictionary* dictionary);
-static int dictionary_get(struct dictionary* dictionary, const void* key, void** value);
-static int dictionary_put(struct dictionary* dictionary, const void* key, const void* value);
-
-struct rwflock_dictionary {	// thread safe
-	struct dictionary dictionary;
-	pthread_mutex_t mutex;
-};
-static int rwflock_dictionary_init(struct rwflock_dictionary* dictionary) {
-	return 0;
-}
-static int rwflock_dictionary_destroy(struct rwflock_dictionary* dictionary) {
-	return 0;
-}
-static pthread_rwlock_t* rwflock_dictionary_get(struct rwflock_dictionary* dictionary, const char* fname) {
-	return NULL;
-}
-
-//------------
-
 static void fts_close(evutil_socket_t signal, short events, void* arg);
 static void dispatch_request(evutil_socket_t fd, short events, void* arg);
 static void* handle_request(void* arg);
@@ -69,7 +45,7 @@ static tpool_t thread_pool;
 static const char* base_dir;
 static const char* list_command;
 static struct event_base* event_base;
-static struct rwflock_dictionary rwflock_dictionary;
+static struct rwfslock rwfslock;
 
 extern int fts_start(int port, char* pathname) {
 	struct event* socket_event;
@@ -84,7 +60,7 @@ extern int fts_start(int port, char* pathname) {
 	try(thread_pool = tpool_init(nprocs()), NULL, fail);
 	try(evthread_use_threads(), -1, fail);
 	try(event_base = event_base_new(), NULL, fail);
-	try(rwflock_dictionary_init(&rwflock_dictionary), 1, fail);
+	try(rwfslock_init(&rwfslock), 1, fail);
 	nproto_ipv4_init(&ipv4);
 	tproto_tcp_init(&tcp);
 	try(socket = new(socket2, &tcp.super.tproto, &ipv4.super.nproto), NULL, fail);
@@ -103,7 +79,7 @@ extern int fts_start(int port, char* pathname) {
 	try(delete(socket), 1, fail);
 	try(tpool_wait(thread_pool), 1, fail);
 	try(tpool_destroy(thread_pool), 1, fail);
-	try(rwflock_dictionary_destroy(&rwflock_dictionary), 1, fail);
+	try(rwfslock_destroy(&rwfslock), 1, fail);
 	free((char*)list_command);
 	free(url);
 	return 0;
@@ -180,7 +156,7 @@ static void handle_get_request(struct socket2* socket, ftcp_pp_t request) {
 	}
 	asprintf(&fpath, "%s/%s", base_dir, frpath);
 	if (!access(fpath, F_OK)) {
-		//try_pthread_rwlock_rdlock(rwflock_dictionary_get(&rwflock_dictionary, fpath), fail);
+		try(rwfslock_rdlock(&rwfslock, fpath), 1, fail);
 		file = fopen(fpath, "r");
 		fseek(file, 0L, SEEK_END);
 		flen = ftell(file);
@@ -189,7 +165,7 @@ static void handle_get_request(struct socket2* socket, ftcp_pp_t request) {
 		socket2_send(socket, reply, ftcp_pp_size());
 		socket2_fsend(socket, file);
 		fclose(file);
-		//try_pthread_rwlock_unlock(rwflock_dictionary_get(&rwflock_dictionary, fpath), fail);
+		try(rwfslock_unlock(&rwfslock, fpath), 1, fail);
 	}
 	else {
 		reply = ftcp_pp_init(RESPONSE, FILE_NOT_EXIST, NULL, 0);
@@ -208,7 +184,7 @@ static void handle_put_request(struct socket2* socket, ftcp_pp_t request) {
 	enum ftcp_result result;
 	asprintf(&fpath, "%s/%s", base_dir, ftcp_get_arg(request));
 	result = access(fpath, F_OK) ? FILE_NOT_EXIST : FILE_EXIST;
-	//try_pthread_rwlock_wrlock(rwflock_dictionary_get(&rwflock_dictionary, fpath), fail);
+	try(rwfslock_wrlock(&rwfslock, fpath), 1, fail);
 	file = fopen(fpath, "w");
 	reply = ftcp_pp_init(RESPONSE, result, NULL, 0);
 	socket2_send(socket, reply, ftcp_pp_size());
@@ -217,7 +193,7 @@ static void handle_put_request(struct socket2* socket, ftcp_pp_t request) {
 	reply = ftcp_pp_init(RESPONSE, SUCCESS, NULL, 0);
 	socket2_send(socket, reply, ftcp_pp_size());
 	fclose(file);
-	//try_pthread_rwlock_unlock(rwflock_dictionary_get(&rwflock_dictionary, fpath), fail);
+	try(rwfslock_unlock(&rwfslock, fpath), 1, fail);
 	free(fpath);
 	free(reply);
 fail:

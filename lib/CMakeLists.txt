@@ -1,6 +1,6 @@
 add_subdirectory("data-structure")
 add_subdirectory("ftcp")
 add_subdirectory("socket2")
-add_subdirectory("tpool")
+add_subdirectory("thread")
 add_subdirectory("try")
 add_subdirectory("utilities")
