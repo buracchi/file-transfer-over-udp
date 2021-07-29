@@ -25,14 +25,7 @@ struct socket2;
 *
 * @return	the initialized socket on success; NULL otherwise.
 */
-extern int socket2_init(struct socket2* this, struct tproto* tproto, struct nproto* nproto);
-
-/*
-* Return an initialized socket object from an existing socket file descriptor.
-*
-* @return	the 0 on success; 1 otherwise.
-*/
-extern int socket2_existing_socket_init(struct socket2* this, int fd, struct tproto* tproto, struct nproto* nproto);
+extern int socket2_init(struct socket2* this, struct tproto* tproto, struct nproto* nproto, bool get_fd);
 
 /*
 * Destroys the socket object.

@@ -39,5 +39,6 @@ endif()
 # Subproject
 
 add_subdirectory("lib")
-add_subdirectory("client")
-add_subdirectory("server")
+add_subdirectory("gbnd")
+add_subdirectory("ft-server")
+add_subdirectory("ft-client")

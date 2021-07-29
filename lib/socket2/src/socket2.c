@@ -35,29 +35,19 @@ static ssize_t _peek(struct socket2* this, uint8_t* buff, uint64_t n);
 static ssize_t _recv(struct socket2* this, uint8_t* buff, uint64_t n);
 static ssize_t _send(struct socket2* this, const uint8_t* buff, uint64_t n);
 
-extern int socket2_init(struct socket2* this, struct tproto* tproto, struct nproto* nproto) {
+extern int socket2_init(struct socket2* this, struct tproto* tproto, struct nproto* nproto, bool get_fd) {
 	memset(this, 0, sizeof * this);
 	this->__ops_vptr = get_socket2_vtbl();
 	this->tproto = tproto;
 	this->nproto = nproto;
-	int domain = nproto_get_domain(nproto);
-	int type = tproto_get_type(tproto);
-	try(this->fd = socket(domain, type, 0), INVALID_SOCKET, fail);
+	if (get_fd) {
+		int domain = nproto_get_domain(this->nproto);
+		int type = tproto_get_type(this->tproto);
+		try(this->fd = socket(domain, type, 0), INVALID_SOCKET, fail);
+	}
 	return 0;
-fail2:
-	close(this->fd);
 fail:
-	free(this);
 	return 1;
-}
-
-extern int socket2_existing_socket_init(struct socket2* this, int fd, struct tproto* tproto, struct nproto* nproto) {
-	memset(this, 0, sizeof * this);
-	this->__ops_vptr = get_socket2_vtbl();
-	this->tproto = tproto;
-	this->nproto = nproto;
-	this->fd = fd;
-	return 0;
 }
 
 static struct socket2_vtbl* get_socket2_vtbl() {
@@ -86,23 +76,17 @@ fail:
 
 static struct socket2* _accept(struct socket2* this) {
 	struct socket2* accepted;
-	accepted = malloc(sizeof * accepted);
-	if (accepted) {
-		accepted->nproto = this->nproto;
-		accepted->tproto = this->tproto;
-		accepted->address = malloc(sizeof * accepted->address);
-		accepted->address->addr = malloc(this->address->addrlen);
-		accepted->address->addrlen = this->address->addrlen;
-		accepted->address->__ops_vptr = this->address->__ops_vptr;
-		accepted->__ops_vptr = &__socket2_ops_vtbl;
-		while ((accepted->fd = accept(this->fd, accepted->address->addr, &accepted->address->addrlen)) == -1) {
-			try(errno != EMFILE, true, fail);
-			sleep(0.1);
-		}
+	accepted = new(socket2, this->tproto, this->nproto, false);
+	try(accepted->address = new(sockaddr2, this->address->addr, this->address->addrlen), NULL, fail);
+	while ((accepted->fd = accept(this->fd, accepted->address->addr, &accepted->address->addrlen)) == -1) {
+		try(errno != EMFILE, true, fail2);
+		sleep(0.1);
 	}
 	return accepted;
+fail2:
+	delete(accepted->address);
 fail:
-	free(accepted);
+	delete(accepted);
 	return NULL;
 }
 

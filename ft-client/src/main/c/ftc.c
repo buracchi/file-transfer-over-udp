@@ -45,7 +45,7 @@ extern int ftc_start(const char* url) {
 			help();
 			break;
 		default:
-			try(socket = new(socket2, &tcp.super.tproto, &ipv4.super.nproto), NULL);
+			try(socket = new(socket2, &tcp.super.tproto, &ipv4.super.nproto, true), NULL);
 			try(socket2_connect(socket, url), 1);
 			switch (get_ftcp_operation(buff)) {
 			case LIST:
@@ -108,7 +108,6 @@ static enum ftcp_operation get_ftcp_operation(char* buffer) {
 	}
 	return INVALID_OPERATION;
 }
-
 
 static int require_list(struct socket2* socket) {
 	ftcp_pp_t request;

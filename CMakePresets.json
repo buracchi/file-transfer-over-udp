@@ -1,0 +1,20 @@
+﻿{
+  "version": 2,
+  "configurePresets": [
+    {
+      "name": "linux-default",
+      "displayName": "Linux Debug",
+      "description": "Imposta come destinazione il sottosistema Windows per Linux (WSL) o un sistema Linux remoto.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": { "hostOS": [ "Linux" ] },
+        "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": { "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}" }
+      }
+    }
+  ]
+}

@@ -49,7 +49,7 @@ int client() {
 	struct socket2* socket;
 	char* buff = malloc(strlen(message) + 1);
 	memset(buff, 0, strlen(message) + 1);
-	try(socket = new(socket2, tproto, nproto), NULL, error);
+	try(socket = new(socket2, tproto, nproto, true), NULL, error);
 	try(socket2_connect(socket, "127.0.0.1:1234"), 1, error);
 	try(socket2_recv(socket, message, strlen(message)), -1, error);
 	try(socket2_destroy(socket), 1, error);
@@ -63,7 +63,7 @@ error:
 int server() {
 	struct socket2* server;
 	struct socket2* client;
-	try(server = new(socket2, tproto, nproto), NULL, error);
+	try(server = new(socket2, tproto, nproto, true), NULL, error);
 	try(socket2_listen(server, "0.0.0.0:1234", 1024),1, error);
 	try(client = socket2_accept(server), NULL, error);
 	try(socket2_send(client, message, strlen(message)), -1, error);

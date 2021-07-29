@@ -63,7 +63,7 @@ extern int fts_start(int port, char* pathname) {
 	try(rwfslock_init(&rwfslock), 1, fail);
 	nproto_ipv4_init(&ipv4);
 	tproto_tcp_init(&tcp);
-	try(socket = new(socket2, &tcp.super.tproto, &ipv4.super.nproto), NULL, fail);
+	try(socket = new(socket2, &tcp.super.tproto, &ipv4.super.nproto, true), NULL, fail);
 	try(socket2_set_blocking(socket, false), 1, fail);
 	try(socket2_listen(socket, url, BACKLOG), 1, fail);
 	try(socket_event = event_new(event_base, socket2_get_fd(socket), EV_READ | EV_PERSIST, dispatch_request, socket), NULL, fail);
