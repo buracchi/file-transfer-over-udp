@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <strings.h>
+#include <stdbool.h>
 #include <errno.h>
 #include <event2/event.h>
 #include <event2/thread.h>
@@ -42,7 +43,7 @@ extern int gbnd_start() {
 	try(event_base = event_base_new(), NULL, fail2);
 	nproto_unix_init(&np_unix);
 	tproto_tcp_init(&tp_tcp);
-	try(socket = new(socket2, &tp_tcp.super.tproto, &np_unix.super.nproto), NULL, fail2);
+	try(socket = new(socket2, &tp_tcp.super.tproto, &np_unix.super.nproto, true), NULL, fail2);
 	try(socket2_set_blocking(socket, false), 1, fail3);
 	try(socket2_listen(socket, URL, BACKLOG), 1, fail3);
 	try(socket_event = event_new(event_base, socket2_get_fd(socket), EV_READ | EV_PERSIST, dispatch_request, socket), NULL, fail3);
