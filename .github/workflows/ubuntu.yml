@@ -24,9 +24,9 @@ jobs:
       id: vcpkg-cache
       with:
         path: '**/vcpkg'
-        key: ${{ runner.os }}-Vcpkg-${{ hashFiles('**/.dependencies') }}
+        key: ${{ runner.os }}-vcpkg-${{ hashFiles('**/.dependencies') }}-rubbish
         restore-keys: |
-            ${{ runner.os }}-Vcpkg-
+            ${{ runner.os }}-vcpkg-
             ${{ runner.os }}-
 
     - name: Configure CMake
