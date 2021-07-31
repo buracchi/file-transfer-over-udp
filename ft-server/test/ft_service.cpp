@@ -12,7 +12,7 @@ extern "C" {
 
 using namespace std;
 
-TEST(get_filelist, return_list) {
+TEST(get_filelist, return_directory_regular_file) {
 	string path = filesystem::current_path();
 	istringstream is(get_filelist(path.c_str()));
 	unordered_set<string> actual = unordered_set<string>(

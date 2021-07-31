@@ -8,7 +8,7 @@ project(
 
 add_executable (
 	ft-client
-	"src/main/c/main.c"
+	"src/main.c"
 )
 target_link_libraries(ft-client PRIVATE ft-client-lib)
 target_link_libraries(ft-client PRIVATE try)
@@ -20,8 +20,8 @@ add_dependencies(ft-client ft-client-lib)
 add_library(
 	ft-client-lib
 	STATIC
-	"src/main/c/ftc.h"
-	"src/main/c/ftc.c"
+	"src/ftc.h"
+	"src/ftc.c"
 )
 target_link_libraries(ft-client-lib PRIVATE ftcp)
 target_link_libraries(ft-client-lib PRIVATE socket2)
@@ -29,16 +29,3 @@ target_link_libraries(ft-client-lib PRIVATE try)
 target_link_libraries(ft-client-lib PRIVATE utilities)
 
 # Tests
-
-add_executable (
-	ft-client-test
-	"src/test/c/ftc_test.c"
-)
-target_link_libraries(ft-client-test PRIVATE ft-client-lib)
-target_include_directories(ft-client-test PRIVATE "src/main/c")
-
-add_test(
-	NAME FIRST_TEST 
-	COMMAND ft-client-test
-	#[<args>...]
-)

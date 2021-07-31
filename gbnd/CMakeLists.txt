@@ -8,7 +8,7 @@ project(
 
 add_executable (
 	gbnd
-	"src/main/c/main.c"
+	"src/main.c"
 )
 target_link_libraries(gbnd PRIVATE gbnd-lib)
 target_link_libraries(gbnd PRIVATE try)
@@ -20,8 +20,8 @@ add_dependencies(gbnd gbnd-lib)
 add_library(
 	gbnd-lib
 	STATIC
-	"src/main/c/gbnd.c"
-	"src/main/c/gbnd.h"
+	"src/gbnd.c"
+	"src/gbnd.h"
 )
 find_package(Libevent CONFIG REQUIRED)
 target_link_libraries(gbnd-lib PRIVATE ftcp)
@@ -35,16 +35,3 @@ target_link_libraries(gbnd-lib PRIVATE utilities)
 target_include_directories(gbnd-lib PRIVATE "${LIBEVENT_INCLUDE_DIR}")
 
 # Tests
-
-add_executable (
-	gbnd-test
-	"src/test/c/gbnd_test.c"
-)
-target_link_libraries(gbnd-test PRIVATE gbnd-lib)
-target_include_directories(gbnd-test PRIVATE "src/main/c")
-
-add_test(
-	NAME GBND_TEST 
-	COMMAND gbnd-test
-	#[<args>...]
-)

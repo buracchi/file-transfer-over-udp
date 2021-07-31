@@ -48,19 +48,6 @@ target_link_libraries(ft-service-lib PRIVATE utilities)
 # Tests
 
 add_executable (
-	ft-server-test
-	"test/fts_test.c"
-)
-target_link_libraries(ft-server-test PRIVATE ft-server-lib)
-target_include_directories(ft-server-test PRIVATE "src/")
-
-add_test(
-	NAME SERVER_TEST 
-	COMMAND ft-server-test
-	#[<args>...]
-)
-
-add_executable (
 	ft-service-test
 	"test/ft_service.cpp"
 )
