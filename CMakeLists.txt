@@ -39,6 +39,9 @@ option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 if (BUILD_TESTING)
     enable_testing()
     find_package(GTest REQUIRED)
+    # Notice that GTest::GTest and GTest::Main are deprecated since CMake 3.20 
+    # and should be replaced with GTest::gtest and GTest::gtest_main but this
+    # will make CMake 3.16.3 fails.
 endif()
 
 # Subproject

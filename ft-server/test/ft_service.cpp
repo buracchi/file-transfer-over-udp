@@ -6,18 +6,24 @@ extern "C" {
 
 #include <string>
 #include <vector>
+#include <unordered_set>
 #include <iostream>
 #include <filesystem>
 
-TEST(get_filelist, return_list) {
-	std::string path = std::filesystem::current_path();
-	std::vector<std::string> filelist;
+using namespace std;
 
-	std::string filelist = "";
-	for (const auto& entry : std::filesystem::directory_iterator(path)) {
+TEST(get_filelist, return_list) {
+	string path = filesystem::current_path();
+	istringstream is(get_filelist(path.c_str()));
+	unordered_set<string> actual = unordered_set<string>(
+		istream_iterator<string>(is),
+		istream_iterator<string>()
+	);
+	unordered_set<string> expected;
+	for (const auto& entry : filesystem::directory_iterator(path)) {
 		if (entry.is_regular_file()) {
-			filelist.push_back(entry.path().filename());
+			expected.insert(entry.path().filename());
 		}
 	}
-	ASSERT_STREQ(filelist.c_str(), get_filelist(path.c_str()));
+	ASSERT_EQ(actual, expected);
 }

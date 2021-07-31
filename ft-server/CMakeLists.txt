@@ -1,5 +1,3 @@
-cmake_minimum_required (VERSION 3.8)
-
 project(
 	"File transfer over UDP Server"
 	VERSION 1.0.0
@@ -66,7 +64,7 @@ add_executable (
 	ft-service-test
 	"test/ft_service.cpp"
 )
-target_link_libraries(ft-service-test PRIVATE GTest::gtest GTest::gtest_main)
+target_link_libraries(ft-service-test PRIVATE GTest::GTest GTest::Main)
 target_link_libraries(ft-service-test PRIVATE ft-service-lib)
 target_include_directories(ft-service-test PRIVATE "src/")
 gtest_add_tests(TARGET ft-service-test)

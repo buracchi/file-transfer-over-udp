@@ -16,13 +16,21 @@ endif()
 
 # Vcpkg Configuration
 
+set(IS_UNIX FALSE)
+set(IS_WINDOWS FALSE)
+if (${UNIX})
+    set(IS_UNIX TRUE)
+elseif(${WIN32})
+    set(IS_WINDOWS TRUE)
+endif()
+
 set(VCPKG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg")
 
 if(NOT EXISTS "${VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake")
     message(FATAL_ERROR "The vcpkg submodules was not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
-if(NOT EXISTS "${VCPKG_DIR}/vcpkg" AND NOT EXISTS "${VCPKG_DIR}/vcpkg.exe")
+if((${IS_UNIX} AND NOT EXISTS "${VCPKG_DIR}/vcpkg") OR (${IS_WINDOWS} AND NOT EXISTS "${VCPKG_DIR}/vcpkg.exe"))
     message(STATUS "Installing vcpkg...")
     if (${UNIX})
         set(FORMAT "sh")
@@ -31,9 +39,7 @@ if(NOT EXISTS "${VCPKG_DIR}/vcpkg" AND NOT EXISTS "${VCPKG_DIR}/vcpkg.exe")
     else()
         message(FATAL_ERROR "Vcpkg cannot be insalled in this operating system.")
     endif()
-    exec_program(
-        ${VCPKG_DIR}/bootstrap-vcpkg.${FORMAT} ${VCPKG_DIR}
-    )
+    exec_program(${VCPKG_DIR}/bootstrap-vcpkg.${FORMAT} ${VCPKG_DIR})
 endif()
 
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
