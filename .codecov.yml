@@ -1,5 +1,6 @@
 ignore:
   - "**/test"
+  - "vcpkg"
 
 comment:
   require_changes: true
