@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 extern "C" {
-#include <ft_service.h>
+#include "ft_service.h"
 }
 
 #include <string>
@@ -12,9 +12,10 @@ extern "C" {
 
 using namespace std;
 
-TEST(get_filelist, return_directory_regular_file) {
+TEST(ft_service_get_filelist, return_current_directory_regular_file) {
 	string path = filesystem::current_path();
-	istringstream is(get_filelist(path.c_str()));
+	ft_service_t ftservice = ft_service_init(path.c_str());
+	istringstream is(ft_service_get_filelist(ftservice));
 	unordered_set<string> actual = unordered_set<string>(
 		istream_iterator<string>(is),
 		istream_iterator<string>()

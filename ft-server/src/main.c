@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <limits.h>
 
+#include "ft_service.h"
 #include "utilities.h"
 #include "try.h"
 #include "fts.h"
@@ -36,6 +37,7 @@ extern int main(int argc, char* argv[]) {
 	int port = DEFAULT_PORT;
 	char directory[PATH_MAX] = {};
 	struct option** options;
+	ft_service_t ft_service;
 	getcwd(directory, sizeof(directory));
 	try(options = get_options(argc, argv), NULL);
 	for (int i = 0; options[i]; i++) {
@@ -66,7 +68,11 @@ body:
 		return EXIT_SUCCESS;
 	default:
 		try(is_directory(directory), 0);
-		try(fts_start(port, directory), 1);
+		try(ft_service = ft_service_init(directory), NULL);
+		try(fts_start(port, ft_service), 1);
+		ft_service_destroy(ft_service);
+		free(ft_service);
+		free(directory);
 	}
 	return EXIT_SUCCESS;
 }

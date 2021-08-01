@@ -26,6 +26,7 @@ add_library(
 	"src/fts.h"
 )
 find_package(Libevent CONFIG REQUIRED)
+target_link_libraries(ft-server-lib PRIVATE ft-service-lib)
 target_link_libraries(ft-server-lib PRIVATE ftcp)
 target_link_libraries(ft-server-lib PRIVATE libevent::core libevent::extra libevent::pthreads)
 target_link_libraries(ft-server-lib PRIVATE pthread)
@@ -35,6 +36,7 @@ target_link_libraries(ft-server-lib PRIVATE tpool)
 target_link_libraries(ft-server-lib PRIVATE try)
 target_link_libraries(ft-server-lib PRIVATE utilities)
 target_include_directories(ft-server-lib PRIVATE "${LIBEVENT_INCLUDE_DIR}")
+add_dependencies(ft-server-lib ft-service-lib)
 
 add_library(
 	ft-service-lib
@@ -44,6 +46,7 @@ add_library(
 )
 target_link_libraries(ft-service-lib PRIVATE try)
 target_link_libraries(ft-service-lib PRIVATE utilities)
+target_link_libraries(ft-service-lib PUBLIC coverage_config)
 
 # Tests
 

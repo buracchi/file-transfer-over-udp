@@ -9,6 +9,7 @@
 #include <event2/event.h>
 #include <event2/thread.h>
 
+#include "ft_service.h"
 #include "ftcp.h"
 #include "socket2.h"
 #include "nproto/nproto_ipv4.h"
@@ -41,22 +42,20 @@ static void handle_get_request(struct socket2* socket, ftcp_pp_t request);
 static void handle_put_request(struct socket2* socket, ftcp_pp_t request);
 static void handle_invalid_request(struct socket2* socket, ftcp_pp_t request);
 
+static ft_service_t service;
 static tpool_t thread_pool;
-static const char* base_dir;
-static const char* list_command;
 static struct event_base* event_base;
 static struct rwfslock rwfslock;
 
-extern int fts_start(int port, char* pathname) {
+extern int fts_start(int port, ft_service_t ft_service) {
 	struct event* socket_event;
 	struct event* signal_event;
 	struct nproto_ipv4 ipv4;
 	struct tproto_tcp tcp;
 	struct socket2* socket;
-	base_dir = pathname;
 	char* url;
+	service = ft_service;
 	try(asprintf(&url, "127.0.0.1:%d", port), -1, fail);
-	try(asprintf((char**)&list_command, "ls %s -p | grep -v /", base_dir), -1, fail);
 	try(thread_pool = tpool_init(nprocs()), NULL, fail);
 	try(evthread_use_threads(), -1, fail);
 	try(event_base = event_base_new(), NULL, fail);
@@ -80,7 +79,6 @@ extern int fts_start(int port, char* pathname) {
 	try(tpool_wait(thread_pool), 1, fail);
 	try(tpool_destroy(thread_pool), 1, fail);
 	try(rwfslock_destroy(&rwfslock), 1, fail);
-	free((char*)list_command);
 	free(url);
 	return 0;
 fail:
@@ -130,10 +128,7 @@ static void* handle_request(void* arg) {
 static void handle_list_request(struct socket2* socket, ftcp_pp_t request) {
 	ftcp_pp_t reply;
 	FILE* pipe;
-	char* filelist;
-	pipe = popen(list_command, "r");
-	fscanf(pipe, "%m[\x01-\xFF-]", &filelist);
-	pclose(pipe);
+	char* filelist = ft_service_get_filelist(service);
 	reply = ftcp_pp_init(RESPONSE, SUCCESS, NULL, strlen(filelist));
 	socket2_send(socket, reply, ftcp_pp_size());
 	socket2_ssend(socket, filelist);
@@ -154,7 +149,7 @@ static void handle_get_request(struct socket2* socket, ftcp_pp_t request) {
 		socket2_send(socket, reply, ftcp_pp_size());
 		return;
 	}
-	asprintf(&fpath, "%s/%s", base_dir, frpath);
+	asprintf(&fpath, "%s/%s", ft_service_get_base_dir(service), frpath);
 	if (!access(fpath, F_OK)) {
 		try(rwfslock_rdlock(&rwfslock, fpath), 1, fail);
 		file = fopen(fpath, "r");
@@ -182,7 +177,7 @@ static void handle_put_request(struct socket2* socket, ftcp_pp_t request) {
 	FILE* file;
 	char* fpath;
 	enum ftcp_result result;
-	asprintf(&fpath, "%s/%s", base_dir, ftcp_get_arg(request));
+	asprintf(&fpath, "%s/%s", ft_service_get_base_dir(service), ftcp_get_arg(request));
 	result = access(fpath, F_OK) ? FILE_NOT_EXIST : FILE_EXIST;
 	try(rwfslock_wrlock(&rwfslock, fpath), 1, fail);
 	file = fopen(fpath, "w");

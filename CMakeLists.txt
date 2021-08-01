@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.13)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/.cmake/Vcpkg.cmake")
 include(GoogleTest)
@@ -34,7 +34,6 @@ install_dependencies("${DEPENDENCY_LIST}")
 # Test
 
 option(BUILD_TESTING "Build the testing tree." ON)
-option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 
 if (BUILD_TESTING)
     enable_testing()
@@ -42,6 +41,17 @@ if (BUILD_TESTING)
     # Notice that GTest::GTest and GTest::Main are deprecated since CMake 3.20 
     # and should be replaced with GTest::gtest and GTest::gtest_main but this
     # will make CMake 3.16.3 fails.
+endif()
+
+# Code Coverage Configuration
+
+option(ENABLE_TEST_COVERAGE "Enable coverage reporting" OFF)
+
+add_library(coverage_config INTERFACE)
+
+if(ENABLE_TEST_COVERAGE)
+  target_compile_options(coverage_config INTERFACE -O0 -g --coverage)
+  target_link_options(coverage_config INTERFACE --coverage)
 endif()
 
 # Subproject

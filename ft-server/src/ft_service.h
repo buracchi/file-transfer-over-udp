@@ -2,8 +2,16 @@
 
 #include <stdio.h>
 
-extern char* get_filelist(const char* base_dir);
+typedef void* ft_service_t;
 
-extern FILE load_file();
+extern ft_service_t ft_service_init(const char* base_dir);
 
-extern void save_file();
+extern int ft_service_destroy(const ft_service_t ft_service);
+
+extern const char* ft_service_get_base_dir(const ft_service_t ft_service);
+
+extern char* ft_service_get_filelist(const ft_service_t ft_service);
+
+extern FILE ft_service_load_file(const ft_service_t ft_service);
+
+extern void ft_service_save_file(const ft_service_t ft_service);
