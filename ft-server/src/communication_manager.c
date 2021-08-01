@@ -1,4 +1,4 @@
-#include "connection_listener.h"
+#include "communication_manager.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,7 +32,7 @@
 #define evthread_use_threads evthread_use_pthreads
 #endif
 
-static void connection_listener_close(evutil_socket_t signal, short events, void* arg);
+static void communication_manager_close(evutil_socket_t signal, short events, void* arg);
 static void dispatch_request(evutil_socket_t fd, short events, void* arg);
 static void* start_worker(void* arg);
 
@@ -40,7 +40,7 @@ static ft_handler_t handler;
 static tpool_t thread_pool;
 static struct event_base* event_base;
 
-extern int connection_listener_start(int port, ft_handler_t ft_handler) {
+extern int communication_manager_start(int port, ft_handler_t ft_handler) {
 	struct event* socket_event;
 	struct event* signal_event;
 	struct nproto_ipv4 ipv4;
@@ -86,7 +86,7 @@ static void* start_worker(void* arg) {
 	ft_handler_handle_request(handler, socket);
 }
 
-static void connection_listener_close(evutil_socket_t signal, short events, void* user_data) {
+static void communication_manager_close(evutil_socket_t signal, short events, void* user_data) {
 	struct event_base* base = user_data;
 	struct timeval delay = { 1, 0 };
 	printf("\nShutting down...\n");

@@ -6,7 +6,7 @@
 
 #include "ft_service.h"
 #include "ft_handler.h"
-#include "connection_listener.h"
+#include "communication_manager.h"
 #include "utilities.h"
 #include "try.h"
 
@@ -72,7 +72,7 @@ body:
 		try(is_directory(directory), 0);
 		try(ft_service = ft_service_init(directory), NULL);
 		try(ft_handler = ft_handler_init(ft_service), NULL);
-		try(connection_listener_start(port, ft_handler), 1);
+		try(communication_manager_start(port, ft_handler), 1);
 		ft_handler_destroy(ft_handler);
 		ft_service_destroy(ft_service);
 		free(ft_service);
