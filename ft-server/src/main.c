@@ -5,9 +5,10 @@
 #include <limits.h>
 
 #include "ft_service.h"
+#include "ft_handler.h"
+#include "connection_listener.h"
 #include "utilities.h"
 #include "try.h"
-#include "fts.h"
 
 #define DEFAULT_PORT 1234
 
@@ -38,6 +39,7 @@ extern int main(int argc, char* argv[]) {
 	char directory[PATH_MAX] = {};
 	struct option** options;
 	ft_service_t ft_service;
+	ft_handler_t ft_handler;
 	getcwd(directory, sizeof(directory));
 	try(options = get_options(argc, argv), NULL);
 	for (int i = 0; options[i]; i++) {
@@ -69,7 +71,9 @@ body:
 	default:
 		try(is_directory(directory), 0);
 		try(ft_service = ft_service_init(directory), NULL);
-		try(fts_start(port, ft_service), 1);
+		try(ft_handler = ft_handler_init(ft_service), NULL);
+		try(connection_listener_start(port, ft_handler), 1);
+		ft_handler_destroy(ft_handler);
 		ft_service_destroy(ft_service);
 		free(ft_service);
 	}

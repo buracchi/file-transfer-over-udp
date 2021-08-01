@@ -10,30 +10,14 @@ add_executable (
 	ft-server
 	"src/main.c"
 )
-target_link_libraries(ft-server PRIVATE ft-server-lib)
 target_link_libraries(ft-server PRIVATE ft-service-lib)
+target_link_libraries(ft-server PRIVATE ft-handler-lib)
+target_link_libraries(ft-server PRIVATE connection-listener-lib)
+target_link_libraries(ft-server PRIVATE socket2)
 target_link_libraries(ft-server PRIVATE try)
 target_link_libraries(ft-server PRIVATE utilities)
 
 # Libraries
-
-add_library(
-	ft-server-lib
-	STATIC
-	"src/fts.c"
-	"src/fts.h"
-)
-find_package(Libevent CONFIG REQUIRED)
-target_link_libraries(ft-server-lib PRIVATE ft-service-lib)
-target_link_libraries(ft-server-lib PRIVATE ftcp)
-target_link_libraries(ft-server-lib PRIVATE libevent::core libevent::extra libevent::pthreads)
-target_link_libraries(ft-server-lib PRIVATE pthread)
-target_link_libraries(ft-server-lib PRIVATE socket2)
-target_link_libraries(ft-server-lib PRIVATE rwfslock)
-target_link_libraries(ft-server-lib PRIVATE tpool)
-target_link_libraries(ft-server-lib PRIVATE try)
-target_link_libraries(ft-server-lib PRIVATE utilities)
-target_include_directories(ft-server-lib PRIVATE "${LIBEVENT_INCLUDE_DIR}")
 
 add_library(
 	ft-service-lib
@@ -44,6 +28,35 @@ add_library(
 target_link_libraries(ft-service-lib PRIVATE try)
 target_link_libraries(ft-service-lib PRIVATE utilities)
 target_link_libraries(ft-service-lib INTERFACE coverage_config)
+
+add_library(
+	ft-handler-lib
+	STATIC
+	"src/ft_handler.c"
+	"src/ft_handler.h"
+)
+target_link_libraries(ft-handler-lib PRIVATE ft-service-lib)
+target_link_libraries(ft-handler-lib PRIVATE ftcp)
+target_link_libraries(ft-handler-lib PRIVATE socket2)
+target_link_libraries(ft-handler-lib PRIVATE rwfslock)
+target_link_libraries(ft-handler-lib PRIVATE try)
+target_link_libraries(ft-handler-lib PRIVATE utilities)
+
+add_library(
+	connection-listener-lib
+	STATIC
+	"src/connection_listener.c"
+	"src/connection_listener.h"
+)
+find_package(Libevent CONFIG REQUIRED)
+target_link_libraries(connection-listener-lib PRIVATE ft-handler-lib)
+target_link_libraries(connection-listener-lib PRIVATE libevent::core libevent::extra libevent::pthreads)
+target_link_libraries(connection-listener-lib PRIVATE pthread)
+target_link_libraries(connection-listener-lib PRIVATE socket2)
+target_link_libraries(connection-listener-lib PRIVATE tpool)
+target_link_libraries(connection-listener-lib PRIVATE try)
+target_link_libraries(connection-listener-lib PRIVATE utilities)
+target_include_directories(connection-listener-lib PRIVATE "${LIBEVENT_INCLUDE_DIR}")
 
 # Tests
 
