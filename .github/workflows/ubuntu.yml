@@ -30,8 +30,8 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    #- name: Setup tmate session
-    #  uses: mxschmitt/action-tmate@v3
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
 
     - name: Test
       working-directory: ${{github.workspace}}/build
@@ -41,7 +41,5 @@ jobs:
       uses: codecov/codecov-action@v2.0.2
       with:
         token: ${{secrets.CODECOV_TOKEN}}
-        directory: ${{github.workspace}}/build
         verbose: true
         fail_ci_if_error: false
-
