@@ -30,16 +30,12 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
+#    - name: Setup tmate session
+#      uses: mxschmitt/action-tmate@v3
 
     - name: Test
       working-directory: ${{github.workspace}}/build
       run: ctest -C ${{env.BUILD_TYPE}}
 
     - name: Codecov
-      uses: codecov/codecov-action@v2.0.2
-      with:
-        token: ${{secrets.CODECOV_TOKEN}}
-        verbose: true
-        fail_ci_if_error: false
+      run: bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
