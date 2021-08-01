@@ -40,7 +40,7 @@ jobs:
       uses: codecov/codecov-action@v2.0.2
       with:
         token: ${{secrets.CODECOV_TOKEN}}
-        directory: ${{runner.workspace}}/build
+        working-directory: ${{runner.workspace}}/build
         verbose: true
         fail_ci_if_error: false
 
