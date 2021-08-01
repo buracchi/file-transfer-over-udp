@@ -58,7 +58,7 @@ extern int communication_manager_start(int port, ft_handler_t ft_handler) {
 	try(socket2_set_blocking(socket, false), 1, fail);
 	try(socket2_listen(socket, url, BACKLOG), 1, fail);
 	try(socket_event = event_new(event_base, socket2_get_fd(socket), EV_READ | EV_PERSIST, dispatch_request, socket), NULL, fail);
-	try(signal_event = evsignal_new(event_base, SIGINT, connection_listener_close, (void*)event_base), NULL, fail);
+	try(signal_event = evsignal_new(event_base, SIGINT, communication_manager_close, (void*)event_base), NULL, fail);
 	try(event_add(socket_event, NULL), -1, fail);
 	try(event_add(signal_event, NULL), -1, fail);
 	try((printf("Server started.\n") < 0), true, fail);

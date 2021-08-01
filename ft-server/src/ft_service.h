@@ -11,7 +11,3 @@ extern int ft_service_destroy(const ft_service_t ft_service);
 extern const char* ft_service_get_base_dir(const ft_service_t ft_service);
 
 extern char* ft_service_get_filelist(const ft_service_t ft_service);
-
-extern FILE ft_service_load_file(const ft_service_t ft_service);
-
-extern void ft_service_save_file(const ft_service_t ft_service);

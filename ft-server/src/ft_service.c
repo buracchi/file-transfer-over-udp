@@ -47,13 +47,3 @@ extern char* ft_service_get_filelist(const ft_service_t ft_service) {
 fail:
 	return NULL;
 }
-
-extern FILE ft_service_load_file(const ft_service_t ft_service) {
-	_ft_service_t this = (_ft_service_t)ft_service;
-
-}
-
-extern void ft_service_save_file(const ft_service_t ft_service) {
-	_ft_service_t this = (_ft_service_t)ft_service;
-
-}
