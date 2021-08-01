@@ -72,7 +72,6 @@ body:
 		try(fts_start(port, ft_service), 1);
 		ft_service_destroy(ft_service);
 		free(ft_service);
-		free(directory);
 	}
 	return EXIT_SUCCESS;
 }

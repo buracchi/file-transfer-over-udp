@@ -14,8 +14,6 @@ target_link_libraries(ft-server PRIVATE ft-server-lib)
 target_link_libraries(ft-server PRIVATE ft-service-lib)
 target_link_libraries(ft-server PRIVATE try)
 target_link_libraries(ft-server PRIVATE utilities)
-add_dependencies(ft-server ft-server-lib)
-add_dependencies(ft-server ft-service-lib)
 
 # Libraries
 
@@ -36,7 +34,6 @@ target_link_libraries(ft-server-lib PRIVATE tpool)
 target_link_libraries(ft-server-lib PRIVATE try)
 target_link_libraries(ft-server-lib PRIVATE utilities)
 target_include_directories(ft-server-lib PRIVATE "${LIBEVENT_INCLUDE_DIR}")
-add_dependencies(ft-server-lib ft-service-lib)
 
 add_library(
 	ft-service-lib
@@ -46,7 +43,7 @@ add_library(
 )
 target_link_libraries(ft-service-lib PRIVATE try)
 target_link_libraries(ft-service-lib PRIVATE utilities)
-target_link_libraries(ft-service-lib PUBLIC coverage_config)
+target_link_libraries(ft-service-lib INTERFACE coverage_config)
 
 # Tests
 
