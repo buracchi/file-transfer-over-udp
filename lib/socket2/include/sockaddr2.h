@@ -15,5 +15,5 @@ static struct sockaddr2_vtbl {
 extern int sockaddr2_init(struct sockaddr2* sockaddr2, struct sockaddr* addr, socklen_t addrlen);
 
 static inline int sockaddr2_destroy(struct sockaddr2* sockaddr2) {
-	sockaddr2->__ops_vptr->destroy(sockaddr2);
+	return sockaddr2->__ops_vptr->destroy(sockaddr2);
 }

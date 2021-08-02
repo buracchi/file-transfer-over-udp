@@ -11,14 +11,12 @@
 *******************************************************************************/
 
 struct ft_handler {
-	void* __ops_vptr;
-	//struct request_handler;
+	struct request_handler;
 	const ft_service_t ft_service;
 };
 
 static struct ft_handler_vtbl {
-	void (*handle_request)(struct request_handler* this, struct socket2* socket);
-	//struct request_handler_vtbl;
+	struct request_handler_vtbl;
 	int (*destroy)(struct ft_handler* this);
 } __ft_handler_ops_vtbl = { 0 };
 

@@ -43,7 +43,6 @@ extern int ft_handler_destroy(ft_handler_t ft_handler) {
 extern void _ft_handler_init(struct ft_handler* this, const ft_service_t ft_service) {
 	_request_handler_init((void*)this);
 	this->__ops_vptr = get_ft_handler_vtbl();
-	//_ft_handler_ops(this) = get_ft_handler_vtbl();
 	*((ft_service_t*)&(this->ft_service)) = ft_service;
 	rwfslock_init(&rwfslock);
 }
