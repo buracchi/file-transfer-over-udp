@@ -9,6 +9,7 @@
 #include <unistd.h>
 #endif
 
+#include "struct_ft_handler.h"
 #include "ft_service.h"
 #include "ftcp.h"
 #include "socket2.h"
@@ -16,34 +17,53 @@
 #include "try.h"
 #include "utilities.h"
 
-typedef struct ft_handler {
-	const ft_service_t ft_service;
-} *_ft_handler_t;
+static struct ft_handler_vtbl* get_ft_handler_vtbl();
+static int _destroy(struct ft_handler* this);
+static void handle_request(struct request_handler* pthis, struct socket2* socket);
+static void handle_list_request(struct ft_handler* this, struct socket2* socket, ftcp_pp_t request);
+static void handle_get_request(struct ft_handler* this, struct socket2* socket, ftcp_pp_t request);
+static void handle_put_request(struct ft_handler* this, struct socket2* socket, ftcp_pp_t request);
+static void handle_invalid_request(struct ft_handler* this, struct socket2* socket, ftcp_pp_t request);
 
-static void handle_list_request(const ft_handler_t ft_handler, struct socket2* socket, ftcp_pp_t request);
-static void handle_get_request(const ft_handler_t ft_handler, struct socket2* socket, ftcp_pp_t request);
-static void handle_put_request(const ft_handler_t ft_handler, struct socket2* socket, ftcp_pp_t request);
-static void handle_invalid_request(const ft_handler_t ft_handler, struct socket2* socket, ftcp_pp_t request);
-
-static struct rwfslock rwfslock;
+struct rwfslock rwfslock;
 
 extern ft_handler_t ft_handler_init(const ft_service_t ft_service) {
-	_ft_handler_t handler = malloc(sizeof * handler);
-	if (handler) {
-		*((void**)&(handler->ft_service)) = *((void**)&ft_service);
-		rwfslock_init(&rwfslock);
+	struct ft_handler* ft_handler = malloc(sizeof * ft_handler);
+	if (ft_handler) {
+		_ft_handler_init(ft_handler, ft_service);
 	}
-	return handler;
+	return ft_handler;
 }
 
-extern int ft_handler_destroy(const ft_handler_t ft_handler) {
-	_ft_handler_t this = (_ft_handler_t)ft_handler;
-	rwfslock_destroy(&rwfslock);
-	return 0;
+extern int ft_handler_destroy(ft_handler_t ft_handler) {
+	struct ft_handler* this = (struct ft_handler*)ft_handler;
+	return _ft_handler_ops(this)->destroy(this);
 }
 
-extern void ft_handler_handle_request(const ft_handler_t ft_handler, struct socket2* socket) {
-	_ft_handler_t this = (_ft_handler_t)ft_handler;
+extern void _ft_handler_init(struct ft_handler* this, const ft_service_t ft_service) {
+	_request_handler_init((void*)this);
+	this->__ops_vptr = get_ft_handler_vtbl();
+	//_ft_handler_ops(this) = get_ft_handler_vtbl();
+	*((ft_service_t*)&(this->ft_service)) = ft_service;
+	rwfslock_init(&rwfslock);
+}
+
+static struct ft_handler_vtbl* get_ft_handler_vtbl() {
+	struct ft_handler_vtbl vtbl_zero = { 0 };
+	if (!memcmp(&vtbl_zero, &__ft_handler_ops_vtbl, sizeof * &__ft_handler_ops_vtbl)) {
+		memcpy(&__ft_handler_ops_vtbl, &__request_handler_ops_vtbl, sizeof(struct ft_handler_vtbl) - sizeof(struct request_handler_vtbl));
+		__ft_handler_ops_vtbl.destroy = _destroy;
+		__ft_handler_ops_vtbl.handle_request = handle_request;	// override
+	}
+	return &__ft_handler_ops_vtbl;
+}
+
+static int _destroy(struct ft_handler* this) {
+	return rwfslock_destroy(&rwfslock);
+}
+
+static void handle_request(struct request_handler* pthis, struct socket2* socket) {
+	struct ft_handler* this = (struct ft_handler*)pthis;
 	ftcp_pp_t request = malloc(ftcp_pp_size());
 	socket2_recv(socket, request, ftcp_pp_size());
 	switch (ftcp_get_type(request)) {
@@ -69,10 +89,8 @@ extern void ft_handler_handle_request(const ft_handler_t ft_handler, struct sock
 	free(request);
 }
 
-static void handle_list_request(const ft_handler_t ft_handler, struct socket2* socket, ftcp_pp_t request) {
-	_ft_handler_t this = (_ft_handler_t)ft_handler;
+static void handle_list_request(struct ft_handler* this, struct socket2* socket, ftcp_pp_t request) {
 	ftcp_pp_t reply;
-	FILE* pipe;
 	char* filelist = ft_service_get_filelist(this->ft_service);
 	reply = ftcp_pp_init(RESPONSE, SUCCESS, NULL, strlen(filelist));
 	socket2_send(socket, reply, ftcp_pp_size());
@@ -81,14 +99,12 @@ static void handle_list_request(const ft_handler_t ft_handler, struct socket2* s
 	free(reply);
 }
 
-static void handle_get_request(const ft_handler_t ft_handler, struct socket2* socket, ftcp_pp_t request) {
-	_ft_handler_t this = (_ft_handler_t)ft_handler;
+static void handle_get_request(struct ft_handler* this, struct socket2* socket, ftcp_pp_t request) {
 	ftcp_pp_t reply;
 	char* frpath;
 	char* fpath;
 	FILE* file;
 	uint64_t flen;
-	bool fexist;
 	frpath = ftcp_get_arg(request);
 	if (strstr(frpath, "/")) {
 		reply = ftcp_pp_init(RESPONSE, INVALID_ARGUMENT, NULL, 0);
@@ -118,8 +134,7 @@ fail:
 	return;
 }
 
-static void handle_put_request(const ft_handler_t ft_handler, struct socket2* socket, ftcp_pp_t request) {
-	_ft_handler_t this = (_ft_handler_t)ft_handler;
+static void handle_put_request(struct ft_handler* this, struct socket2* socket, ftcp_pp_t request) {
 	ftcp_pp_t reply;
 	FILE* file;
 	char* fpath;
@@ -142,8 +157,7 @@ fail:
 	return;
 }
 
-static void handle_invalid_request(const ft_handler_t ft_handler, struct socket2* socket, ftcp_pp_t request) {
-	_ft_handler_t this = (_ft_handler_t)ft_handler;
+static void handle_invalid_request(struct ft_handler* this, struct socket2* socket, ftcp_pp_t request) {
 	ftcp_pp_t reply;
 	reply = ftcp_pp_init(RESPONSE, ERROR, NULL, 0);
 	socket2_send(socket, reply, ftcp_pp_size());

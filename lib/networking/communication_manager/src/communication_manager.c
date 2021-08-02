@@ -9,7 +9,7 @@
 #include <event2/event.h>
 #include <event2/thread.h>
 
-#include "ft_handler.h"
+#include "request_handler.h"
 #include "socket2.h"
 #include "nproto/nproto_ipv4.h"
 #include "tproto/tproto_tcp.h"
@@ -36,18 +36,18 @@ static void communication_manager_close(evutil_socket_t signal, short events, vo
 static void dispatch_request(evutil_socket_t fd, short events, void* arg);
 static void* start_worker(void* arg);
 
-static ft_handler_t handler;
+static request_handler_t handler;
 static tpool_t thread_pool;
 static struct event_base* event_base;
 
-extern int communication_manager_start(int port, ft_handler_t ft_handler) {
+extern int communication_manager_start(int port, request_handler_t request_handler) {
 	struct event* socket_event;
 	struct event* signal_event;
 	struct nproto_ipv4 ipv4;
 	struct tproto_tcp tcp;
 	struct socket2* socket;
 	char* url;
-	handler = ft_handler;
+	handler = request_handler;
 	try(asprintf(&url, "127.0.0.1:%d", port), -1, fail);
 	try(thread_pool = tpool_init(nprocs()), NULL, fail);
 	try(evthread_use_threads(), -1, fail);
@@ -83,7 +83,7 @@ static void dispatch_request(evutil_socket_t fd, short events, void* arg) {
 }
 static void* start_worker(void* arg) {
 	struct socket2* socket = arg;
-	ft_handler_handle_request(handler, socket);
+	request_handler_handle_request(handler, socket);
 }
 
 static void communication_manager_close(evutil_socket_t signal, short events, void* user_data) {

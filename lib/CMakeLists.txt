@@ -1,4 +1,5 @@
 add_subdirectory("data-structure")
+add_subdirectory("networking")
 add_subdirectory("ftcp")
 add_subdirectory("socket2")
 add_subdirectory("thread")

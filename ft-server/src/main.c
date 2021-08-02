@@ -32,14 +32,13 @@ struct option {
 
 static int usage();
 static struct option** get_options(int argc, char* argv[]);
+static void start_server(int port, char* directory);
 
 extern int main(int argc, char* argv[]) {
 	enum operation operation = OP_RUN;
 	int port = DEFAULT_PORT;
 	char directory[PATH_MAX] = {};
 	struct option** options;
-	ft_service_t ft_service;
-	ft_handler_t ft_handler;
 	getcwd(directory, sizeof(directory));
 	try(options = get_options(argc, argv), NULL);
 	for (int i = 0; options[i]; i++) {
@@ -69,15 +68,22 @@ body:
 		try(usage(), 1);
 		return EXIT_SUCCESS;
 	default:
-		try(is_directory(directory), 0);
-		try(ft_service = ft_service_init(directory), NULL);
-		try(ft_handler = ft_handler_init(ft_service), NULL);
-		try(communication_manager_start(port, ft_handler), 1);
-		ft_handler_destroy(ft_handler);
-		ft_service_destroy(ft_service);
-		free(ft_service);
+		start_server(port, directory);
 	}
 	return EXIT_SUCCESS;
+}
+
+static void start_server(int port, char* directory) {
+	ft_service_t ft_service;
+	ft_handler_t ft_handler;
+	try(is_directory(directory), 0);
+	try(ft_service = ft_service_init(directory), NULL);
+	try(ft_handler = ft_handler_init(ft_service), NULL);
+	try(communication_manager_start(port, ft_handler), 1);
+	ft_handler_destroy(ft_handler);
+	ft_service_destroy(ft_service);
+	free(ft_handler);
+	free(ft_service);
 }
 
 static int usage() {

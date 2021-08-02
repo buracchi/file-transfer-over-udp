@@ -12,7 +12,7 @@ add_executable (
 )
 target_link_libraries(ft-server PRIVATE ft-service-lib)
 target_link_libraries(ft-server PRIVATE ft-handler-lib)
-target_link_libraries(ft-server PRIVATE communication-manager-lib)
+target_link_libraries(ft-server PRIVATE networking-communication-manager-lib)
 target_link_libraries(ft-server PRIVATE socket2)
 target_link_libraries(ft-server PRIVATE try)
 target_link_libraries(ft-server PRIVATE utilities)
@@ -34,29 +34,15 @@ add_library(
 	STATIC
 	"src/ft_handler.c"
 	"src/ft_handler.h"
+	"src/struct_ft_handler.h"
 )
+target_link_libraries(ft-handler-lib PRIVATE networking-handle-request-lib)
 target_link_libraries(ft-handler-lib PRIVATE ft-service-lib)
 target_link_libraries(ft-handler-lib PRIVATE ftcp)
 target_link_libraries(ft-handler-lib PRIVATE socket2)
 target_link_libraries(ft-handler-lib PRIVATE rwfslock)
 target_link_libraries(ft-handler-lib PRIVATE try)
 target_link_libraries(ft-handler-lib PRIVATE utilities)
-
-add_library(
-	communication-manager-lib
-	STATIC
-	"src/communication_manager.c"
-	"src/communication_manager.h"
-)
-find_package(Libevent CONFIG REQUIRED)
-target_link_libraries(communication-manager-lib PRIVATE ft-handler-lib)
-target_link_libraries(communication-manager-lib PRIVATE libevent::core libevent::extra libevent::pthreads)
-target_link_libraries(communication-manager-lib PRIVATE pthread)
-target_link_libraries(communication-manager-lib PRIVATE socket2)
-target_link_libraries(communication-manager-lib PRIVATE tpool)
-target_link_libraries(communication-manager-lib PRIVATE try)
-target_link_libraries(communication-manager-lib PRIVATE utilities)
-target_include_directories(communication-manager-lib PRIVATE "${LIBEVENT_INCLUDE_DIR}")
 
 # Tests
 

@@ -1,0 +1,2 @@
+﻿add_subdirectory(request_handler)
+add_subdirectory(communication_manager)
