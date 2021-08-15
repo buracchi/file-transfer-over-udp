@@ -5,3 +5,4 @@ add_library(
 )
 target_compile_definitions(utilities PRIVATE UTILITIES_VERSION=1)
 target_include_directories(utilities PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(utilities INTERFACE coverage_config)
