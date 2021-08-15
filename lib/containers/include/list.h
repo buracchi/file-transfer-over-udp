@@ -199,15 +199,15 @@ static inline struct cmn_iterator* cmn_list_insert(struct cmn_list* list, struct
 
 /*
 * Removes from the list container the element at the specified position.
-* The iterator position must be valid and dereferenceable. Thus the end()
-* iterator (which is valid, but is not dereferenceable) cannot be used as a
-* value for position.
+*  The iterator position must be valid and dereferenceable. Thus the end()
+*  iterator (which is valid, but is not dereferenceable) cannot be used as a
+*  value for position.
 *
-* References and iterators to the erased elements are invalidated. Other
-* references and iterators are not affected.
+*  References and iterators to the erased elements are invalidated. Other
+*  references and iterators are not affected.
 *
-* If position is valid, the function never fails.
-* Otherwise, it causes undefined behavior.
+*  If position is valid, the function never fails.
+*  Otherwise, it causes undefined behavior.
 *
 * @param	list	 -	the list object.
 * @param	position -	iterator to the element to remove.

@@ -1,9 +1,17 @@
 add_executable (
+	linked-list-map-test
+	"map/linked_list_map.cpp"
+)
+target_link_libraries(linked-list-map-test PRIVATE GTest::GTest GTest::Main)
+target_link_libraries(linked-list-map-test PRIVATE containers-linked-list-map)
+gtest_add_tests(TARGET linked-list-map-test)
+
+add_executable (
 	double-stack-queue-test
 	"queue/double_stack_queue.cpp"
 )
 target_link_libraries(double-stack-queue-test PRIVATE GTest::GTest GTest::Main)
-target_link_libraries(double-stack-queue-test PRIVATE containers)
+target_link_libraries(double-stack-queue-test PRIVATE containers-double-stack-queue)
 gtest_add_tests(TARGET double-stack-queue-test)
 
 add_executable (

@@ -8,7 +8,7 @@
 
 static struct cmn_iterator_vtbl* get_iterator_vtbl();
 int destroy(struct cmn_iterator* iterator);
-static void** data(struct cmn_iterator* iterator);
+static void* data(struct cmn_iterator* iterator);
 static struct cmn_iterator* next(struct cmn_iterator* iterator);
 static struct cmn_iterator* prev(struct cmn_iterator* iterator);
 static bool begin(struct cmn_iterator* iterator);
@@ -39,12 +39,13 @@ static struct cmn_iterator_vtbl* get_iterator_vtbl() {
 }
 
 int destroy(struct cmn_iterator* iterator) {
+	free(iterator);
     return 0;
 }
 
-static void** data(struct cmn_iterator* iterator) {
+static void* data(struct cmn_iterator* iterator) {
     struct linked_list_iterator* this = (struct linked_list_iterator*)iterator;
-	return &(this->element->data);
+	return this->element->data;
 }
 
 static struct cmn_iterator* next(struct cmn_iterator* iterator) {

@@ -77,9 +77,7 @@ static struct cmn_list_vtbl* get_list_vtbl() {
 }
 
 static int destroy(struct cmn_list* list) {
-	while (!is_empty(list)) {
-		pop_front(list);
-	}
+	clear(list);
 	return 0;
 }
 
@@ -130,8 +128,7 @@ static size_t size(struct cmn_list* list) {
 *******************************************************************************/
 
 static void clear(struct cmn_list* list) {
-	struct cmn_linked_list* _this = (struct cmn_linked_list*)list;
-	while (_this->size > 0) {
+	while (!is_empty(list)) {
 		pop_front(list);
 	}
 }
@@ -422,8 +419,8 @@ static int unique(struct cmn_list* list, int(*comp)(void* a, void* b, bool* resu
 		iterator2->element = iterator1->element->next;
 		while (!cmn_iterator_end(&(iterator2->super))) {
 			int ret;
-			void* e1 = *cmn_iterator_data(&(iterator1->super));
-			void* e2 = *cmn_iterator_data(&(iterator2->super));
+			void* e1 = cmn_iterator_data(&(iterator1->super));
+			void* e2 = cmn_iterator_data(&(iterator2->super));
 			ret = comp(e1, e2, &result);
 			if (ret) {
 				return ret;

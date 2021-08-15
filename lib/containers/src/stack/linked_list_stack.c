@@ -38,18 +38,10 @@ static int destroy(struct cmn_stack* stack) {
 	return cmn_list_destroy(&(this->list.super));
 }
 
-/*******************************************************************************
-*                                Element access                                *
-*******************************************************************************/
-
 static void* peek(struct cmn_stack* stack) {
 	struct cmn_linked_list_stack* this = (struct cmn_linked_list_stack*) stack;
 	return cmn_list_front(&(this->list.super));
 }
-
-/*******************************************************************************
-*                                   Capacity                                   *
-*******************************************************************************/
 
 static bool is_empty(struct cmn_stack* stack) {
 	struct cmn_linked_list_stack* this = (struct cmn_linked_list_stack*) stack;
@@ -60,10 +52,6 @@ static size_t get_size(struct cmn_stack* stack) {
 	struct cmn_linked_list_stack* this = (struct cmn_linked_list_stack*) stack;
 	return cmn_list_size(&(this->list.super));
 }
-
-/*******************************************************************************
-*                                   Modifiers                                  *
-*******************************************************************************/
 
 static int push(struct cmn_stack* stack, void* item) {
 	struct cmn_linked_list_stack* this = (struct cmn_linked_list_stack*) stack;

@@ -25,6 +25,11 @@ int asprintf(char** str, const char* format, ...);
 #define tostr(statement) __tostr(statement)
 #define streq(expected, actual) !strncasecmp(actual, expected, max(strlen(expected), strlen(actual)))
 
+struct cmn_pair {
+	void* first;
+	void* second;
+};
+
 int strtoi(char* str, int* result);
 
 int str_to_uint16(const char* str, uint16_t * result);

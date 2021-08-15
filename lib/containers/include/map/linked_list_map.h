@@ -1,12 +1,11 @@
 /**
- * @brief This object inherit from the stack object and is indeed polimorphyc to
- *  it, you can use all the function defined in stack.h casting a
- *  a simple_stack object.
- * 
+ * @brief This object inherit from the list object and is indeed polimorphyc to
+ *  it, you can use all the function defined in list.h casting a
+ *  a cmn_linked_list object.
  */
 #pragma once
 
-#include "stack.h"
+#include "map.h"
 
 #include "list/linked_list.h"
 
@@ -14,8 +13,8 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-struct cmn_linked_list_stack {
-    struct cmn_stack super;
+struct cmn_linked_list_map {
+    struct cmn_map super;
 	struct cmn_linked_list list;
 };
 
@@ -26,7 +25,7 @@ struct cmn_linked_list_stack {
 /**
  * @brief 
  * 
- * @param stack 
- * @return  
+ * @param map 
+ * @return int 
  */
-extern int cmn_linked_list_stack_init(struct cmn_linked_list_stack* stack);
+extern int cmn_linked_list_map_init(struct cmn_linked_list_map* map);

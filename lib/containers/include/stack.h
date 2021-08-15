@@ -44,17 +44,15 @@ static inline int cmn_stack_destroy(struct cmn_stack* stack) {
 *                                Element access                                *
 *******************************************************************************/
 
-/*
-* Returns reference to the top element in the stack. This is the most recently
-* pushed element. This element will be removed on a call to pop().
-*
-* If the container is not empty, the function never fails.
-* Otherwise, it causes undefined behavior.
-*
-* @param	handle	-	the stack object.
-*
-* @return	A reference to the first element in the container.
-*/
+/**
+ * @brief Returns the top most element in the stack.
+ * 
+ * @details Returns reference to the top element in the stack. This is the most
+ *  recently pushed element. This element will be removed on a call to pop().
+ * 
+ * @param stack the stack object.
+ * @return A reference to the first element in the container.
+ */
 static inline void* cmn_stack_peek(struct cmn_stack* stack) {
     return stack->__ops_vptr->peek(stack);
 }

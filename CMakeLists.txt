@@ -17,11 +17,16 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-if (MSVC)
-    add_compile_options(/Wall)
-else()
-    add_compile_options(-Wall -Wextra -pedantic -fms-extensions)
-endif()
+# Debug configuration
+
+if(CMAKE_BUILD_TYPE MATCHES DEBUG)
+    if(MSVC)
+        add_compile_options(/Wall /fsanitize=address)
+    else()
+        add_compile_options(-Wall -Wextra -pedantic -fms-extensions -fsanitize=address)
+        add_link_options(-fsanitize=address)
+    endif(MSVC)
+endif(CMAKE_BUILD_TYPE MATCHES DEBUG)
 
 # Guards
 
@@ -41,7 +46,7 @@ install_dependencies("${DEPENDENCY_LIST}")
 
 option(BUILD_TESTING "Build the testing tree." ON)
 
-if (BUILD_TESTING)
+if(BUILD_TESTING)
     enable_testing()
     find_package(GTest REQUIRED)
     # Notice that GTest::GTest and GTest::Main are deprecated since CMake 3.20 

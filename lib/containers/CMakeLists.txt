@@ -1,11 +1,20 @@
 add_library(
-	containers
+	containers-linked-list-map
+	"src/map/linked_list_map.c"
+)
+target_compile_definitions(containers-linked-list-map PRIVATE CONTAINERS_VERSION=1)
+target_include_directories(containers-linked-list-map PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(containers-linked-list-map PUBLIC containers-linked-list)
+target_link_libraries(containers-linked-list-map PRIVATE utilities)
+
+add_library(
+	containers-double-stack-queue
 	"src/queue/double_stack_queue.c"
 )
-target_compile_definitions(containers PRIVATE CONTAINERS_VERSION=1)
-target_include_directories(containers PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(containers PUBLIC containers-linked-list-stack)
-target_link_libraries(containers PRIVATE utilities)
+target_compile_definitions(containers-double-stack-queue PRIVATE CONTAINERS_VERSION=1)
+target_include_directories(containers-double-stack-queue PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(containers-double-stack-queue PUBLIC containers-linked-list-stack)
+target_link_libraries(containers-double-stack-queue PRIVATE utilities)
 
 add_library(
 	containers-linked-list-stack

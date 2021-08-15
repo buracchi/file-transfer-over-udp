@@ -15,7 +15,7 @@ static struct cmn_iterator_vtbl {
 	// Member functions
 	int		(*destroy)	(struct cmn_iterator* iterator);
 	// Element access
-	void**	(*data)		(struct cmn_iterator* iterator);
+	void*	(*data)		(struct cmn_iterator* iterator);
 	struct cmn_iterator*	(*next)	(struct cmn_iterator* iterator);
 	struct cmn_iterator*	(*prev)	(struct cmn_iterator* iterator);
 	bool	(*begin)	(struct cmn_iterator* iterator);
@@ -56,7 +56,7 @@ static inline int cmn_iterator_destroy(struct cmn_iterator* iterator) {
 * @return	A reference to the data  associated to the container element
 *			pointed by the iterator.
 */
-static inline void** cmn_iterator_data(struct cmn_iterator* iterator) {
+static inline void* cmn_iterator_data(struct cmn_iterator* iterator) {
 	return iterator->__ops_vptr->data(iterator);
 }
 
