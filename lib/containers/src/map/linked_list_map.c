@@ -15,6 +15,7 @@
 static struct cmn_map_vtbl* get_map_vtbl();
 static int destroy(struct cmn_map* map);
 static int at(struct cmn_map* map, void* key, void** value);
+static int at2(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), void** value);
 static struct cmn_iterator* begin(struct cmn_map* map);
 static struct cmn_iterator* end(struct cmn_map* map);
 static bool is_empty(struct cmn_map* map);
@@ -27,6 +28,8 @@ static void swap(struct cmn_map* map, struct cmn_map* other);
 static int count(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), size_t* count);
 static int find(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), struct cmn_iterator** iterator);
 
+static int dflt_cmp(void* arg1, void* arg2, bool* result);
+
 extern int cmn_linked_list_map_init(struct cmn_linked_list_map* map) {
 	memset(map, 0, sizeof *map);
 	map->super.__ops_vptr = get_map_vtbl();
@@ -38,6 +41,7 @@ static struct cmn_map_vtbl* get_map_vtbl() {
 	if (!memcmp(&vtbl_zero, &__cmn_map_ops_vtbl, sizeof vtbl_zero)) {
 		__cmn_map_ops_vtbl.destroy = destroy;
 		__cmn_map_ops_vtbl.at = at;
+		__cmn_map_ops_vtbl.at2 = at2;
 		__cmn_map_ops_vtbl.begin = begin;
 		__cmn_map_ops_vtbl.end = end;
 		__cmn_map_ops_vtbl.is_empty = is_empty;
@@ -60,12 +64,24 @@ static int destroy(struct cmn_map* map) {
 }
 
 static int at(struct cmn_map* map, void* key, void** value) {
+	return at2(map, key, dflt_cmp, value);
+}
+
+static inline int dflt_cmp(void* arg1, void* arg2, bool* result) {
+	*result = arg1 == arg2;
+	return 0;
+}
+
+static int at2(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), void** value) {
 	struct cmn_linked_list_map* _this = (struct cmn_linked_list_map*) map;
 	struct cmn_iterator* iterator;
 	iterator = cmn_list_begin(&(_this->list.super));
 	while (cmn_iterator_end(iterator) == false) {
-		struct cmn_pair* kv_pair = (struct cmn_pair*)cmn_iterator_data(iterator);
-		if (kv_pair->KEY == key) {
+		struct cmn_pair* kv_pair;
+		bool found;
+		kv_pair = (struct cmn_pair*)cmn_iterator_data(iterator);
+		try(comp(kv_pair->KEY, key, &found), !0, fail);
+		if (found) {
 			*value = kv_pair->VALUE;
 			cmn_iterator_destroy(iterator);
 			return 0;
@@ -74,6 +90,7 @@ static int at(struct cmn_map* map, void* key, void** value) {
 	}
 	cmn_iterator_destroy(iterator);
 	errno = ERANGE;
+fail:
 	return 1;
 }
 

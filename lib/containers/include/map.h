@@ -17,6 +17,7 @@ static struct cmn_map_vtbl {
 	int		(*destroy)		(struct cmn_map* map);
 	// Element access
 	int		(*at)			(struct cmn_map* map, void* key, void** value);
+	int		(*at2)			(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), void** value);
 	// Iterators
 	struct cmn_iterator*	(*begin)			(struct cmn_map* map);
 	struct cmn_iterator*	(*end)				(struct cmn_map* map);
@@ -33,7 +34,7 @@ static struct cmn_map_vtbl {
 	// Lookup
 	int		(*count)		(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), size_t* count);
 	int		(*find)			(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), struct cmn_iterator** iterator);
-} __cmn_map_ops_vtbl __attribute__((unused)) = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+} __cmn_map_ops_vtbl __attribute__((unused)) = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -74,6 +75,19 @@ static inline int cmn_map_destroy(struct cmn_map* map) {
 */
 static inline int cmn_map_at(struct cmn_map* map, void* key, void** value) {
 	return map->__ops_vptr->at(map, key, value);
+}
+
+/**
+ * @brief 
+ * 
+ * @param map 
+ * @param key 
+ * @param comp 
+ * @param value 
+ * @return  
+ */
+static inline int cmn_map_at2(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), void** value) {
+	return map->__ops_vptr->at2(map, key, comp, value);
 }
 
 /*******************************************************************************
