@@ -16,11 +16,14 @@ int asprintf(LPTSTR* str, LPCTSTR format, ...);
 int asprintf(char** str, const char* format, ...);
 #endif
 
-#define max(a, b) a > b ? a : b
+#define max(a, b) ({    \
+    typeof(a) _a = (a); \
+    typeof(b) _b = (b); \
+    _a > _b ? _a : _b })
 
-#define streq(expected, actual) !strncasecmp(actual, expected, max(strlen(expected), strlen(actual)))
 #define __tostr(statement) #statement
 #define tostr(statement) __tostr(statement)
+#define streq(expected, actual) !strncasecmp(actual, expected, max(strlen(expected), strlen(actual)))
 
 int strtoi(char* str, int* result);
 

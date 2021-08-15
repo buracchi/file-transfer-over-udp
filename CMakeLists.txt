@@ -63,6 +63,6 @@ endif()
 # Subproject
 
 add_subdirectory("lib")
-add_subdirectory("gbnd")
-add_subdirectory("ft-server")
-add_subdirectory("ft-client")
+#add_subdirectory("gbnd")
+#add_subdirectory("ft-server")
+#add_subdirectory("ft-client")

@@ -7,31 +7,38 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
+struct cmn_stack {
+    struct cmn_stack_vtbl* __ops_vptr;
+};
+
+static struct cmn_stack_vtbl {
+    int     (*destroy)  (struct cmn_stack* stack);
+    void*   (*peek)     (struct cmn_stack* stack);
+    bool    (*is_empty) (struct cmn_stack* stack);
+    size_t  (*get_size) (struct cmn_stack* stack);
+    int     (*push)     (struct cmn_stack* stack, void* item);
+    void*   (*pop)      (struct cmn_stack* stack);
+} __cmn_stack_ops_vtbl __attribute__((unused)) = { 0, 0, 0, 0, 0, 0 };
+
 typedef void* _stack_t;
 
 /*******************************************************************************
 *                               Member functions                               *
 *******************************************************************************/
 
-/*
-* Return an initialized stack object.
-*
-* @return	the initialized stack on success; NULL otherwise.
-*/
-extern _stack_t stack_init();
-
-/*
-* Destroys the container object. The contained elements are not destroyed.
-*
-* All iterators, pointers and references are invalidated.
-*
-* This function never fails.
-*
-* @param	handle	-	the stack object.
-*
-* @return	This function returns no value.
-*/
-extern void stack_destroy(const _stack_t handle);
+/**
+ * @brief Destroy a stack object.
+ * 
+ * @details Destroys the container object. The contained elements are not
+ *  destroyed.
+ *  All iterators, pointers and references are invalidated.
+ *
+ * @param stack the stack object.
+ * @return 0 on success; non-zero otherwise.
+ */
+static inline int cmn_stack_destroy(struct cmn_stack* stack) {
+    return stack->__ops_vptr->destroy(stack);
+}
 
 /*******************************************************************************
 *                                Element access                                *
@@ -48,7 +55,9 @@ extern void stack_destroy(const _stack_t handle);
 *
 * @return	A reference to the first element in the container.
 */
-extern void* stack_peek(const _stack_t handle);
+static inline void* cmn_stack_peek(struct cmn_stack* stack) {
+    return stack->__ops_vptr->peek(stack);
+}
 
 /*******************************************************************************
 *                                   Capacity                                   *
@@ -63,7 +72,9 @@ extern void* stack_peek(const _stack_t handle);
 *
 * @return	true if the container size is 0, false otherwise.
 */
-extern bool stack_is_empty(const _stack_t handle);
+static inline bool cmn_stack_is_empty(struct cmn_stack* stack) {
+    return stack->__ops_vptr->is_empty(stack);
+}
 
 /*
 * Returns the number of elements in the container.
@@ -74,7 +85,9 @@ extern bool stack_is_empty(const _stack_t handle);
 *
 * @return	The number of elements in the container.
 */
-extern size_t stack_get_size(const _stack_t handle);
+static inline size_t cmn_stack_get_size(struct cmn_stack* stack) {
+    return stack->__ops_vptr->get_size(stack);
+}
 
 /*******************************************************************************
 *                                   Modifiers                                  *
@@ -88,7 +101,9 @@ extern size_t stack_get_size(const _stack_t handle);
 *
 * @return	0 on success; non-zero otherwise.
 */
-extern int stack_push(const _stack_t handle, void* item);
+static inline int cmn_stack_push(struct cmn_stack* stack, void* item) {
+    return stack->__ops_vptr->push(stack, item);
+}
 
 /*
 * Removes the top element from the stack.
@@ -100,4 +115,6 @@ extern int stack_push(const _stack_t handle, void* item);
 * @return	the pointer that will reference the value of the popped element, if 
 *			the parameter is NULL the value is ignored.
 */
-extern void* stack_pop(const _stack_t handle);
+static inline void* cmn_stack_pop(struct cmn_stack* stack) {
+    return stack->__ops_vptr->pop(stack);
+}
