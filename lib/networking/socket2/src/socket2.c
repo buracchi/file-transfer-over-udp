@@ -52,6 +52,7 @@ extern int cmn_socket2_accept(struct cmn_socket2* this, struct cmn_socket2* acce
 	return 0;
 fail2:
 	free(accepted->address);
+	this->address = NULL;
 fail:
 	return 1;
 }
@@ -62,6 +63,7 @@ extern int cmn_socket2_connect(struct cmn_socket2* this, const char* url) {
 	return 0;
 fail2:
 	free(this->address);
+	this->address = NULL;
 fail:
 	return -1;
 }
@@ -73,6 +75,7 @@ extern int cmn_socket2_listen(struct cmn_socket2* this, const char* url, int bac
 	return 0;
 fail2:
 	free(this->address);
+	this->address = NULL;
 fail:
 	return 1;
 }
