@@ -20,8 +20,6 @@ static struct cmn_stack_vtbl {
     void*   (*pop)      (struct cmn_stack* stack);
 } __cmn_stack_ops_vtbl __attribute__((unused)) = { 0, 0, 0, 0, 0, 0 };
 
-typedef void* _stack_t;
-
 /*******************************************************************************
 *                               Member functions                               *
 *******************************************************************************/
