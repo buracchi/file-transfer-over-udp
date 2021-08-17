@@ -1,12 +1,17 @@
 ﻿find_package(Libevent CONFIG REQUIRED)
 
-add_library(networking-communication-manager-lib STATIC "src/communication_manager.c")
-target_include_directories(networking-communication-manager-lib PRIVATE "${LIBEVENT_INCLUDE_DIR}")
-target_include_directories(networking-communication-manager-lib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(networking-communication-manager-lib PUBLIC networking-handle-request-lib)
-target_link_libraries(networking-communication-manager-lib PRIVATE libevent::core libevent::extra libevent::pthreads)
-target_link_libraries(networking-communication-manager-lib PRIVATE pthread)
-target_link_libraries(networking-communication-manager-lib PRIVATE socket2)
-target_link_libraries(networking-communication-manager-lib PRIVATE tpool)
-target_link_libraries(networking-communication-manager-lib PRIVATE try)
-target_link_libraries(networking-communication-manager-lib PRIVATE utilities)
+add_library(
+    networking-communication-manager 
+    STATIC 
+    "src/communication_manager.c"
+)
+target_compile_definitions(networking-communication-manager PRIVATE COMMUNICATION_MANAGER=1)
+target_include_directories(networking-communication-manager PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(networking-communication-manager PRIVATE "${LIBEVENT_INCLUDE_DIR}")
+target_link_libraries(networking-communication-manager PUBLIC networking-request-handler)
+target_link_libraries(networking-communication-manager PRIVATE libevent::core libevent::extra libevent::pthreads)
+target_link_libraries(networking-communication-manager PRIVATE pthread)
+target_link_libraries(networking-communication-manager PRIVATE socket2)
+target_link_libraries(networking-communication-manager PRIVATE tpool)
+target_link_libraries(networking-communication-manager PRIVATE try)
+target_link_libraries(networking-communication-manager PRIVATE utilities)

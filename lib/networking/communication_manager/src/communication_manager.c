@@ -10,83 +10,90 @@
 #include <event2/thread.h>
 
 #include "request_handler.h"
-#include "socket2.h"
-#include "nproto/nproto_ipv4.h"
-#include "tproto/tproto_tcp.h"
-#include "tpool.h"
+#include "nproto/nproto_service_ipv4.h"
+#include "tproto/tproto_service_tcp.h"
 #include "try.h"
 #include "utilities.h"
 
 #ifdef __unix__
-#include <sys/sysinfo.h>
-#include <unistd.h>
+	#include <sys/sysinfo.h>
+	#include <unistd.h>
 #endif
 
 #define BACKLOG 4096
 
 #ifdef WIN32
-#define evthread_use_threads evthread_use_windows_threads
-#define nprocs() 2
+	#define evthread_use_threads evthread_use_windows_threads
 #elif __unix__
-#define nprocs() get_nprocs()
-#define evthread_use_threads evthread_use_pthreads
+	#define evthread_use_threads evthread_use_pthreads
 #endif
 
-static void communication_manager_close(evutil_socket_t signal, short events, void* arg);
+static void stop(evutil_socket_t signal, short events, void* arg);
 static void dispatch_request(evutil_socket_t fd, short events, void* arg);
 static void* start_worker(void* arg);
 
-static request_handler_t handler;
-static tpool_t thread_pool;
 static struct event_base* event_base;
 
-extern int communication_manager_start(int port, request_handler_t request_handler) {
+extern int cmn_communication_manager_init(struct cmn_communication_manager* this, size_t thread_number) {
+	if (thread_number) {
+		try(evthread_use_threads(), -1, fail);
+		try(cmn_tpool_init(&(this->thread_pool), thread_number), !0, fail);
+	} else {
+		goto fail;	// TODO: handle mono thread case
+	}
+	return 0;
+fail:
+	return 1;
+}
+
+extern int cmn_communication_manager_start(struct cmn_communication_manager* this, const char* url, struct cmn_request_handler* request_handler) {
 	struct event* socket_event;
 	struct event* signal_event;
-	struct nproto_ipv4 ipv4;
-	struct tproto_tcp tcp;
-	struct socket2* socket;
-	char* url;
-	handler = request_handler;
-	try(asprintf(&url, "127.0.0.1:%d", port), -1, fail);
-	try(thread_pool = tpool_init(nprocs()), NULL, fail);
-	try(evthread_use_threads(), -1, fail);
-	try(event_base = event_base_new(), NULL, fail);
-	nproto_ipv4_init(&ipv4);
-	tproto_tcp_init(&tcp);
-	try(socket = new(socket2, &tcp.super.tproto, &ipv4.super.nproto, true), NULL, fail);
-	try(socket2_set_blocking(socket, false), 1, fail);
-	try(socket2_listen(socket, url, BACKLOG), 1, fail);
-	try(socket_event = event_new(event_base, socket2_get_fd(socket), EV_READ | EV_PERSIST, dispatch_request, socket), NULL, fail);
-	try(signal_event = evsignal_new(event_base, SIGINT, communication_manager_close, (void*)event_base), NULL, fail);
+	try(cmn_socket2_init(&(this->socket), cmn_nproto_service_ipv4, cmn_tproto_service_tcp), !0, fail);
+	try(cmn_socket2_set_blocking(&(this->socket), false), 1, fail);
+	try(cmn_socket2_listen(&(this->socket), url, BACKLOG), 1, fail);
+	this->handler = request_handler;
+	try(socket_event = event_new(event_base, this->socket.fd, EV_READ | EV_PERSIST, dispatch_request, this), NULL, fail);
+	try(signal_event = evsignal_new(event_base, SIGINT, stop, (void*)event_base), NULL, fail);
 	try(event_add(socket_event, NULL), -1, fail);
 	try(event_add(signal_event, NULL), -1, fail);
+	try(event_base = event_base_new(), NULL, fail);
 	try((printf("Server started.\n") < 0), true, fail);
 	try(event_base_dispatch(event_base), -1, fail);
 	event_free(socket_event);
 	event_free(signal_event);
 	event_base_free(event_base);
 	libevent_global_shutdown();
-	try(delete(socket), 1, fail);
-	try(tpool_wait(thread_pool), 1, fail);
-	try(tpool_destroy(thread_pool), 1, fail);
-	free(url);
+	try(cmn_socket2_destroy(&(this->socket)), 1, fail);
+	return 0;
+fail:
+	return 1;
+}
+
+extern int cmn_communication_manager_stop(struct cmn_communication_manager* this) {
+	stop(0, 0, (void*)event_base);
+}
+
+extern int cmn_communication_manager_destroy(struct cmn_communication_manager* this) {
+	try(cmn_tpool_destroy(&(this->thread_pool)), 1, fail);
 	return 0;
 fail:
 	return 1;
 }
 
 static void dispatch_request(evutil_socket_t fd, short events, void* arg) {
-	struct socket2* listening_socket = arg;
-	struct socket2* accepted = socket2_accept(listening_socket);
-	tpool_add_work(thread_pool, start_worker, accepted);
+	struct cmn_communication_manager* this = (struct cmn_communication_manager*)arg;
+	cmn_tpool_add_work(&(this->thread_pool), start_worker, arg);
 }
 static void* start_worker(void* arg) {
-	struct socket2* socket = arg;
-	request_handler_handle_request(handler, socket);
+	struct cmn_communication_manager* this = (struct cmn_communication_manager*)arg;
+	struct cmn_socket2* accepted;
+	accepted = malloc(sizeof *accepted);
+	cmn_socket2_accept(&(this->socket), accepted);
+	cmn_request_handler_handle_request(this->handler, accepted);
 }
 
-static void communication_manager_close(evutil_socket_t signal, short events, void* user_data) {
+static void stop(evutil_socket_t signal, short events, void* user_data) {
 	struct event_base* base = user_data;
 	struct timeval delay = { 1, 0 };
 	printf("\nShutting down...\n");
