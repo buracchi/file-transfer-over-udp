@@ -6,24 +6,33 @@ extern "C" {
 }
 
 TEST(cmn_double_stack_queue, empty_after_initialization) {
+	bool is_empty;
 	struct cmn_double_stack_queue queue;
 	cmn_double_stack_queue_init(&queue);
-	ASSERT_EQ(cmn_queue_is_empty(&(queue.super)), true);
+	is_empty = cmn_queue_is_empty(&(queue.super));
+	cmn_queue_destroy(&(queue.super));
+	ASSERT_EQ(is_empty, true);
 }
 
 TEST(cmn_double_stack_queue, non_empty_after_single_insertion) {
+	bool is_empty;
 	struct cmn_double_stack_queue queue;
 	cmn_double_stack_queue_init(&queue);
 	cmn_queue_enqueue(&(queue.super), (void*)1);
-	ASSERT_EQ(cmn_queue_is_empty(&(queue.super)), false);
+	is_empty = cmn_queue_is_empty(&(queue.super));
+	cmn_queue_destroy(&(queue.super));
+	ASSERT_EQ(is_empty, false);
 }
 
 TEST(cmn_double_stack_queue, empty_after_single_deletion_after_single_insertion) {
+	bool is_empty;
 	struct cmn_double_stack_queue queue;
 	cmn_double_stack_queue_init(&queue);
 	cmn_queue_enqueue(&(queue.super), (void*)1);
 	cmn_queue_dequeue(&(queue.super));
-	ASSERT_EQ(cmn_queue_is_empty(&(queue.super)), true);
+	is_empty = cmn_queue_is_empty(&(queue.super));
+	cmn_queue_destroy(&(queue.super));
+	ASSERT_EQ(is_empty, true);
 }
 
 TEST(cmn_double_stack_queue, item_inserted_is_retrievable) {
@@ -33,6 +42,7 @@ TEST(cmn_double_stack_queue, item_inserted_is_retrievable) {
 	cmn_double_stack_queue_init(&queue);
 	cmn_queue_enqueue(&(queue.super), inserted);
 	retrieved = cmn_queue_dequeue(&(queue.super));
+	cmn_queue_destroy(&(queue.super));
 	ASSERT_EQ(inserted, retrieved);
 }
 
@@ -49,5 +59,6 @@ TEST(cmn_double_stack_queue, is_FIFO) {
 	isFIFO &= (cmn_queue_dequeue(&(queue.super)) == e1);
 	isFIFO &= (cmn_queue_dequeue(&(queue.super)) == e2);
 	isFIFO &= (cmn_queue_dequeue(&(queue.super)) == e3);
+	cmn_queue_destroy(&(queue.super));
 	ASSERT_EQ(isFIFO, true);
 }

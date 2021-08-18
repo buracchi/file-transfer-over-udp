@@ -6,24 +6,33 @@ extern "C" {
 }
 
 TEST(cmn_linked_list_stack, empty_after_initialization) {
+	bool is_empty;
 	struct cmn_linked_list_stack stack;
 	cmn_linked_list_stack_init(&stack);
-	ASSERT_EQ(cmn_stack_is_empty(&(stack.super)), true);
+	is_empty = cmn_stack_is_empty(&(stack.super));
+	cmn_stack_destroy(&(stack.super));
+	ASSERT_EQ(is_empty, true);
 }
 
 TEST(cmn_linked_list_stack, non_empty_after_single_insertion) {
+	bool is_empty;
 	struct cmn_linked_list_stack stack;
 	cmn_linked_list_stack_init(&stack);
 	cmn_stack_push(&(stack.super), (void*)1);
-	ASSERT_EQ(cmn_stack_is_empty(&(stack.super)), false);
+	is_empty = cmn_stack_is_empty(&(stack.super));
+	cmn_stack_destroy(&(stack.super));
+	ASSERT_EQ(is_empty, false);
 }
 
 TEST(cmn_linked_list_stack, empty_after_single_deletion_after_single_insertion) {
+	bool is_empty;
 	struct cmn_linked_list_stack stack;
 	cmn_linked_list_stack_init(&stack);
 	cmn_stack_push(&(stack.super), (void*)1);
 	cmn_stack_pop(&(stack.super));
-	ASSERT_EQ(cmn_stack_is_empty(&(stack.super)), true);
+	is_empty = cmn_stack_is_empty(&(stack.super));
+	cmn_stack_destroy(&(stack.super));
+	ASSERT_EQ(is_empty, true);
 }
 
 TEST(cmn_linked_list_stack, item_inserted_is_retrievable) {
@@ -33,6 +42,7 @@ TEST(cmn_linked_list_stack, item_inserted_is_retrievable) {
 	cmn_linked_list_stack_init(&stack);
 	cmn_stack_push(&(stack.super), inserted);
 	retrieved = cmn_stack_pop(&(stack.super));
+	cmn_stack_destroy(&(stack.super));
 	ASSERT_EQ(inserted, retrieved);
 }
 
@@ -49,5 +59,6 @@ TEST(cmn_linked_list_stack, is_LIFO) {
 	isLIFO &= (cmn_stack_pop(&(stack.super)) == e3);
 	isLIFO &= (cmn_stack_pop(&(stack.super)) == e2);
 	isLIFO &= (cmn_stack_pop(&(stack.super)) == e1);
+	cmn_stack_destroy(&(stack.super));
 	ASSERT_EQ(isLIFO, true);
 }

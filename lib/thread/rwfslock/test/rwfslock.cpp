@@ -13,6 +13,7 @@ TEST(cmn_rwfslock, multiple_rdlock_are_allowed) {
 	for (int i = 0; i < 10; i++) {
 		cmn_rwfslock_rdlock(&lock, "./pippo");
 	}
+	cmn_rwfslock_destroy(&lock);
 	ASSERT_EQ(1, 1);
 }
 
@@ -35,6 +36,7 @@ TEST(cmn_rwfslock, wrlock_is_exclusive) {
 	t1.detach();
 	t2.detach();
 	timer.join();
+	cmn_rwfslock_destroy(&lock);
 	ASSERT_EQ(t1_has_lock && t2_has_lock, false);
 }
 
@@ -50,5 +52,6 @@ TEST(cmn_rwfslock, lock_is_unique_per_file) {
 	});
 	t1.join();
 	t2.join();
+	cmn_rwfslock_destroy(&lock);
 	ASSERT_EQ(1, 1);
 }

@@ -22,8 +22,17 @@ fail:
 }
 
 extern int cmn_rwfslock_destroy(struct cmn_rwfslock* this) {
+	struct cmn_iterator* iterator;
 	try_pthread_mutex_lock(&(this->mutex), fail);
-	// TODO: destroy rwlock mutex befor destroy the map
+	iterator = cmn_map_begin(&(this->map.super));
+	while(!cmn_iterator_end(iterator)) {
+		struct cmn_pair* kv_pair;
+		kv_pair = cmn_iterator_data(iterator);
+		try_pthread_rwlock_destroy(kv_pair->second, fail);
+		free(kv_pair->second);
+		iterator = cmn_iterator_next(iterator);
+	}
+	cmn_iterator_destroy(iterator);
 	try(cmn_map_destroy(&(this->map.super)), !0, fail);
 	try_pthread_mutex_destroy(&(this->mutex), fail);
 	return 0;
@@ -63,10 +72,12 @@ fail:
 
 static pthread_rwlock_t* get_rwlock(struct cmn_rwfslock* this, const char* fname) {
 	pthread_rwlock_t* lock;
+	struct cmn_iterator* iterator;
 	if (cmn_map_at2(&(this->map.super), (void*)fname, lexicographical_comparison, (void**)&lock)) {
 		lock = malloc(sizeof *lock);
 		try_pthread_rwlock_init(lock, fail);
-		cmn_map_insert(&(this->map.super), (void*)fname, lock);
+		iterator = cmn_map_insert(&(this->map.super), (void*)fname, lock);
+		cmn_iterator_destroy(iterator);
 	}
 	return lock;
 fail:
