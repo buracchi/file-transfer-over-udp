@@ -1,31 +1,31 @@
 add_executable (
-	linked-list-map-test
+	test_linked_list_map
 	"map/linked_list_map.cpp"
 )
-target_link_libraries(linked-list-map-test PRIVATE GTest::GTest GTest::Main)
-target_link_libraries(linked-list-map-test PRIVATE containers-linked-list-map)
-gtest_add_tests(TARGET linked-list-map-test)
+target_link_libraries(test_linked_list_map PRIVATE GTest::GTest GTest::Main)
+target_link_libraries(test_linked_list_map PRIVATE containers-linked-list-map)
+gtest_add_tests(TARGET test_linked_list_map)
 
 add_executable (
-	double-stack-queue-test
+	test_double_stack_queue
 	"queue/double_stack_queue.cpp"
 )
-target_link_libraries(double-stack-queue-test PRIVATE GTest::GTest GTest::Main)
-target_link_libraries(double-stack-queue-test PRIVATE containers-double-stack-queue)
-gtest_add_tests(TARGET double-stack-queue-test)
+target_link_libraries(test_double_stack_queue PRIVATE GTest::GTest GTest::Main)
+target_link_libraries(test_double_stack_queue PRIVATE containers-double-stack-queue)
+gtest_add_tests(TARGET test_double_stack_queue)
 
 add_executable (
-	linked-list-stack-test
+	test_linked_list_stack
 	"stack/linked_list_stack.cpp"
 )
-target_link_libraries(linked-list-stack-test PRIVATE GTest::GTest GTest::Main)
-target_link_libraries(linked-list-stack-test PRIVATE containers-linked-list-stack)
-gtest_add_tests(TARGET linked-list-stack-test)
+target_link_libraries(test_linked_list_stack PRIVATE GTest::GTest GTest::Main)
+target_link_libraries(test_linked_list_stack PRIVATE containers-linked-list-stack)
+gtest_add_tests(TARGET test_linked_list_stack)
 
 add_executable (
-	linked-list-test
+	test_linked_list
 	"list/linked_list.cpp"
 )
-target_link_libraries(linked-list-test PRIVATE GTest::GTest GTest::Main)
-target_link_libraries(linked-list-test PRIVATE containers-linked-list)
-gtest_add_tests(TARGET linked-list-test)
+target_link_libraries(test_linked_list PRIVATE GTest::GTest GTest::Main)
+target_link_libraries(test_linked_list PRIVATE containers-linked-list)
+gtest_add_tests(TARGET test_linked_list)

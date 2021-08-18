@@ -1,7 +1,7 @@
 add_executable (
-	rwfslock-test
+	test_rwfslock
 	"rwfslock.cpp"
 )
-target_link_libraries(rwfslock-test PRIVATE GTest::GTest GTest::Main)
-target_link_libraries(rwfslock-test PRIVATE rwfslock)
-gtest_add_tests(TARGET rwfslock-test)
+target_link_libraries(test_rwfslock PRIVATE GTest::GTest GTest::Main)
+target_link_libraries(test_rwfslock PRIVATE rwfslock)
+gtest_add_tests(TARGET test_rwfslock)

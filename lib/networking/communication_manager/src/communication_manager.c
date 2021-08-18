@@ -10,8 +10,6 @@
 #include <event2/thread.h>
 
 #include "request_handler.h"
-#include "nproto/nproto_service_ipv4.h"
-#include "tproto/tproto_service_tcp.h"
 #include "try.h"
 #include "utilities.h"
 
@@ -46,18 +44,18 @@ fail:
 	return 1;
 }
 
-extern int cmn_communication_manager_start(struct cmn_communication_manager* this, const char* url, struct cmn_request_handler* request_handler) {
+extern int cmn_communication_manager_start(struct cmn_communication_manager* this, struct cmn_nproto_service* nproto_serivce, struct cmn_tproto_service* tproto_serivce, const char* url, struct cmn_request_handler* request_handler) {
 	struct event* socket_event;
 	struct event* signal_event;
-	try(cmn_socket2_init(&(this->socket), cmn_nproto_service_ipv4, cmn_tproto_service_tcp), !0, fail);
+	try(cmn_socket2_init(&(this->socket), nproto_serivce, tproto_serivce), !0, fail);
 	try(cmn_socket2_set_blocking(&(this->socket), false), 1, fail);
 	try(cmn_socket2_listen(&(this->socket), url, BACKLOG), 1, fail);
 	this->handler = request_handler;
+	try(event_base = event_base_new(), NULL, fail);
 	try(socket_event = event_new(event_base, this->socket.fd, EV_READ | EV_PERSIST, dispatch_request, this), NULL, fail);
 	try(signal_event = evsignal_new(event_base, SIGINT, stop, (void*)event_base), NULL, fail);
 	try(event_add(socket_event, NULL), -1, fail);
 	try(event_add(signal_event, NULL), -1, fail);
-	try(event_base = event_base_new(), NULL, fail);
 	try((printf("Server started.\n") < 0), true, fail);
 	try(event_base_dispatch(event_base), -1, fail);
 	event_free(socket_event);
