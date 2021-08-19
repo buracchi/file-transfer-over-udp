@@ -11,6 +11,7 @@ extern "C" {
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <chrono>
 
 struct simple_handler {
 	struct cmn_request_handler super;
@@ -25,7 +26,7 @@ struct simple_handler {
 
 static void foo(struct cmn_request_handler* request_handler, struct cmn_socket2* socket);
 
-constexpr int request_number = 128;
+constexpr int request_number = 4096;
 
 TEST(cmn_communication_manager, test) {
 	__cmn_request_handler_ops_vtbl.handle_request = foo;
@@ -51,6 +52,7 @@ TEST(cmn_communication_manager, test) {
 			cmn_socket2_destroy(&socket);
 		}));
 	}
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	std::for_each(clients.begin(), clients.end(), [](std::thread &client) {
         client.join();
     });
@@ -62,11 +64,12 @@ TEST(cmn_communication_manager, test) {
 
 static void foo(struct cmn_request_handler* request_handler, struct cmn_socket2* socket) {
 	struct simple_handler* handler = (struct simple_handler*)request_handler;
+	struct cmn_socket2 accepted;
 	uint8_t buff = 1;
+	cmn_socket2_accept(socket, &accepted);
 	handler->m.lock();
 	handler->counter++;
 	handler->m.unlock();
-	cmn_socket2_send(socket, &buff, 1);
-	cmn_socket2_destroy(socket);
-	free(socket);
+	cmn_socket2_send(&accepted, &buff, 1);
+	cmn_socket2_destroy(&accepted);
 }

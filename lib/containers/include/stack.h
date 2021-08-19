@@ -7,18 +7,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-struct cmn_stack {
-    struct cmn_stack_vtbl* __ops_vptr;
-};
-
-static struct cmn_stack_vtbl {
-    int     (*destroy)  (struct cmn_stack* stack);
-    void*   (*peek)     (struct cmn_stack* stack);
-    bool    (*is_empty) (struct cmn_stack* stack);
-    size_t  (*get_size) (struct cmn_stack* stack);
-    int     (*push)     (struct cmn_stack* stack, void* item);
-    void*   (*pop)      (struct cmn_stack* stack);
-} __cmn_stack_ops_vtbl __attribute__((unused)) = { 0, 0, 0, 0, 0, 0 };
+typedef struct cmn_stack* cmn_stack_t;
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -34,9 +23,7 @@ static struct cmn_stack_vtbl {
  * @param stack the stack object.
  * @return 0 on success; non-zero otherwise.
  */
-static inline int cmn_stack_destroy(struct cmn_stack* stack) {
-    return stack->__ops_vptr->destroy(stack);
-}
+extern int cmn_stack_destroy(cmn_stack_t stack);
 
 /*******************************************************************************
 *                                Element access                                *
@@ -51,9 +38,7 @@ static inline int cmn_stack_destroy(struct cmn_stack* stack) {
  * @param stack the stack object.
  * @return A reference to the first element in the container.
  */
-static inline void* cmn_stack_peek(struct cmn_stack* stack) {
-    return stack->__ops_vptr->peek(stack);
-}
+extern void* cmn_stack_peek(cmn_stack_t stack);
 
 /*******************************************************************************
 *                                   Capacity                                   *
@@ -68,9 +53,7 @@ static inline void* cmn_stack_peek(struct cmn_stack* stack) {
 *
 * @return	true if the container size is 0, false otherwise.
 */
-static inline bool cmn_stack_is_empty(struct cmn_stack* stack) {
-    return stack->__ops_vptr->is_empty(stack);
-}
+extern bool cmn_stack_is_empty(cmn_stack_t stack);
 
 /*
 * Returns the number of elements in the container.
@@ -81,9 +64,7 @@ static inline bool cmn_stack_is_empty(struct cmn_stack* stack) {
 *
 * @return	The number of elements in the container.
 */
-static inline size_t cmn_stack_get_size(struct cmn_stack* stack) {
-    return stack->__ops_vptr->get_size(stack);
-}
+extern size_t cmn_stack_get_size(cmn_stack_t stack);
 
 /*******************************************************************************
 *                                   Modifiers                                  *
@@ -97,9 +78,7 @@ static inline size_t cmn_stack_get_size(struct cmn_stack* stack) {
 *
 * @return	0 on success; non-zero otherwise.
 */
-static inline int cmn_stack_push(struct cmn_stack* stack, void* item) {
-    return stack->__ops_vptr->push(stack, item);
-}
+extern int cmn_stack_push(cmn_stack_t stack, void* item);
 
 /*
 * Removes the top element from the stack.
@@ -111,6 +90,4 @@ static inline int cmn_stack_push(struct cmn_stack* stack, void* item) {
 * @return	the pointer that will reference the value of the popped element, if 
 *			the parameter is NULL the value is ignored.
 */
-static inline void* cmn_stack_pop(struct cmn_stack* stack) {
-    return stack->__ops_vptr->pop(stack);
-}
+extern void* cmn_stack_pop(cmn_stack_t stack);

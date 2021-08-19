@@ -1,6 +1,6 @@
 add_subdirectory("containers")
-add_subdirectory("networking")
+#add_subdirectory("networking")
 #add_subdirectory("ftcp")
 add_subdirectory("iterators")
-add_subdirectory("thread")
+#add_subdirectory("thread")
 add_subdirectory("utilities")

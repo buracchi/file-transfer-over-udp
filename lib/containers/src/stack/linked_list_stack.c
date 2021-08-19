@@ -5,19 +5,36 @@
 #include <string.h>
 
 #include "list.h"
+#include "types/stack.h"
+#include "types/stack/linked_list_stack.h"
+#include "try.h"
 
 static struct cmn_stack_vtbl* get_stack_vtbl();
-static int destroy(struct cmn_stack* stack);
-static void* peek(struct cmn_stack* stack);
-static bool is_empty(struct cmn_stack* stack);
-static size_t get_size(struct cmn_stack* stack);
-static int push(struct cmn_stack* stack, void* item);
-static void* pop(struct cmn_stack* stack);
+static int destroy(cmn_stack_t stack);
+static void* peek(cmn_stack_t stack);
+static bool is_empty(cmn_stack_t stack);
+static size_t get_size(cmn_stack_t stack);
+static int push(cmn_stack_t stack, void* item);
+static void* pop(cmn_stack_t stack);
 
-extern int cmn_linked_list_stack_init(struct cmn_linked_list_stack* stack) {
+extern cmn_linked_list_stack_t cmn_linked_list_stack_init() {
+	cmn_linked_list_stack_t stack;
+	try(stack = malloc(sizeof *stack), NULL, fail);
+	try(cmn_linked_list_stack_ctor(stack), 1, fail);
+	return stack;
+fail2:
+	free(stack);
+fail:
+	return NULL;
+}
+
+extern int cmn_linked_list_stack_ctor(cmn_linked_list_stack_t stack) {
 	memset(stack, 0, sizeof *stack);
 	stack->super.__ops_vptr = get_stack_vtbl();
-	return cmn_linked_list_init(&(stack->list));
+	try(stack->list = cmn_linked_list_init(), NULL, fail);
+	return 0;
+fail:
+	return 1;
 }
 
 static struct cmn_stack_vtbl* get_stack_vtbl() {
@@ -33,35 +50,35 @@ static struct cmn_stack_vtbl* get_stack_vtbl() {
 	return &__cmn_stack_ops_vtbl;
 }
 
-static int destroy(struct cmn_stack* stack) {
-	struct cmn_linked_list_stack* this = (struct cmn_linked_list_stack*) stack;
-	return cmn_list_destroy(&(this->list.super));
+static int destroy(cmn_stack_t stack) {
+	cmn_linked_list_stack_t this = (cmn_linked_list_stack_t) stack;
+	return cmn_list_destroy((cmn_list_t)this->list);
 }
 
-static void* peek(struct cmn_stack* stack) {
-	struct cmn_linked_list_stack* this = (struct cmn_linked_list_stack*) stack;
-	return cmn_list_front(&(this->list.super));
+static void* peek(cmn_stack_t stack) {
+	cmn_linked_list_stack_t this = (cmn_linked_list_stack_t) stack;
+	return cmn_list_front((cmn_list_t)this->list);
 }
 
-static bool is_empty(struct cmn_stack* stack) {
-	struct cmn_linked_list_stack* this = (struct cmn_linked_list_stack*) stack;
-	return cmn_list_is_empty(&(this->list.super));
+static bool is_empty(cmn_stack_t stack) {
+	cmn_linked_list_stack_t this = (cmn_linked_list_stack_t) stack;
+	return cmn_list_is_empty((cmn_list_t)this->list);
 }
 
-static size_t get_size(struct cmn_stack* stack) {
-	struct cmn_linked_list_stack* this = (struct cmn_linked_list_stack*) stack;
-	return cmn_list_size(&(this->list.super));
+static size_t get_size(cmn_stack_t stack) {
+	cmn_linked_list_stack_t this = (cmn_linked_list_stack_t) stack;
+	return cmn_list_size((cmn_list_t)this->list);
 }
 
-static int push(struct cmn_stack* stack, void* item) {
-	struct cmn_linked_list_stack* this = (struct cmn_linked_list_stack*) stack;
-	return cmn_list_push_front(&(this->list.super), item);
+static int push(cmn_stack_t stack, void* item) {
+	cmn_linked_list_stack_t this = (cmn_linked_list_stack_t) stack;
+	return cmn_list_push_front((cmn_list_t)this->list, item);
 }
 
-static void* pop(struct cmn_stack* stack) {
-	struct cmn_linked_list_stack* this = (struct cmn_linked_list_stack*) stack;
+static void* pop(cmn_stack_t stack) {
+	cmn_linked_list_stack_t this = (cmn_linked_list_stack_t) stack;
 	void* popped;
-	popped = cmn_list_front(&(this->list.super));
-	cmn_list_pop_front(&(this->list.super));
+	popped = cmn_list_front((cmn_list_t)this->list);
+	cmn_list_pop_front((cmn_list_t)this->list);
 	return popped;
 }

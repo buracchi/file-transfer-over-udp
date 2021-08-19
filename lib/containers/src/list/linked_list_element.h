@@ -1,11 +1,7 @@
 #pragma once
 
 #include "list/linked_list.h"
-
-struct list_element {
-	void* data;
-	struct list_element* next;
-};
+#include "types/list/linked_list.h"
 
 extern struct list_element* list_element_init(void* data, struct list_element* next);
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdbool.h>
 
 #include "iterator.h"
@@ -8,41 +9,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-struct cmn_list {
-    struct cmn_list_vtbl* __ops_vptr;
-};
-
-static struct cmn_list_vtbl {
-    // Member functions
-	int		(*destroy)      (struct cmn_list* list);
-	// Element access
-	void*	(*front)        (struct cmn_list* list);
-	void*	(*back)         (struct cmn_list* list);
-	// Iterators
-	struct cmn_iterator*	(*begin)	(struct cmn_list* list);
-	struct cmn_iterator*	(*end)		(struct cmn_list* list);
-	// Capacity
-	bool	(*is_empty)		(struct cmn_list* list);
-	size_t	(*size)			(struct cmn_list* list);
-	// Modifiers
-	void	(*clear)        (struct cmn_list* list);
-	struct cmn_iterator*	(*insert)	(struct cmn_list* list, struct cmn_iterator* position, void* value);
-	struct cmn_iterator*	(*erase)	(struct cmn_list* list, struct cmn_iterator* position);
-	int		(*push_front)	(struct cmn_list* list, void* value);
-	int		(*push_back)    (struct cmn_list* list, void* value);
-	void	(*pop_front)    (struct cmn_list* list);
-	void	(*pop_back)     (struct cmn_list* list);
-	int		(*resize)       (struct cmn_list* list, size_t s, void* value);
-	void	(*swap)         (struct cmn_list* list, struct cmn_list* other);
-	// Operations
-	int		(*merge)        (struct cmn_list* list, struct cmn_list* other, int(*comp)(void* a, void* b, bool* result));
-	void	(*splice)       (struct cmn_list* list, struct cmn_list* other, struct cmn_iterator* pos, struct cmn_iterator* first, struct cmn_iterator* last);
-	size_t	(*remove)       (struct cmn_list* list, void* value);
-	int		(*remove_if)    (struct cmn_list* list, int(*p)(void* a, bool* result), size_t* removed);
-	void	(*reverse)      (struct cmn_list* list);
-	int		(*unique)       (struct cmn_list* list, int(*comp)(void* a, void* b, bool* result), size_t* removed);
-	int		(*sort)         (struct cmn_list* list, int(*comp)(void* a, void* b, bool* result));
-} __cmn_list_ops_vtbl __attribute__((unused)) = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0, 0, 0, 0, 0, 0, 0 };
+typedef struct cmn_list* cmn_list_t;
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -59,9 +26,7 @@ static struct cmn_list_vtbl {
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-static inline int cmn_list_destroy(struct cmn_list* list) {
-    return list->__ops_vptr->destroy(list);
-}
+extern int cmn_list_destroy(cmn_list_t list);
 
 /*******************************************************************************
 *                                Element access                                *
@@ -77,9 +42,7 @@ static inline int cmn_list_destroy(struct cmn_list* list) {
 *
 * @return	A reference to the first element in the list container.
 */
-static inline void* cmn_list_front(struct cmn_list* list) {
-    return list->__ops_vptr->front(list);
-}
+extern void* cmn_list_front(cmn_list_t list);
 
 /*
 * Returns a direct reference to the last element in the list container.
@@ -91,9 +54,7 @@ static inline void* cmn_list_front(struct cmn_list* list) {
 *
 * @return	A reference to the last element in the list container.
 */
-static inline void* cmn_list_back(struct cmn_list* list) {
-    return list->__ops_vptr->back(list);
-}
+extern void* cmn_list_back(cmn_list_t list);
 
 /*******************************************************************************
 *                                   Iterators                                  *
@@ -109,9 +70,7 @@ static inline void* cmn_list_back(struct cmn_list* list) {
 *
 * @return	An iterator to the beginning of the list container.
 */
-static inline struct cmn_iterator* cmn_list_begin(struct cmn_list* list) {
-    return list->__ops_vptr->begin(list);
-}
+extern cmn_iterator_t cmn_list_begin(cmn_list_t list);
 
 /*
 * Returns an iterator to the element following the last element of the list.
@@ -124,9 +83,7 @@ static inline struct cmn_iterator* cmn_list_begin(struct cmn_list* list) {
 *
 * @return	An iterator to the element past the end of the list container.
 */
-static inline struct cmn_iterator* cmn_list_end(struct cmn_list* list) {
-    return list->__ops_vptr->end(list);
-}
+extern cmn_iterator_t cmn_list_end(cmn_list_t list);
 
 /*******************************************************************************
 *                                   Capacity                                   *
@@ -141,9 +98,7 @@ static inline struct cmn_iterator* cmn_list_end(struct cmn_list* list) {
 *
 * @return	true if the container size is 0, false otherwise.
 */
-static inline bool cmn_list_is_empty(struct cmn_list* list) {
-    return list->__ops_vptr->is_empty(list);
-}
+extern bool cmn_list_is_empty(cmn_list_t list);
 
 /*
 * Returns the number of elements in the list container.
@@ -154,9 +109,7 @@ static inline bool cmn_list_is_empty(struct cmn_list* list) {
 *
 * @return	The number of elements in the container.
 */
-static inline size_t cmn_list_size(struct cmn_list* list) {
-    return list->__ops_vptr->size(list);
-}
+extern size_t cmn_list_size(cmn_list_t list);
 
 /*******************************************************************************
 *                                   Modifiers                                  *
@@ -175,9 +128,7 @@ static inline size_t cmn_list_size(struct cmn_list* list) {
 *
 * @return	This function returns no value.
 */
-static inline void cmn_list_clear(struct cmn_list* list) {
-    list->__ops_vptr->clear(list);
-}
+extern void cmn_list_clear(cmn_list_t list);
 
 /*
 * Inserts an element before the specified position in the list.
@@ -193,9 +144,7 @@ static inline void cmn_list_clear(struct cmn_list* list) {
 * @return	An iterator that points to the inserted element. On error,
 *			this function returns NULL.
 */
-static inline struct cmn_iterator* cmn_list_insert(struct cmn_list* list, struct cmn_iterator* position, void* value) {
-    return list->__ops_vptr->insert(list, position, value);
-}
+extern cmn_iterator_t cmn_list_insert(cmn_list_t list, cmn_iterator_t position, void* value);
 
 /*
 * Removes from the list container the element at the specified position.
@@ -214,9 +163,7 @@ static inline struct cmn_iterator* cmn_list_insert(struct cmn_list* list, struct
 *
 * @return	An iterator pointing to the element that followed the erased one.
 */
-static inline struct cmn_iterator* cmn_list_erase(struct cmn_list* list, struct cmn_iterator* position) {
-    return list->__ops_vptr->erase(list, position);
-}
+extern cmn_iterator_t cmn_list_erase(cmn_list_t list, cmn_iterator_t position);
 
 /*
 * Prepends a new element to the beginning of the list.
@@ -228,9 +175,7 @@ static inline struct cmn_iterator* cmn_list_erase(struct cmn_list* list, struct 
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-static inline int cmn_list_push_front(struct cmn_list* list, void* value) {
-    return list->__ops_vptr->push_front(list, value);
-}
+extern int cmn_list_push_front(cmn_list_t list, void* value);
 
 /*
 * Appends the given element value to the end of the list.
@@ -242,9 +187,7 @@ static inline int cmn_list_push_front(struct cmn_list* list, void* value) {
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-static inline int cmn_list_push_back(struct cmn_list* list, void* value) {
-    return list->__ops_vptr->push_back(list, value);
-}
+extern int cmn_list_push_back(cmn_list_t list, void* value);
 
 /*
 * Removes the first element of the list.
@@ -259,9 +202,7 @@ static inline int cmn_list_push_back(struct cmn_list* list, void* value) {
 *
 * @return	This function returns no value.
 */
-static inline void cmn_list_pop_front(struct cmn_list* list) {
-    list->__ops_vptr->pop_front(list);
-}
+extern void cmn_list_pop_front(cmn_list_t list);
 
 /*
 * Removes the last element of the list.
@@ -276,9 +217,7 @@ static inline void cmn_list_pop_front(struct cmn_list* list) {
 *
 * @return	This function returns no value.
 */
-static inline void cmn_list_pop_back(struct cmn_list* list) {
-    list->__ops_vptr->pop_back(list);
-}
+extern void cmn_list_pop_back(cmn_list_t list);
 
 /*
 * Resizes the list to contain n elements.
@@ -295,9 +234,7 @@ static inline void cmn_list_pop_back(struct cmn_list* list) {
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-static inline int cmn_list_resize(struct cmn_list* list, size_t s, void* value) {
-    return list->__ops_vptr->resize(list, s, value);
-}
+extern int cmn_list_resize(cmn_list_t list, size_t s, void* value);
 
 /*
 * Exchanges the contents of the list with those of other. Does not invoke any
@@ -314,9 +251,7 @@ static inline int cmn_list_resize(struct cmn_list* list, size_t s, void* value) 
 *
 * @return	This function returns no value.
 */
-static inline void cmn_list_swap(struct cmn_list* list, struct cmn_list* other) {
-	list->__ops_vptr->swap(list, other);
-}
+extern void cmn_list_swap(cmn_list_t list, cmn_list_t other);
 
 /*******************************************************************************
 *                                  Operations                                  *
@@ -342,9 +277,7 @@ static inline void cmn_list_swap(struct cmn_list* list, struct cmn_list* other) 
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-static inline int cmn_list_merge(struct cmn_list* list, struct cmn_list* other, int (*comp)(void* a, void* b, bool* result)) {
-    return list->__ops_vptr->merge(list, other, comp);
-}
+extern int cmn_list_merge(cmn_list_t list, cmn_list_t other, int (*comp)(void* a, void* b, bool* result));
 
 /*
 * Transfers the elements in the range [first, last) from another list into this.
@@ -365,9 +298,7 @@ static inline int cmn_list_merge(struct cmn_list* list, struct cmn_list* other, 
 *
 * @return	This function returns no value.
 */
-static inline void cmn_list_splice(struct cmn_list* list, struct cmn_list* other, struct cmn_iterator* position, struct cmn_iterator* first, struct cmn_iterator* last) {
-    list->__ops_vptr->splice(list, other, position, first, last);
-}
+extern void cmn_list_splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t position, cmn_iterator_t first, cmn_iterator_t last);
 
 /*
 * Removes from the container all elements that are equal to value.
@@ -380,9 +311,7 @@ static inline void cmn_list_splice(struct cmn_list* list, struct cmn_list* other
 *
 * @return	The number of elements removed.
 */
-static inline size_t cmn_list_remove(struct cmn_list* list, void* value) {
-    return list->__ops_vptr->remove(list, value);
-}
+extern size_t cmn_list_remove(cmn_list_t list, void* value);
 
 /*
 * Removes all elements for which predicate pred returns true.
@@ -403,9 +332,7 @@ static inline size_t cmn_list_remove(struct cmn_list* list, void* value) {
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-static inline int cmn_list_remove_if(struct cmn_list* list, int (*pred)(void* a, bool* result), size_t* removed) {
-    return list->__ops_vptr->remove_if(list, pred, removed);
-}
+extern int cmn_list_remove_if(cmn_list_t list, int (*pred)(void* a, bool* result), size_t* removed);
 
 /*
 * Reverses the order of the elements in the list.
@@ -418,9 +345,7 @@ static inline int cmn_list_remove_if(struct cmn_list* list, int (*pred)(void* a,
 *
 * @return	This function returns no value.
 */
-static inline void cmn_list_reverse(struct cmn_list* list) {
-    list->__ops_vptr->reverse(list);
-}
+extern void cmn_list_reverse(cmn_list_t list);
 
 /*
 * Removes all consecutive duplicate elements from the list. Only the first
@@ -440,9 +365,7 @@ static inline void cmn_list_reverse(struct cmn_list* list) {
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-static inline int cmn_list_unique(struct cmn_list* list, int (*comp)(void* a, void* b, bool* result), size_t* removed) {
-    return list->__ops_vptr->unique(list, comp, removed);
-}
+extern int cmn_list_unique(cmn_list_t list, int (*comp)(void* a, void* b, bool* result), size_t* removed);
 
 /*
 * Sorts the elements in ascending order. The order of equal elements is
@@ -457,6 +380,4 @@ static inline int cmn_list_unique(struct cmn_list* list, int (*comp)(void* a, vo
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-static inline int cmn_list_sort(struct cmn_list* list, int(*comp)(void* a, void* b, bool* result)) {
-    return list->__ops_vptr->sort(list, comp);
-}
+extern int cmn_list_sort(cmn_list_t list, int(*comp)(void* a, void* b, bool* result));

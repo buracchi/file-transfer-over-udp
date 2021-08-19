@@ -28,7 +28,7 @@
 
 static void stop(evutil_socket_t signal, short events, void* arg);
 static void dispatch_request(evutil_socket_t fd, short events, void* arg);
-static void* start_worker(void* arg);
+static void* handle_request(void* arg);
 
 static struct event_base* event_base;
 
@@ -81,15 +81,12 @@ fail:
 
 static void dispatch_request(evutil_socket_t fd, short events, void* arg) {
 	struct cmn_communication_manager* this = (struct cmn_communication_manager*)arg;
-	cmn_tpool_add_work(&(this->thread_pool), start_worker, arg);
+	cmn_tpool_add_work(&(this->thread_pool), handle_request, arg);
 }
-static void* start_worker(void* arg) {
+
+static void* handle_request(void* arg) {
 	struct cmn_communication_manager* this = (struct cmn_communication_manager*)arg;
-	struct cmn_socket2* accepted;
-	accepted = malloc(sizeof *accepted);
-	if (!cmn_socket2_accept(&(this->socket), accepted)) {
-		cmn_request_handler_handle_request(this->handler, accepted);
-	}
+	cmn_request_handler_handle_request(this->handler, &(this->socket));
 }
 
 static void stop(evutil_socket_t signal, short events, void* user_data) {

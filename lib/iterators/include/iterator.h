@@ -7,20 +7,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-struct cmn_iterator {
-	struct cmn_iterator_vtbl* __ops_vptr;
-};
-
-static struct cmn_iterator_vtbl {
-	// Member functions
-	int		(*destroy)	(struct cmn_iterator* iterator);
-	// Element access
-	void*	(*data)		(struct cmn_iterator* iterator);
-	struct cmn_iterator*	(*next)	(struct cmn_iterator* iterator);
-	struct cmn_iterator*	(*prev)	(struct cmn_iterator* iterator);
-	bool	(*begin)	(struct cmn_iterator* iterator);
-	bool	(*end)		(struct cmn_iterator* iterator);
-} __cmn_iterator_ops_vtbl __attribute__((unused)) = { 0, 0, 0, 0, 0, 0 };
+typedef struct cmn_iterator* cmn_iterator_t;
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -35,9 +22,7 @@ static struct cmn_iterator_vtbl {
 *
 * @return	This function returns no value.
 */
-static inline int cmn_iterator_destroy(struct cmn_iterator* iterator) {
-	return iterator->__ops_vptr->destroy(iterator);
-}
+extern int cmn_iterator_destroy(cmn_iterator_t iterator);
 
 /*******************************************************************************
 *                                Element access                                *
@@ -56,9 +41,7 @@ static inline int cmn_iterator_destroy(struct cmn_iterator* iterator) {
 * @return	A reference to the data  associated to the container element
 *			pointed by the iterator.
 */
-static inline void* cmn_iterator_data(struct cmn_iterator* iterator) {
-	return iterator->__ops_vptr->data(iterator);
-}
+extern void* cmn_iterator_data(cmn_iterator_t iterator);
 
 /*
 * Increments iterator this by 1 element.
@@ -70,9 +53,7 @@ static inline void* cmn_iterator_data(struct cmn_iterator* iterator) {
 *
 * @return	A reference to this iterator.
 */
-static inline struct cmn_iterator* cmn_iterator_next(struct cmn_iterator* iterator) {
-	return iterator->__ops_vptr->next(iterator);
-}
+extern cmn_iterator_t cmn_iterator_next(cmn_iterator_t iterator);
 
 /*
 * Decrements iterator this by 1 element.
@@ -84,9 +65,7 @@ static inline struct cmn_iterator* cmn_iterator_next(struct cmn_iterator* iterat
 *
 * @return	A reference to this iterator.
 */
-static inline struct cmn_iterator* cmn_iterator_prev(struct cmn_iterator* iterator) {
-	return iterator->__ops_vptr->prev(iterator);
-}
+extern cmn_iterator_t cmn_iterator_prev(cmn_iterator_t iterator);
 
 /*
 * Returns true if the iterator is followed by an element.
@@ -98,9 +77,7 @@ static inline struct cmn_iterator* cmn_iterator_prev(struct cmn_iterator* iterat
 *
 * @return	true if the iterator is followed by an element, false otherwise.
 */
-static inline bool cmn_iterator_begin(struct cmn_iterator* iterator) {
-	return iterator->__ops_vptr->begin(iterator);
-}
+extern bool cmn_iterator_begin(cmn_iterator_t iterator);
 
 /*
 * Returns true if the iterator is preceded by an element.
@@ -112,9 +89,7 @@ static inline bool cmn_iterator_begin(struct cmn_iterator* iterator) {
 *
 * @return	true if the iterator is preceded by an element, false otherwise.
 */
-static inline bool cmn_iterator_end(struct cmn_iterator* iterator) {
-	return iterator->__ops_vptr->end(iterator);
-}
+extern bool cmn_iterator_end(cmn_iterator_t iterator);
 
 /*******************************************************************************
 *                                  Operations                                  *
@@ -131,7 +106,7 @@ static inline bool cmn_iterator_end(struct cmn_iterator* iterator) {
 *
 * @return	A reference to this iterator.
 */
-extern struct cmn_iterator* cmn_iterator_advance(struct cmn_iterator* iterator, int n);
+extern cmn_iterator_t cmn_iterator_advance(cmn_iterator_t iterator, int n);
 
 /*
 * Returns the number of hops from first to last.
@@ -144,4 +119,4 @@ extern struct cmn_iterator* cmn_iterator_advance(struct cmn_iterator* iterator, 
 *
 * @return	The number of elements between first and last.
 */
-extern size_t cmn_iterator_distance(struct cmn_iterator* first, struct cmn_iterator* last);
+extern size_t cmn_iterator_distance(cmn_iterator_t first, cmn_iterator_t last);

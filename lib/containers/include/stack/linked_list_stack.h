@@ -1,23 +1,10 @@
-/**
- * @brief This object inherit from the stack object and is indeed polimorphyc to
- *  it, you can use all the function defined in stack.h casting a
- *  a simple_stack object.
- * 
- */
 #pragma once
-
-#include "stack.h"
-
-#include "list/linked_list.h"
 
 /*******************************************************************************
 *                                 Member types                                 *
 *******************************************************************************/
 
-struct cmn_linked_list_stack {
-    struct cmn_stack super;
-	struct cmn_linked_list list;
-};
+typedef struct cmn_linked_list_stack* cmn_linked_list_stack_t;
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -26,7 +13,6 @@ struct cmn_linked_list_stack {
 /**
  * @brief 
  * 
- * @param stack 
- * @return  
+ * @return cmn_linked_list_stack_t 
  */
-extern int cmn_linked_list_stack_init(struct cmn_linked_list_stack* stack);
+extern cmn_linked_list_stack_t cmn_linked_list_stack_init();
