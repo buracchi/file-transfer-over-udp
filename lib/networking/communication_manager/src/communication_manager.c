@@ -87,8 +87,9 @@ static void* start_worker(void* arg) {
 	struct cmn_communication_manager* this = (struct cmn_communication_manager*)arg;
 	struct cmn_socket2* accepted;
 	accepted = malloc(sizeof *accepted);
-	cmn_socket2_accept(&(this->socket), accepted);
-	cmn_request_handler_handle_request(this->handler, accepted);
+	if (!cmn_socket2_accept(&(this->socket), accepted)) {
+		cmn_request_handler_handle_request(this->handler, accepted);
+	}
 }
 
 static void stop(evutil_socket_t signal, short events, void* user_data) {

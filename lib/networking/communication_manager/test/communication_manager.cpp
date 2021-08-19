@@ -7,7 +7,6 @@ extern "C" {
 #include "request_handler.h"
 }
 
-#include <iostream>
 #include <cstdint>
 #include <vector>
 #include <thread>
@@ -26,12 +25,12 @@ struct simple_handler {
 
 static void foo(struct cmn_request_handler* request_handler, struct cmn_socket2* socket);
 
-constexpr int request_number = 2;
+constexpr int request_number = 128;
 
 TEST(cmn_communication_manager, test) {
 	__cmn_request_handler_ops_vtbl.handle_request = foo;
 	struct cmn_communication_manager cm;
-	cmn_communication_manager_init(&cm, 4);
+	cmn_communication_manager_init(&cm, 8);
 	std::thread server([&cm] {
 		cmn_communication_manager_start(
 			&cm,
@@ -67,6 +66,7 @@ static void foo(struct cmn_request_handler* request_handler, struct cmn_socket2*
 	handler->m.lock();
 	handler->counter++;
 	handler->m.unlock();
-	std::cout << std::this_thread::get_id() << std::endl;
 	cmn_socket2_send(socket, &buff, 1);
+	cmn_socket2_destroy(socket);
+	free(socket);
 }
