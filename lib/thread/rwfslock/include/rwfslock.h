@@ -3,12 +3,14 @@
 #include <stdbool.h>
 #include <pthread.h>
 
-#include "map/linked_list_map.h"
+typedef struct cmn_rwfslock* cmn_rwfslock_t;
 
-struct cmn_rwfslock {
-	struct cmn_linked_list_map map;
-	pthread_mutex_t mutex;
-};
+/**
+ * @brief 
+ * 
+ * @return cmn_rwfslock_t 
+ */
+extern cmn_rwfslock_t cmn_rwfslock_init();
 
 /**
  * @brief 
@@ -16,15 +18,7 @@ struct cmn_rwfslock {
  * @param rwfslock 
  * @return int 
  */
-extern int cmn_rwfslock_init(struct cmn_rwfslock* rwfslock);
-
-/**
- * @brief 
- * 
- * @param rwfslock 
- * @return int 
- */
-extern int cmn_rwfslock_destroy(struct cmn_rwfslock* rwfslock);
+extern int cmn_rwfslock_destroy(cmn_rwfslock_t rwfslock);
 
 /**
  * @brief 
@@ -33,7 +27,7 @@ extern int cmn_rwfslock_destroy(struct cmn_rwfslock* rwfslock);
  * @param fname 
  * @return int 
  */
-extern int cmn_rwfslock_rdlock(struct cmn_rwfslock* rwfslock, const char* fname);
+extern int cmn_rwfslock_rdlock(cmn_rwfslock_t rwfslock, const char* fname);
 
 /**
  * @brief 
@@ -42,7 +36,7 @@ extern int cmn_rwfslock_rdlock(struct cmn_rwfslock* rwfslock, const char* fname)
  * @param fname 
  * @return int 
  */
-extern int cmn_rwfslock_wrlock(struct cmn_rwfslock* rwfslock, const char* fname);
+extern int cmn_rwfslock_wrlock(cmn_rwfslock_t rwfslock, const char* fname);
 
 /**
  * @brief 
@@ -51,4 +45,4 @@ extern int cmn_rwfslock_wrlock(struct cmn_rwfslock* rwfslock, const char* fname)
  * @param fname 
  * @return int 
  */
-extern int cmn_rwfslock_unlock(struct cmn_rwfslock* rwfslock, const char* fname);
+extern int cmn_rwfslock_unlock(cmn_rwfslock_t rwfslock, const char* fname);
