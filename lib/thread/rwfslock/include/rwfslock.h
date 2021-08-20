@@ -1,8 +1,5 @@
 #pragma once
 
-#include <stdbool.h>
-#include <pthread.h>
-
 typedef struct cmn_rwfslock* cmn_rwfslock_t;
 
 /**

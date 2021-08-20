@@ -1,25 +1,12 @@
 #pragma once
 
 #include <stddef.h>
-#include <stdbool.h>
-#include <pthread.h>
-#include <sys/types.h>
-
-#include "queue/double_stack_queue.h"
 
 /*******************************************************************************
 *                                 Member types                                 *
 *******************************************************************************/
 
-struct cmn_tpool {
-    size_t thread_cnt;
-    size_t working_cnt;
-    struct cmn_double_linked_list_stack_queue job_queue;
-    pthread_mutex_t mutex;
-    pthread_cond_t work_available_cond;
-    pthread_cond_t none_working_cond;
-    bool stop;
-};
+typedef struct cmn_tpool* cmn_tpool_t;
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -38,7 +25,7 @@ struct cmn_tpool {
  * @return If successful \a cmn_tpool_init() function shall return zero;
  *  otherwise, an error number shall be returned to indicate the error.
  */
-extern int cmn_tpool_init(struct cmn_tpool* tpool, size_t tnumber);
+extern cmn_tpool_t cmn_tpool_init(size_t tnumber);
 
 /**
  * @brief Destroy a thread pool.
@@ -56,7 +43,7 @@ extern int cmn_tpool_init(struct cmn_tpool* tpool, size_t tnumber);
  * @return If successful \a cmn_tpool_destroy() function shall return zero;
  *  otherwise, an error number shall be returned to indicate the error.
  */
-extern int cmn_tpool_destroy(struct cmn_tpool* tpool);
+extern int cmn_tpool_destroy(cmn_tpool_t tpool);
 
 /**
  * @brief Add a work to the thread pool.
@@ -74,7 +61,7 @@ extern int cmn_tpool_destroy(struct cmn_tpool* tpool);
  * @return If successful \a cmn_tpool_add_work() function shall return zero;
  *  otherwise, an error number shall be returned to indicate the error.
  */
-extern int cmn_tpool_add_work(struct cmn_tpool* tpool, void* (*work_routine) (void*), void* arg);
+extern int cmn_tpool_add_work(cmn_tpool_t tpool, void* (*work_routine) (void*), void* arg);
 
 /**
  * @brief Block untill each thread in the thread pool have finished its assigned
@@ -84,4 +71,4 @@ extern int cmn_tpool_add_work(struct cmn_tpool* tpool, void* (*work_routine) (vo
  * @return If successful \a cmn_tpool_wait() function shall return zero; 
  *  otherwise, an error number shall be returned to indicate the error.
  */
-extern int cmn_tpool_wait(struct cmn_tpool* tpool);
+extern int cmn_tpool_wait(cmn_tpool_t tpool);
