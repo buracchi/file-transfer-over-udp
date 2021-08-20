@@ -39,7 +39,6 @@ static struct cmn_iterator_vtbl* get_iterator_vtbl() {
 }
 
 int destroy(struct cmn_iterator* iterator) {
-	free(iterator);
     return 0;
 }
 

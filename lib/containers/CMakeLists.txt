@@ -7,6 +7,7 @@ target_link_libraries(containers INTERFACE containers-map)
 target_link_libraries(containers INTERFACE containers-linked-list)
 target_link_libraries(containers INTERFACE containers-linked-list-stack)
 target_link_libraries(containers INTERFACE containers-double-linked-list-stack-queue)
+target_link_libraries(containers INTERFACE containers-linked-list-map)
 
 add_library(
 	containers-list
@@ -69,15 +70,16 @@ target_link_libraries(containers-double-linked-list-stack-queue PRIVATE containe
 target_link_libraries(containers-double-linked-list-stack-queue PRIVATE utilities)
 target_link_libraries(containers-double-linked-list-stack-queue INTERFACE coverage_config)
 
-#add_library(
-#	containers-linked-list-map
-#	"src/map/linked_list_map.c"
-#)
-#target_compile_definitions(containers-linked-list-map PRIVATE CONTAINERS_VERSION=1)
-#target_include_directories(containers-linked-list-map PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-#target_link_libraries(containers-linked-list-map PUBLIC containers-linked-list)
-#target_link_libraries(containers-linked-list-map PRIVATE utilities)
-#target_link_libraries(containers-linked-list-map INTERFACE coverage_config)
+add_library(
+	containers-linked-list-map
+	"src/map/linked_list_map.c"
+)
+target_compile_definitions(containers-linked-list-map PRIVATE CONTAINERS_VERSION=1)
+target_include_directories(containers-linked-list-map PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(containers-linked-list-map PUBLIC containers-map)
+target_link_libraries(containers-linked-list-map PRIVATE containers-linked-list)
+target_link_libraries(containers-linked-list-map PRIVATE utilities)
+target_link_libraries(containers-linked-list-map INTERFACE coverage_config)
 
 if (BUILD_TESTING)
 	add_subdirectory("test")

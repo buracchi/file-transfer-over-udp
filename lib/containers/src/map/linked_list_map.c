@@ -6,6 +6,8 @@
 #include <errno.h>
 
 #include "list.h"
+#include "types/map.h"
+#include "types/map/linked_list_map.h"
 #include "utilities.h"
 #include "try.h"
 
@@ -13,27 +15,44 @@
 #define VALUE second
 
 static struct cmn_map_vtbl* get_map_vtbl();
-static int destroy(struct cmn_map* map);
-static int at(struct cmn_map* map, void* key, void** value);
-static int at2(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), void** value);
-static struct cmn_iterator* begin(struct cmn_map* map);
-static struct cmn_iterator* end(struct cmn_map* map);
-static bool is_empty(struct cmn_map* map);
-static size_t size(struct cmn_map* map);
-static void clear(struct cmn_map* map);
-static struct cmn_iterator* insert(struct cmn_map* map, void* key, void* value);
-static struct cmn_iterator* insert_or_assign(struct cmn_map* map, void* key, void* value);
-static struct cmn_iterator* erase(struct cmn_map* map, struct cmn_iterator* position);
-static void swap(struct cmn_map* map, struct cmn_map* other);
-static int count(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), size_t* count);
-static int find(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), struct cmn_iterator** iterator);
+static int destroy(cmn_map_t map);
+static int at(cmn_map_t map, void* key, void** value);
+static int at2(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), void** value);
+static cmn_iterator_t begin(cmn_map_t map);
+static cmn_iterator_t end(cmn_map_t map);
+static bool is_empty(cmn_map_t map);
+static size_t size(cmn_map_t map);
+static void clear(cmn_map_t map);
+static int insert(cmn_map_t map, void* key, void* value, cmn_iterator_t* iterator);
+static int insert_or_assign(cmn_map_t map, void* key, void* value, cmn_iterator_t* iterator);
+static int erase(cmn_map_t map, cmn_iterator_t position, cmn_iterator_t* iterator);
+static void swap(cmn_map_t map, cmn_map_t other);
+static int count(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), size_t* count);
+static int find(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), cmn_iterator_t* iterator);
 
-static int dflt_cmp(void* arg1, void* arg2, bool* result);
+static inline int dflt_cmp(void* arg1, void* arg2, bool* result) {
+	*result = (arg1 == arg2);
+	return 0;
+}
 
-extern int cmn_linked_list_map_init(struct cmn_linked_list_map* map) {
-	memset(map, 0, sizeof *map);
-	map->super.__ops_vptr = get_map_vtbl();
-	return cmn_linked_list_init(&(map->list));
+extern cmn_linked_list_map_t cmn_linked_list_map_init() {
+	cmn_linked_list_map_t map;
+	try(map = malloc(sizeof *map), NULL, fail);
+	try(cmn_linked_list_map_ctor(map), 1, fail);
+	return map;
+fail2:
+	free(map);
+fail:
+	return NULL;
+}
+
+extern int cmn_linked_list_map_ctor(cmn_linked_list_map_t this) {
+	memset(this, 0, sizeof *this);
+	this->super.__ops_vptr = get_map_vtbl();
+	try(this->list = cmn_linked_list_init(), NULL, fail);
+	return 0;
+fail:
+	return 1;
 }
 
 static struct cmn_map_vtbl* get_map_vtbl() {
@@ -57,29 +76,24 @@ static struct cmn_map_vtbl* get_map_vtbl() {
 	return &__cmn_map_ops_vtbl;
 }
 
-static int destroy(struct cmn_map* map) {
-	struct cmn_linked_list_map* _this = (struct cmn_linked_list_map*) map;
+static int destroy(cmn_map_t map) {
+	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
 	clear(map);
-	return cmn_list_destroy(&(_this->list.super));
+	return cmn_list_destroy((cmn_list_t)_this->list);
 }
 
-static int at(struct cmn_map* map, void* key, void** value) {
+static int at(cmn_map_t map, void* key, void** value) {
 	return at2(map, key, dflt_cmp, value);
 }
 
-static inline int dflt_cmp(void* arg1, void* arg2, bool* result) {
-	*result = arg1 == arg2;
-	return 0;
-}
-
-static int at2(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), void** value) {
-	struct cmn_linked_list_map* _this = (struct cmn_linked_list_map*) map;
-	struct cmn_iterator* iterator;
-	iterator = cmn_list_begin(&(_this->list.super));
+static int at2(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), void** value) {
+	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	cmn_iterator_t iterator;
+	iterator = cmn_list_begin((cmn_list_t)_this->list);
 	while (cmn_iterator_end(iterator) == false) {
-		struct cmn_pair* kv_pair;
+		cmn_pair_t kv_pair;
 		bool found;
-		kv_pair = (struct cmn_pair*)cmn_iterator_data(iterator);
+		kv_pair = (cmn_pair_t)cmn_iterator_data(iterator);
 		try(comp(kv_pair->KEY, key, &found), !0, fail);
 		if (found) {
 			*value = kv_pair->VALUE;
@@ -94,87 +108,101 @@ fail:
 	return 1;
 }
 
-static struct cmn_iterator* begin(struct cmn_map* map) {
-	struct cmn_linked_list_map* _this = (struct cmn_linked_list_map*) map;
-	return cmn_list_begin(&(_this->list.super));
+static cmn_iterator_t begin(cmn_map_t map) {
+	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	return cmn_list_begin((cmn_list_t)_this->list);
 }
 
-static struct cmn_iterator* end(struct cmn_map* map) {
-	struct cmn_linked_list_map* _this = (struct cmn_linked_list_map*) map;
-	return cmn_list_end(&(_this->list.super));
+static cmn_iterator_t end(cmn_map_t map) {
+	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	return cmn_list_end((cmn_list_t)_this->list);
 }
 
-static bool is_empty(struct cmn_map* map) {
-	struct cmn_linked_list_map* _this = (struct cmn_linked_list_map*) map;
-	return cmn_list_is_empty(&(_this->list.super));
+static bool is_empty(cmn_map_t map) {
+	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	return cmn_list_is_empty((cmn_list_t)_this->list);
 }
 
-static size_t size(struct cmn_map* map) {
-	struct cmn_linked_list_map* _this = (struct cmn_linked_list_map*) map;
-	return cmn_list_size(&(_this->list.super));
+static size_t size(cmn_map_t map) {
+	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	return cmn_list_size((cmn_list_t)_this->list);
 }
 
-static void clear(struct cmn_map* map) {
-	struct cmn_linked_list_map* _this = (struct cmn_linked_list_map*) map;
-	struct cmn_iterator* iterator;
-	iterator = cmn_list_begin(&(_this->list.super));
+static void clear(cmn_map_t map) {
+	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	cmn_iterator_t iterator;
+	iterator = cmn_list_begin((cmn_list_t)_this->list);
 	while (cmn_iterator_end(iterator) == false) {
-		struct cmn_pair* kv_pair = (struct cmn_pair*)cmn_iterator_data(iterator);
+		cmn_pair_t kv_pair = (cmn_pair_t)cmn_iterator_data(iterator);
 		free(kv_pair);
 		iterator = cmn_iterator_next(iterator);
 	}
 	cmn_iterator_destroy(iterator);
-	cmn_list_clear(&(_this->list.super));
+	cmn_list_clear((cmn_list_t)_this->list);
 }
 
-static struct cmn_iterator* insert(struct cmn_map* map, void* key, void* value) {
-	struct cmn_linked_list_map* _this = (struct cmn_linked_list_map*) map;
-	struct cmn_iterator* result = NULL;
-	struct cmn_pair* kv_pair = malloc(sizeof * kv_pair);
+static int insert(cmn_map_t map, void* key, void* value, cmn_iterator_t* inserted) {
+	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	cmn_iterator_t result = NULL;
+	cmn_pair_t kv_pair = malloc(sizeof * kv_pair);
 	if (kv_pair) {
 		kv_pair->KEY = key;
 		kv_pair->VALUE = value;
-		struct cmn_iterator* iterator = cmn_list_begin(&(_this->list.super));
-		result = cmn_list_insert(&(_this->list.super), iterator, kv_pair);
+		cmn_iterator_t iterator = cmn_list_begin((cmn_list_t)_this->list);
+		result = cmn_list_insert((cmn_list_t)_this->list, iterator, kv_pair);
+		if (inserted) {
+			*inserted = result;
+		} else {
+			cmn_iterator_destroy(result);
+		}
 		cmn_iterator_destroy(iterator);
 	}
-	return result;
+	return 0;
 }
 
-static struct cmn_iterator* insert_or_assign(struct cmn_map* map, void* key, void* value) {
-	struct cmn_linked_list_map* _this = (struct cmn_linked_list_map*) map;
-	struct cmn_pair* kv_pair;
+static int insert_or_assign(cmn_map_t map, void* key, void* value, cmn_iterator_t* inserted) {
+	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	cmn_pair_t kv_pair;
 	if (at(map, key, (void**)&kv_pair)) {
-		return insert(map, key, value);
+		return insert(map, key, value, inserted);
 	}
 	kv_pair->VALUE = value;
-	struct cmn_iterator* iterator = cmn_list_begin(&(_this->list.super));
-	while (((struct cmn_pair*)cmn_iterator_data(iterator))->KEY != key) {
-		iterator = cmn_iterator_next(iterator);
+	if (inserted) {
+		cmn_iterator_t iterator = cmn_list_begin((cmn_list_t)_this->list);
+		while (((cmn_pair_t)cmn_iterator_data(iterator))->KEY != key) {
+			iterator = cmn_iterator_next(iterator);
+		}
+		*inserted = iterator;
 	}
-	return iterator;
+	return 0;
 }
 
-static struct cmn_iterator* erase(struct cmn_map* map, struct cmn_iterator* position) {
-	struct cmn_linked_list_map* _this = (struct cmn_linked_list_map*) map;
-	struct cmn_pair* kv_pair = (struct cmn_pair*)cmn_iterator_data(position);
+static int erase(cmn_map_t map, cmn_iterator_t position, cmn_iterator_t* iterator) {
+	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	cmn_pair_t kv_pair = (cmn_pair_t)cmn_iterator_data(position);
 	free(kv_pair);
-	return cmn_list_erase(&(_this->list.super), position);
+	cmn_iterator_t erased = cmn_list_erase((cmn_list_t)_this->list, position);
+	if (iterator) {
+		*iterator = erased;
+	} else {
+		cmn_iterator_destroy(erased);
+	}
+	return 0;
 }
 
-static void swap(struct cmn_map* map, struct cmn_map* other) {
-	struct cmn_linked_list_map* _this = (struct cmn_linked_list_map*) map;
-	struct cmn_linked_list_map* _other = (struct cmn_linked_list_map*) other;
-	cmn_list_swap(&(_this->list.super), &(_other->list.super));
+static void swap(cmn_map_t map, cmn_map_t other) {
+	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	cmn_linked_list_map_t _other = (cmn_linked_list_map_t) other;
+	cmn_list_swap((cmn_list_t)_this->list, (cmn_list_t)_other->list);
 }
 
-static int count(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), size_t* count) {
-	struct cmn_linked_list_map* _this = (struct cmn_linked_list_map*) map;
-	struct cmn_iterator* iterator;
+static int count(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), size_t* count) {
+	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	cmn_iterator_t iterator;
 	*count = 0;
-	iterator = cmn_list_begin(&(_this->list.super));
+	iterator = cmn_list_begin((cmn_list_t)_this->list);
 	while (cmn_iterator_end(iterator) == false) {
-		struct cmn_pair* kv_pair = (struct cmn_pair*)cmn_iterator_data(iterator);
+		cmn_pair_t kv_pair = (cmn_pair_t)cmn_iterator_data(iterator);
 		bool found;
 		try(comp(kv_pair->KEY, key, &found), !0, fail);
 		if (found) {
@@ -190,12 +218,12 @@ fail:
 	return 1;
 }
 
-static int find(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), struct cmn_iterator** iterator) {
-	struct cmn_linked_list_map* _this = (struct cmn_linked_list_map*) map;
-	struct cmn_iterator* i;
-	i = cmn_list_begin(&(_this->list.super));
+static int find(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), cmn_iterator_t* iterator) {
+	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	cmn_iterator_t i;
+	i = cmn_list_begin((cmn_list_t)_this->list);
 	while (cmn_iterator_end(i) == false) {
-		struct cmn_pair* kv_pair = (struct cmn_pair*)cmn_iterator_data(i);
+		cmn_pair_t kv_pair = (cmn_pair_t)cmn_iterator_data(i);
 		bool found;
 		try(comp(kv_pair->KEY, key, &found), !0, fail);
 		if (found) {

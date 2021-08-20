@@ -25,10 +25,10 @@ int asprintf(char** str, const char* format, ...);
 #define tostr(statement) __tostr(statement)
 #define streq(expected, actual) !strncasecmp(actual, expected, max(strlen(expected), strlen(actual)))
 
-struct cmn_pair {
+typedef struct cmn_pair {
 	void* first;
 	void* second;
-};
+} *cmn_pair_t;
 
 int strtoi(char* str, int* result);
 

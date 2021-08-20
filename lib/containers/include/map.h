@@ -147,7 +147,7 @@ extern void cmn_map_clear(cmn_map_t map);
 * @param	iterator an iterator to the inserted element, or to the element that 
 *			prevented the insertion. On error, this function returns NULL.
 */
-extern int cmn_map_insert(cmn_map_t map, void* key, void* value, cmn_iterator_t* iterator);
+extern int cmn_map_insert(cmn_map_t map, void* key, void* value, cmn_iterator_t* inserted);
 
 /*
 * Inserts an element into the container, if a key equivalent to key already 
@@ -164,7 +164,7 @@ extern int cmn_map_insert(cmn_map_t map, void* key, void* value, cmn_iterator_t*
 * @param	iterator an iterator to the inserted element. On error, this function 
 *			returns NULL.
 */
-extern int cmn_map_insert_or_assign(cmn_map_t map, void* key, void* value, cmn_iterator_t* iterator);
+extern int cmn_map_insert_or_assign(cmn_map_t map, void* key, void* value, cmn_iterator_t* inserted);
 
 /*
 * Removes from the container the element at the specified position.
