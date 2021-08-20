@@ -14,7 +14,7 @@
 struct cmn_tpool {
     size_t thread_cnt;
     size_t working_cnt;
-    struct cmn_double_stack_queue job_queue;
+    struct cmn_double_linked_list_stack_queue job_queue;
     pthread_mutex_t mutex;
     pthread_cond_t work_available_cond;
     pthread_cond_t none_working_cond;

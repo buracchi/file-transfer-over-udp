@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdbool.h>
 
 #include "iterator.h"
@@ -8,33 +9,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-struct cmn_map {
-    struct cmn_map_vtbl* __ops_vptr;
-};
-
-static struct cmn_map_vtbl {
-	// Member functions
-	int		(*destroy)		(struct cmn_map* map);
-	// Element access
-	int		(*at)			(struct cmn_map* map, void* key, void** value);
-	int		(*at2)			(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), void** value);
-	// Iterators
-	struct cmn_iterator*	(*begin)			(struct cmn_map* map);
-	struct cmn_iterator*	(*end)				(struct cmn_map* map);
-	// Capacity
-	bool	(*is_empty)		(struct cmn_map* map);
-	size_t	(*size)			(struct cmn_map* map);
-	// Modifiers
-	void	(*clear)		(struct cmn_map* map);
-	struct cmn_iterator*	(*insert)			(struct cmn_map* map, void* key, void* value);
-	struct cmn_iterator*	(*insert_or_assign)	(struct cmn_map* map, void* key, void* value);
-	struct cmn_iterator*	(*erase)			(struct cmn_map* map, struct cmn_iterator* position);
-	void	(*swap)			(struct cmn_map* map, struct cmn_map* other);
-	// <T> (_*extract)(struct cmn_map* map, ...)
-	// Lookup
-	int		(*count)		(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), size_t* count);
-	int		(*find)			(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), struct cmn_iterator** iterator);
-} __cmn_map_ops_vtbl __attribute__((unused)) = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+typedef struct cmn_map* cmn_map_t;
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -51,9 +26,7 @@ static struct cmn_map_vtbl {
 *
 * @return	This function returns no value.
 */
-static inline int cmn_map_destroy(struct cmn_map* map) {
-	return map->__ops_vptr->destroy(map);
-}
+extern int cmn_map_destroy(cmn_map_t map);
 
 /*******************************************************************************
 *                                Element access                                *
@@ -73,9 +46,7 @@ static inline int cmn_map_destroy(struct cmn_map* map) {
 *
 * @return	On success, this function returns zero.  On error, an errno ERANGE.
 */
-static inline int cmn_map_at(struct cmn_map* map, void* key, void** value) {
-	return map->__ops_vptr->at(map, key, value);
-}
+extern int cmn_map_at(cmn_map_t map, void* key, void** value);
 
 /**
  * @brief 
@@ -86,9 +57,7 @@ static inline int cmn_map_at(struct cmn_map* map, void* key, void** value) {
  * @param value 
  * @return  
  */
-static inline int cmn_map_at2(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), void** value) {
-	return map->__ops_vptr->at2(map, key, comp, value);
-}
+extern int cmn_map_at2(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), void** value);
 
 /*******************************************************************************
 *                                   Iterators                                  *
@@ -104,9 +73,7 @@ static inline int cmn_map_at2(struct cmn_map* map, void* key, int (*comp)(void* 
 *
 * @return	An iterator to the beginning of the container.
 */
-static inline struct cmn_iterator* cmn_map_begin(struct cmn_map* map) {
-	return map->__ops_vptr->begin(map);
-}
+extern cmn_iterator_t cmn_map_begin(cmn_map_t map);
 
 /*
 * Returns an iterator to the element following the last element of the map.
@@ -119,9 +86,7 @@ static inline struct cmn_iterator* cmn_map_begin(struct cmn_map* map) {
 *
 * @return	An iterator to the element past the end of the container.
 */
-static inline struct cmn_iterator* cmn_map_end(struct cmn_map* map) {
-	return map->__ops_vptr->end(map);
-}
+extern cmn_iterator_t cmn_map_end(cmn_map_t map);
 
 /*******************************************************************************
 *                                   Capacity                                   *
@@ -136,9 +101,7 @@ static inline struct cmn_iterator* cmn_map_end(struct cmn_map* map) {
 *
 * @return	true if the container empty, false otherwise.
 */
-static inline bool cmn_map_is_empty(struct cmn_map* map) {
-	return map->__ops_vptr->is_empty(map);
-}
+extern bool cmn_map_is_empty(cmn_map_t map);
 
 /*
 * Returns the number of elements in the container.
@@ -149,9 +112,7 @@ static inline bool cmn_map_is_empty(struct cmn_map* map) {
 *
 * @return	The number of elements in the container.
 */
-static inline size_t cmn_map_size(struct cmn_map* map) {
-	return map->__ops_vptr->size(map);
-}
+extern size_t cmn_map_size(cmn_map_t map);
 
 /*******************************************************************************
 *                                   Modifiers                                  *
@@ -170,9 +131,7 @@ static inline size_t cmn_map_size(struct cmn_map* map) {
 *
 * @return	This function returns no value.
 */
-static inline void cmn_map_clear(struct cmn_map* map) {
-	map->__ops_vptr->clear(map);
-}
+extern void cmn_map_clear(cmn_map_t map);
 
 /*
 * Inserts an element into the container, if the container doesn't already
@@ -185,13 +144,10 @@ static inline void cmn_map_clear(struct cmn_map* map) {
 * @param	map	-	the map object.
 * @param	key		-	the key of the element to insert.
 * @param	value	-	element value to insert.
-*
-* @return	returns an iterator to the inserted element, or to the element that 
+* @param	iterator an iterator to the inserted element, or to the element that 
 *			prevented the insertion. On error, this function returns NULL.
 */
-static inline struct cmn_iterator* cmn_map_insert(struct cmn_map* map, void* key, void* value) {
-	return map->__ops_vptr->insert(map, key, value);
-}
+extern int cmn_map_insert(cmn_map_t map, void* key, void* value, cmn_iterator_t* iterator);
 
 /*
 * Inserts an element into the container, if a key equivalent to key already 
@@ -205,13 +161,10 @@ static inline struct cmn_iterator* cmn_map_insert(struct cmn_map* map, void* key
 * @param	map	-	the map object.
 * @param	key		-	the key used both to look up and to insert if not found.
 * @param	value	-	element value to insert.
-*
-* @return	returns an iterator to the inserted element. On error, this function 
+* @param	iterator an iterator to the inserted element. On error, this function 
 *			returns NULL.
 */
-static inline struct cmn_iterator* cmn_map_insert_or_assign(struct cmn_map* map, void* key, void* value) {
-	return map->__ops_vptr->insert_or_assign(map, key, value);
-}
+extern int cmn_map_insert_or_assign(cmn_map_t map, void* key, void* value, cmn_iterator_t* iterator);
 
 /*
 * Removes from the container the element at the specified position.
@@ -227,12 +180,9 @@ static inline struct cmn_iterator* cmn_map_insert_or_assign(struct cmn_map* map,
 *
 * @param	map	 -	the map object.
 * @param	position -	iterator to the element to remove.
-*
-* @return	An iterator pointing to the element that followed the erased one.
+* @param	iterator - An iterator pointing to the element that followed the erased one.
 */
-static inline struct cmn_iterator* cmn_map_erase(struct cmn_map* map, struct cmn_iterator* position) {
-	return map->__ops_vptr->erase(map, position);
-}
+extern int cmn_map_erase(cmn_map_t map, cmn_iterator_t position, cmn_iterator_t* iterator);
 
 /*
 * Exchanges the contents of the container  with those of other. Does not invoke
@@ -249,9 +199,7 @@ static inline struct cmn_iterator* cmn_map_erase(struct cmn_map* map, struct cmn
 *
 * @return	This function returns no value.
 */
-static inline void cmn_map_swap(struct cmn_map* map, struct cmn_map* other) {
-	map->__ops_vptr->swap(map, other);
-}
+extern void cmn_map_swap(cmn_map_t map, cmn_map_t other);
 
 /*******************************************************************************
 *                                   Lookup                                     *
@@ -272,9 +220,7 @@ static inline void cmn_map_swap(struct cmn_map* map, struct cmn_map* other) {
 * 
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-static inline int cmn_map_count(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), size_t* count) {
-	return map->__ops_vptr->count(map, key, comp, count);
-}
+extern int cmn_map_count(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), size_t* count);
 
 /*
 * Finds an element with key equivalent to key.
@@ -289,6 +235,4 @@ static inline int cmn_map_count(struct cmn_map* map, void* key, int (*comp)(void
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-static inline int cmn_map_find(struct cmn_map* map, void* key, int (*comp)(void* a, void* b, bool* result), struct cmn_iterator** iterator) {
-	return map->__ops_vptr->find(map, key, comp, iterator);
-}
+extern int cmn_map_find(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), cmn_iterator_t* iterator);

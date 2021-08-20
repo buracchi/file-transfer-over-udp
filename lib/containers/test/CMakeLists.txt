@@ -15,12 +15,12 @@ target_link_libraries(test_linked_list_stack PRIVATE containers-linked-list-stac
 gtest_add_tests(TARGET test_linked_list_stack)
 
 add_executable (
-	test_double_stack_queue
-	"queue/double_stack_queue.cpp"
+	test_double_linked_list_stack_queue
+	"queue/double_linked_list_stack_queue.cpp"
 )
-target_link_libraries(test_double_stack_queue PRIVATE GTest::GTest GTest::Main)
-target_link_libraries(test_double_stack_queue PRIVATE containers-double-stack-queue)
-gtest_add_tests(TARGET test_double_stack_queue)
+target_link_libraries(test_double_linked_list_stack_queue PRIVATE GTest::GTest GTest::Main)
+target_link_libraries(test_double_linked_list_stack_queue PRIVATE containers-double-linked-list-stack-queue)
+gtest_add_tests(TARGET test_double_linked_list_stack_queue)
 
 #add_executable (
 #	test_linked_list_map

@@ -22,7 +22,7 @@ extern int cmn_tpool_init(struct cmn_tpool* tpool, size_t tnumber) {
     memset(tpool, 0, sizeof *tpool);
     tpool->thread_cnt = tnumber;
     tpool->working_cnt = 0;
-    try(cmn_double_stack_queue_init(&(tpool->job_queue)), !0, fail);
+    try(cmn_double_linked_list_stack_queue_init(&(tpool->job_queue)), !0, fail);
     try_pthread_mutex_init(&(tpool->mutex), fail2);
     try_pthread_cond_init(&(tpool->work_available_cond), fail3);
     try_pthread_cond_init(&(tpool->none_working_cond), fail4);

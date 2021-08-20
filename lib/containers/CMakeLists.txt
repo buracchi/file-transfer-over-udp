@@ -3,9 +3,10 @@ target_compile_definitions(containers INTERFACE CONTAINERS_VERSION=1)
 target_link_libraries(containers INTERFACE containers-list)
 target_link_libraries(containers INTERFACE containers-stack)
 target_link_libraries(containers INTERFACE containers-queue)
+target_link_libraries(containers INTERFACE containers-map)
 target_link_libraries(containers INTERFACE containers-linked-list)
 target_link_libraries(containers INTERFACE containers-linked-list-stack)
-target_link_libraries(containers INTERFACE containers-double-stack-queue)
+target_link_libraries(containers INTERFACE containers-double-linked-list-stack-queue)
 
 add_library(
 	containers-list
@@ -30,6 +31,14 @@ target_include_directories(containers-queue PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/
 target_link_libraries(containers-queue INTERFACE coverage_config)
 
 add_library(
+	containers-map
+	"src/map.c"
+)
+target_include_directories(containers-map PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(containers-map PUBLIC iterators)
+target_link_libraries(containers-map INTERFACE coverage_config)
+
+add_library(
 	containers-linked-list
 	"src/list/linked_list.c"
 	"src/list/linked_list_element.c"
@@ -51,14 +60,14 @@ target_link_libraries(containers-linked-list-stack PRIVATE utilities)
 target_link_libraries(containers-linked-list-stack INTERFACE coverage_config)
 
 add_library(
-	containers-double-stack-queue
-	"src/queue/double_stack_queue.c"
+	containers-double-linked-list-stack-queue
+	"src/queue/double_linked_list_stack_queue.c"
 )
-target_include_directories(containers-double-stack-queue PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(containers-double-stack-queue PUBLIC containers-queue)
-target_link_libraries(containers-double-stack-queue PRIVATE containers-linked-list-stack)
-target_link_libraries(containers-double-stack-queue PRIVATE utilities)
-target_link_libraries(containers-double-stack-queue INTERFACE coverage_config)
+target_include_directories(containers-double-linked-list-stack-queue PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(containers-double-linked-list-stack-queue PUBLIC containers-queue)
+target_link_libraries(containers-double-linked-list-stack-queue PRIVATE containers-linked-list-stack)
+target_link_libraries(containers-double-linked-list-stack-queue PRIVATE utilities)
+target_link_libraries(containers-double-linked-list-stack-queue INTERFACE coverage_config)
 
 #add_library(
 #	containers-linked-list-map
