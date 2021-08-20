@@ -20,8 +20,8 @@ static cmn_iterator_t end(cmn_list_t list);
 static bool is_empty(cmn_list_t list);
 static size_t size(cmn_list_t list);
 static void clear(cmn_list_t list);
-static cmn_iterator_t insert(cmn_list_t list, cmn_iterator_t position, void* value);
-static cmn_iterator_t erase(cmn_list_t list, cmn_iterator_t position);
+static int insert(cmn_list_t list, cmn_iterator_t position, void* value, cmn_iterator_t* inserted);
+static int erase(cmn_list_t list, cmn_iterator_t position, cmn_iterator_t* iterator);
 static int push_front(cmn_list_t list, void* value);
 static int push_back(cmn_list_t list, void* value);
 static void pop_front(cmn_list_t list);
@@ -147,7 +147,7 @@ static void clear(cmn_list_t list) {
 	}
 }
 
-static cmn_iterator_t insert(cmn_list_t list, cmn_iterator_t position, void* value) {
+static int insert(cmn_list_t list, cmn_iterator_t position, void* value, cmn_iterator_t* inserted) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 	struct linked_list_iterator* _position = (struct linked_list_iterator *)position;
 	struct list_element* new_element;
@@ -165,12 +165,14 @@ static cmn_iterator_t insert(cmn_list_t list, cmn_iterator_t position, void* val
 			prev->next = new_element;
 		}
 		_this->size++;
-		return &(linked_list_iterator_init(_this, new_element)->super);
+		if (inserted) {
+			*inserted = &(linked_list_iterator_init(_this, new_element)->super);
+		}
 	}
-	return NULL;
+	return 1;
 }
 
-static cmn_iterator_t erase(cmn_list_t list, cmn_iterator_t position) {
+static int erase(cmn_list_t list, cmn_iterator_t position, cmn_iterator_t* iterator) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 	struct linked_list_iterator* _position = (struct linked_list_iterator *)position;
 
@@ -196,7 +198,10 @@ static cmn_iterator_t erase(cmn_list_t list, cmn_iterator_t position) {
 		element_destroy(_position->element);
 	}
 	_this->size--;
-	return &(linked_list_iterator_init(_this, follower)->super);
+	if (iterator) {
+		*iterator = &(linked_list_iterator_init(_this, follower)->super);
+	}
+	return 0;
 }
 
 static int push_front(cmn_list_t list, void* value) {
@@ -326,7 +331,6 @@ static void splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t position, c
 	struct linked_list_iterator* _position = (struct linked_list_iterator *)position;
 	struct linked_list_iterator* _first = (struct linked_list_iterator*)first;
 	struct linked_list_iterator* _last = (struct linked_list_iterator*)last;
-
 	if (_position->element == _this->head) {
 		_this->head = _first->element;
 	}
@@ -351,7 +355,7 @@ static size_t remove(cmn_list_t list, void* value) {
 	while (!cmn_iterator_end(&(iterator->super))) {
 		if (iterator->element->data == value) {
 			tmp = iterator;
-			iterator = (struct linked_list_iterator*)erase(list, &(iterator->super));
+			erase(list, &(iterator->super), (cmn_iterator_t*)&iterator);
 			cmn_iterator_destroy(&(tmp->super));
 			_removed++;
 		}
@@ -376,7 +380,7 @@ static int remove_if(cmn_list_t list, int(*pred)(void* a, bool* result), size_t*
 		}
 		if (result) {
 			tmp = iterator;
-			iterator = (struct linked_list_iterator*)erase(list, &(iterator->super));
+			erase(list, &(iterator->super), (cmn_iterator_t*)&iterator);
 			cmn_iterator_destroy(&(tmp->super));
 			_removed++;
 		}
@@ -441,7 +445,7 @@ static int unique(cmn_list_t list, int(*comp)(void* a, void* b, bool* result), s
 			}
 			if (result) {
 				tmp = iterator2;
-				iterator2 = (struct linked_list_iterator*)erase(list, &(iterator2->super));
+				erase(list, &(iterator2->super), (cmn_iterator_t*)&iterator2);
 				cmn_iterator_destroy(&(tmp->super));
 				_removed++;
 			}

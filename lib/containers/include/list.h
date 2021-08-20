@@ -140,11 +140,12 @@ extern void cmn_list_clear(cmn_list_t list);
 * @param	list	 -	the list object.
 * @param	position -	iterator before which the content will be inserted.
 * @param	value	 -	element value to insert.
-*
-* @return	An iterator that points to the inserted element. On error,
-*			this function returns NULL.
+* @param	inserted -  pointer where will be stored an iterator to the inserted
+*                       element, or to the element that prevented the insertion.
+*                       If NULL the iterator will not be returned.
+* @return   On error, this function returns not zero.
 */
-extern cmn_iterator_t cmn_list_insert(cmn_list_t list, cmn_iterator_t position, void* value);
+extern int cmn_list_insert(cmn_list_t list, cmn_iterator_t position, void* value, cmn_iterator_t* inserted);
 
 /*
 * Removes from the list container the element at the specified position.
@@ -160,10 +161,12 @@ extern cmn_iterator_t cmn_list_insert(cmn_list_t list, cmn_iterator_t position, 
 *
 * @param	list	 -	the list object.
 * @param	position -	iterator to the element to remove.
-*
-* @return	An iterator pointing to the element that followed the erased one.
+* @param	iterator -  pointer where will be stored an iterator pointing to the
+*                       element that followed the erased one. If NULL the 
+*                       iterator will not be returned.
+* @return   On error, this function returns not zero.
 */
-extern cmn_iterator_t cmn_list_erase(cmn_list_t list, cmn_iterator_t position);
+extern int cmn_list_erase(cmn_list_t list, cmn_iterator_t position, cmn_iterator_t* iterator);
 
 /*
 * Prepends a new element to the beginning of the list.

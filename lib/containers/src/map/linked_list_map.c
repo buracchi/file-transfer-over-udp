@@ -17,18 +17,19 @@
 static struct cmn_map_vtbl* get_map_vtbl();
 static int destroy(cmn_map_t map);
 static int at(cmn_map_t map, void* key, void** value);
-static int at2(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), void** value);
 static cmn_iterator_t begin(cmn_map_t map);
 static cmn_iterator_t end(cmn_map_t map);
 static bool is_empty(cmn_map_t map);
 static size_t size(cmn_map_t map);
+static void set_key_comparer(cmn_map_t map, int (*comp)(void* a, void* b, bool* result));
 static void clear(cmn_map_t map);
 static int insert(cmn_map_t map, void* key, void* value, cmn_iterator_t* iterator);
 static int insert_or_assign(cmn_map_t map, void* key, void* value, cmn_iterator_t* iterator);
 static int erase(cmn_map_t map, cmn_iterator_t position, cmn_iterator_t* iterator);
 static void swap(cmn_map_t map, cmn_map_t other);
-static int count(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), size_t* count);
-static int find(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), cmn_iterator_t* iterator);
+static int count(cmn_map_t map, void* key, size_t* count);
+static int find(cmn_map_t map, void* key, cmn_iterator_t* iterator);
+static bool contains(cmn_map_t map, void* key);
 
 static inline int dflt_cmp(void* arg1, void* arg2, bool* result) {
 	*result = (arg1 == arg2);
@@ -49,6 +50,7 @@ fail:
 extern int cmn_linked_list_map_ctor(cmn_linked_list_map_t this) {
 	memset(this, 0, sizeof *this);
 	this->super.__ops_vptr = get_map_vtbl();
+	this->super.comp = dflt_cmp;
 	try(this->list = cmn_linked_list_init(), NULL, fail);
 	return 0;
 fail:
@@ -60,11 +62,11 @@ static struct cmn_map_vtbl* get_map_vtbl() {
 	if (!memcmp(&vtbl_zero, &__cmn_map_ops_vtbl, sizeof vtbl_zero)) {
 		__cmn_map_ops_vtbl.destroy = destroy;
 		__cmn_map_ops_vtbl.at = at;
-		__cmn_map_ops_vtbl.at2 = at2;
 		__cmn_map_ops_vtbl.begin = begin;
 		__cmn_map_ops_vtbl.end = end;
 		__cmn_map_ops_vtbl.is_empty = is_empty;
 		__cmn_map_ops_vtbl.size = size;
+		__cmn_map_ops_vtbl.set_key_comparer = set_key_comparer;
 		__cmn_map_ops_vtbl.clear = clear;
 		__cmn_map_ops_vtbl.insert = insert;
 		__cmn_map_ops_vtbl.insert_or_assign = insert_or_assign;
@@ -72,29 +74,26 @@ static struct cmn_map_vtbl* get_map_vtbl() {
 		__cmn_map_ops_vtbl.swap = swap;
 		__cmn_map_ops_vtbl.count = count;
 		__cmn_map_ops_vtbl.find = find;
+		__cmn_map_ops_vtbl.contains = contains;
 	}
 	return &__cmn_map_ops_vtbl;
 }
 
 static int destroy(cmn_map_t map) {
-	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
 	clear(map);
-	return cmn_list_destroy((cmn_list_t)_this->list);
+	return cmn_list_destroy((cmn_list_t)this->list);
 }
 
 static int at(cmn_map_t map, void* key, void** value) {
-	return at2(map, key, dflt_cmp, value);
-}
-
-static int at2(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), void** value) {
-	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
 	cmn_iterator_t iterator;
-	iterator = cmn_list_begin((cmn_list_t)_this->list);
+	iterator = cmn_list_begin((cmn_list_t)this->list);
 	while (cmn_iterator_end(iterator) == false) {
 		cmn_pair_t kv_pair;
 		bool found;
 		kv_pair = (cmn_pair_t)cmn_iterator_data(iterator);
-		try(comp(kv_pair->KEY, key, &found), !0, fail);
+		try(this->super.comp(kv_pair->KEY, key, &found), !0, fail);
 		if (found) {
 			*value = kv_pair->VALUE;
 			cmn_iterator_destroy(iterator);
@@ -109,66 +108,65 @@ fail:
 }
 
 static cmn_iterator_t begin(cmn_map_t map) {
-	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
-	return cmn_list_begin((cmn_list_t)_this->list);
+	cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
+	return cmn_list_begin((cmn_list_t)this->list);
 }
 
 static cmn_iterator_t end(cmn_map_t map) {
-	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
-	return cmn_list_end((cmn_list_t)_this->list);
+	cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
+	return cmn_list_end((cmn_list_t)this->list);
 }
 
 static bool is_empty(cmn_map_t map) {
-	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
-	return cmn_list_is_empty((cmn_list_t)_this->list);
+	cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
+	return cmn_list_is_empty((cmn_list_t)this->list);
 }
 
 static size_t size(cmn_map_t map) {
-	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
-	return cmn_list_size((cmn_list_t)_this->list);
+	cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
+	return cmn_list_size((cmn_list_t)this->list);
+}
+
+static void set_key_comparer(cmn_map_t map, int (*comp)(void* a, void* b, bool* result)) {
+	cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
+	this->super.comp = comp;
 }
 
 static void clear(cmn_map_t map) {
-	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
 	cmn_iterator_t iterator;
-	iterator = cmn_list_begin((cmn_list_t)_this->list);
+	iterator = cmn_list_begin((cmn_list_t)this->list);
 	while (cmn_iterator_end(iterator) == false) {
 		cmn_pair_t kv_pair = (cmn_pair_t)cmn_iterator_data(iterator);
 		free(kv_pair);
 		iterator = cmn_iterator_next(iterator);
 	}
 	cmn_iterator_destroy(iterator);
-	cmn_list_clear((cmn_list_t)_this->list);
+	cmn_list_clear((cmn_list_t)this->list);
 }
 
 static int insert(cmn_map_t map, void* key, void* value, cmn_iterator_t* inserted) {
-	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
-	cmn_iterator_t result = NULL;
+	cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
 	cmn_pair_t kv_pair = malloc(sizeof * kv_pair);
 	if (kv_pair) {
 		kv_pair->KEY = key;
 		kv_pair->VALUE = value;
-		cmn_iterator_t iterator = cmn_list_begin((cmn_list_t)_this->list);
-		result = cmn_list_insert((cmn_list_t)_this->list, iterator, kv_pair);
-		if (inserted) {
-			*inserted = result;
-		} else {
-			cmn_iterator_destroy(result);
-		}
+		cmn_iterator_t iterator = cmn_list_begin((cmn_list_t)this->list);
+		cmn_list_insert((cmn_list_t)this->list, iterator, kv_pair, inserted);
 		cmn_iterator_destroy(iterator);
 	}
 	return 0;
 }
 
 static int insert_or_assign(cmn_map_t map, void* key, void* value, cmn_iterator_t* inserted) {
-	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
 	cmn_pair_t kv_pair;
 	if (at(map, key, (void**)&kv_pair)) {
 		return insert(map, key, value, inserted);
 	}
 	kv_pair->VALUE = value;
 	if (inserted) {
-		cmn_iterator_t iterator = cmn_list_begin((cmn_list_t)_this->list);
+		cmn_iterator_t iterator = cmn_list_begin((cmn_list_t)this->list);
 		while (((cmn_pair_t)cmn_iterator_data(iterator))->KEY != key) {
 			iterator = cmn_iterator_next(iterator);
 		}
@@ -178,33 +176,28 @@ static int insert_or_assign(cmn_map_t map, void* key, void* value, cmn_iterator_
 }
 
 static int erase(cmn_map_t map, cmn_iterator_t position, cmn_iterator_t* iterator) {
-	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
 	cmn_pair_t kv_pair = (cmn_pair_t)cmn_iterator_data(position);
 	free(kv_pair);
-	cmn_iterator_t erased = cmn_list_erase((cmn_list_t)_this->list, position);
-	if (iterator) {
-		*iterator = erased;
-	} else {
-		cmn_iterator_destroy(erased);
-	}
+	cmn_list_erase((cmn_list_t)this->list, position, iterator);
 	return 0;
 }
 
 static void swap(cmn_map_t map, cmn_map_t other) {
-	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+	cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
 	cmn_linked_list_map_t _other = (cmn_linked_list_map_t) other;
-	cmn_list_swap((cmn_list_t)_this->list, (cmn_list_t)_other->list);
+	cmn_list_swap((cmn_list_t)this->list, (cmn_list_t)_other->list);
 }
 
-static int count(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), size_t* count) {
-	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+static int count(cmn_map_t map, void* key, size_t* count) {
+	cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
 	cmn_iterator_t iterator;
 	*count = 0;
-	iterator = cmn_list_begin((cmn_list_t)_this->list);
+	iterator = cmn_list_begin((cmn_list_t)this->list);
 	while (cmn_iterator_end(iterator) == false) {
 		cmn_pair_t kv_pair = (cmn_pair_t)cmn_iterator_data(iterator);
 		bool found;
-		try(comp(kv_pair->KEY, key, &found), !0, fail);
+		try(this->super.comp(kv_pair->KEY, key, &found), !0, fail);
 		if (found) {
 			*count = 1;
 			break;
@@ -218,14 +211,14 @@ fail:
 	return 1;
 }
 
-static int find(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), cmn_iterator_t* iterator) {
-	cmn_linked_list_map_t _this = (cmn_linked_list_map_t) map;
+static int find(cmn_map_t map, void* key, cmn_iterator_t* iterator) {
+	cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
 	cmn_iterator_t i;
-	i = cmn_list_begin((cmn_list_t)_this->list);
+	i = cmn_list_begin((cmn_list_t)this->list);
 	while (cmn_iterator_end(i) == false) {
 		cmn_pair_t kv_pair = (cmn_pair_t)cmn_iterator_data(i);
 		bool found;
-		try(comp(kv_pair->KEY, key, &found), !0, fail);
+		try(this->super.comp(kv_pair->KEY, key, &found), !0, fail);
 		if (found) {
 			*iterator = i;
 			return 0;
@@ -235,4 +228,8 @@ static int find(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* re
 fail:
 	cmn_iterator_destroy(i);
 	return 1;
+}
+
+static bool contains(cmn_map_t map, void* key) {
+	return !(at(map, key, NULL) && errno == ERANGE);
 }

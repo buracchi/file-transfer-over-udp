@@ -48,17 +48,6 @@ extern int cmn_map_destroy(cmn_map_t map);
 */
 extern int cmn_map_at(cmn_map_t map, void* key, void** value);
 
-/**
- * @brief 
- * 
- * @param map 
- * @param key 
- * @param comp 
- * @param value 
- * @return  
- */
-extern int cmn_map_at2(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), void** value);
-
 /*******************************************************************************
 *                                   Iterators                                  *
 *******************************************************************************/
@@ -95,8 +84,6 @@ extern cmn_iterator_t cmn_map_end(cmn_map_t map);
 /*
 * Returns whether the container is empty.
 *
-* This function never fails.
-*
 * @param	map	 -	the map object.
 *
 * @return	true if the container empty, false otherwise.
@@ -117,6 +104,18 @@ extern size_t cmn_map_size(cmn_map_t map);
 /*******************************************************************************
 *                                   Modifiers                                  *
 *******************************************************************************/
+
+/*
+* Replace the default comparer function with a cutom one.
+*
+* This function never fails
+*
+* @param	map	-	the map object.
+* @param    comp -  the comparator function.
+*
+* @return	This function returns no value.
+*/
+extern void cmn_map_set_key_comparer(cmn_map_t map, int (*comp)(void* a, void* b, bool* result));
 
 /*
 * Removes all elements from the container, leaving the container with a size
@@ -144,8 +143,10 @@ extern void cmn_map_clear(cmn_map_t map);
 * @param	map	-	the map object.
 * @param	key		-	the key of the element to insert.
 * @param	value	-	element value to insert.
-* @param	iterator an iterator to the inserted element, or to the element that 
-*			prevented the insertion. On error, this function returns NULL.
+* @param	inserted -  pointer where will be stored an iterator to the inserted
+*                       element, or to the element that prevented the insertion.
+*                       If NULL the iterator will not be returned.
+* @return   On error, this function returns not zero.
 */
 extern int cmn_map_insert(cmn_map_t map, void* key, void* value, cmn_iterator_t* inserted);
 
@@ -161,8 +162,9 @@ extern int cmn_map_insert(cmn_map_t map, void* key, void* value, cmn_iterator_t*
 * @param	map	-	the map object.
 * @param	key		-	the key used both to look up and to insert if not found.
 * @param	value	-	element value to insert.
-* @param	iterator an iterator to the inserted element. On error, this function 
-*			returns NULL.
+* @param	inserted -  pointer where will be stored an iterator to the inserted.
+*                       If NULL the iterator will not be returned.
+* @return   On error, this function returns not zero.
 */
 extern int cmn_map_insert_or_assign(cmn_map_t map, void* key, void* value, cmn_iterator_t* inserted);
 
@@ -181,6 +183,10 @@ extern int cmn_map_insert_or_assign(cmn_map_t map, void* key, void* value, cmn_i
 * @param	map	 -	the map object.
 * @param	position -	iterator to the element to remove.
 * @param	iterator - An iterator pointing to the element that followed the erased one.
+* @param	iterator -  pointer where will be stored an iterator pointing to the
+*                       element that followed the erased one. If NULL the 
+*                       iterator will not be returned.
+* @return   On error, this function returns not zero.
 */
 extern int cmn_map_erase(cmn_map_t map, cmn_iterator_t position, cmn_iterator_t* iterator);
 
@@ -220,7 +226,7 @@ extern void cmn_map_swap(cmn_map_t map, cmn_map_t other);
 * 
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-extern int cmn_map_count(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), size_t* count);
+extern int cmn_map_count(cmn_map_t map, void* key, size_t* count);
 
 /*
 * Finds an element with key equivalent to key.
@@ -235,4 +241,14 @@ extern int cmn_map_count(cmn_map_t map, void* key, int (*comp)(void* a, void* b,
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-extern int cmn_map_find(cmn_map_t map, void* key, int (*comp)(void* a, void* b, bool* result), cmn_iterator_t* iterator);
+extern int cmn_map_find(cmn_map_t map, void* key, cmn_iterator_t* iterator);
+
+/*
+* Checks if there is an element with key equivalent to key.
+*
+* @param	map	        -	the map object.
+* @param	key         -	key value of the element to search for.
+*
+* @return	true if there is such an element, otherwise false.
+*/
+extern bool cmn_map_contains(cmn_map_t map, void* key);

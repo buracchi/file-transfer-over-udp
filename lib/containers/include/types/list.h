@@ -23,8 +23,8 @@ static struct cmn_list_vtbl {
 	size_t			(*size)			(cmn_list_t list);
 	// Modifiers
 	void			(*clear)        (cmn_list_t list);
-	cmn_iterator_t	(*insert)		(cmn_list_t list, cmn_iterator_t position, void* value);
-	cmn_iterator_t	(*erase)		(cmn_list_t list, cmn_iterator_t position);
+	int				(*insert)		(cmn_list_t list, cmn_iterator_t position, void* value, cmn_iterator_t* inserted);
+	int				(*erase)		(cmn_list_t list, cmn_iterator_t position, cmn_iterator_t* iterator);
 	int				(*push_front)	(cmn_list_t list, void* value);
 	int				(*push_back)    (cmn_list_t list, void* value);
 	void			(*pop_front)    (cmn_list_t list);

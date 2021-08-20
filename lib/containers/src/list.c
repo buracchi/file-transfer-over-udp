@@ -41,12 +41,12 @@ extern inline void cmn_list_clear(cmn_list_t list) {
     list->__ops_vptr->clear(list);
 }
 
-extern inline cmn_iterator_t cmn_list_insert(cmn_list_t list, cmn_iterator_t position, void* value) {
-    return list->__ops_vptr->insert(list, position, value);
+extern inline int cmn_list_insert(cmn_list_t list, cmn_iterator_t position, void* value, cmn_iterator_t* inserted) {
+    return list->__ops_vptr->insert(list, position, value, inserted);
 }
 
-extern inline cmn_iterator_t cmn_list_erase(cmn_list_t list, cmn_iterator_t position) {
-    return list->__ops_vptr->erase(list, position);
+extern inline int cmn_list_erase(cmn_list_t list, cmn_iterator_t position, cmn_iterator_t* iterator) {
+    return list->__ops_vptr->erase(list, position, iterator);
 }
 
 extern inline int cmn_list_push_front(cmn_list_t list, void* value) {
