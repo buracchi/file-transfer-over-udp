@@ -13,14 +13,15 @@ target_include_directories(tproto PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(tproto INTERFACE coverage_config)
 
 add_library(
-	socket2
+	networking-socket2
 	"src/socket2.c"
 )
-target_include_directories(socket2 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(socket2 PRIVATE nproto)
-target_link_libraries(socket2 PRIVATE tproto)
-target_link_libraries(socket2 PRIVATE utilities)
-target_link_libraries(socket2 INTERFACE coverage_config)
+target_include_directories(networking-socket2 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(networking-socket2 PRIVATE utilities)
+target_link_libraries(networking-socket2 PRIVATE nproto)
+target_link_libraries(networking-socket2 PRIVATE tproto)
+target_link_libraries(networking-socket2 PRIVATE utilities)
+target_link_libraries(networking-socket2 INTERFACE coverage_config)
 
 add_library(
 	nproto-ipv4
