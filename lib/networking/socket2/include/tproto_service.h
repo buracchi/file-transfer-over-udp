@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/types.h>
 
 /*******************************************************************************
 *                                 Member types                                 *
@@ -9,7 +10,7 @@
 
 typedef struct cmn_socket2* cmn_socket2_t;
 
-typedef cmn_tproto_service_t cmn_tproto_service_t;
+typedef struct cmn_tproto_service* cmn_tproto_service_t;
 
 /*******************************************************************************
 *                               Member functions                               *

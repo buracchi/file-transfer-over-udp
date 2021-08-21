@@ -6,11 +6,12 @@
 #include <errno.h>
 #include <sys/un.h>
 
-#include "socket2.h"
+#include "types/nproto/nproto_service_unix.h"
+#include "types/socket2.h"
 #include "try.h"
 #include "utilities.h"
 
-static int set_address(struct cmn_nproto_service* service, struct cmn_socket2* socket, const char* url);
+static int set_address(cmn_nproto_service_t service, cmn_socket2_t socket, const char* url);
 static int parse_url(const char* url, char** address, uint16_t *port);
 
 static struct cmn_nproto_service_vtbl __cmn_nproto_service_ops_vtbl = { .set_address = set_address };
@@ -23,12 +24,12 @@ static struct cmn_nproto_service_unix service = {
 };
 
 #ifdef WIN32 // May the gcc guy who forgot to create a flag for this stupid warning be cursed
-    extern struct cmn_nproto_service* cmn_nproto_service_unix = &(service.super);
+    extern cmn_nproto_service_t cmn_nproto_service_unix = &(service.super);
 #elif __unix__
-    struct cmn_nproto_service* cmn_nproto_service_unix = &(service.super);
+    cmn_nproto_service_t cmn_nproto_service_unix = &(service.super);
 #endif
 
-static int set_address(struct cmn_nproto_service* service, struct cmn_socket2* socket, const char* url) {
+static int set_address(cmn_nproto_service_t service, cmn_socket2_t socket, const char* url) {
     struct sockaddr_un* saddr_un;
     try(saddr_un = malloc(sizeof * saddr_un), NULL, fail);
     memset(saddr_un, 'x', sizeof * saddr_un);

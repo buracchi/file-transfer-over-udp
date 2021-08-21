@@ -2,8 +2,4 @@
 
 #include "tproto_service.h"
 
-struct cmn_tproto_service_tcp {
-    struct cmn_tproto_service super;
-};
-
-extern struct cmn_tproto_service* cmn_tproto_service_tcp;
+extern cmn_tproto_service_t cmn_tproto_service_tcp;

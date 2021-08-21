@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "types/socket2.h"
 #include "try.h"
 #include "utilities.h"
 
@@ -24,40 +25,49 @@
 #define SOCKET_ERROR  -1
 #define CHUNK_SIZE 4096	// MUST be even
 
-extern int cmn_socket2_init(struct cmn_socket2* this, struct cmn_nproto_service* nproto_serivce, struct cmn_tproto_service* tproto_serivce) {
+extern cmn_socket2_t cmn_socket2_init(cmn_nproto_service_t nproto_serivce, cmn_tproto_service_t tproto_serivce) {
+	cmn_socket2_t this;
+	try(this = malloc(sizeof *this), NULL, fail);
 	memset(this, 0, sizeof * this);
 	this->nproto_service = nproto_serivce;
 	this->tproto_service = tproto_serivce;
-	try(this->fd = socket(this->nproto_service->domain, this->tproto_service->type, this->tproto_service->protocol), INVALID_SOCKET, fail);
-	return 0;
+	int domain = this->nproto_service->domain;
+	int type = this->tproto_service->type;
+	int protocol = this->tproto_service->protocol;
+	try(this->fd = socket(domain, type, protocol), INVALID_SOCKET, fail);
+	return this;
 fail:
-	return 1;
+	return NULL;
 }
 
-extern int cmn_socket2_destroy(struct cmn_socket2* this) {
+extern int cmn_socket2_destroy(cmn_socket2_t this) {
 	try(close(this->fd), -1, fail);
 	free(this->address);
+	free(this);
 	return 0;
 fail:
 	return 1;
 }
 
-extern int cmn_socket2_accept(struct cmn_socket2* this, struct cmn_socket2* accepted) {
-    cmn_socket2_init(accepted, this->nproto_service, this->tproto_service);
-    try(accepted->address = malloc(this->addrlen), NULL, fail);
+extern cmn_socket2_t cmn_socket2_accept(cmn_socket2_t this) {
+    cmn_socket2_t accepted;
+	accepted = cmn_socket2_init(this->nproto_service, this->tproto_service);
+    try(accepted->address = malloc(this->addrlen), NULL, fail2);
 	while ((accepted->fd = accept(this->fd, accepted->address, &accepted->addrlen)) == -1) {
-		try(errno != EMFILE, true, fail2);
+		try(errno != EMFILE, true, fail3);
 		usleep(1);
 	}
-	return 0;
-fail2:
+	return accepted;
+fail3:
 	free(accepted->address);
 	this->address = NULL;
+fail2:
+	cmn_socket2_destroy(accepted);
 fail:
-	return 1;
+	return NULL;
 }
 
-extern int cmn_socket2_connect(struct cmn_socket2* this, const char* url) {
+extern int cmn_socket2_connect(cmn_socket2_t this, const char* url) {
 	try(cmn_nproto_service_set_address(this->nproto_service, this, url), 1, fail);
 	try(connect(this->fd, this->address, this->addrlen), SOCKET_ERROR, fail2);
 	return 0;
@@ -68,7 +78,7 @@ fail:
 	return -1;
 }
 
-extern int cmn_socket2_listen(struct cmn_socket2* this, const char* url, int backlog) {
+extern int cmn_socket2_listen(cmn_socket2_t this, const char* url, int backlog) {
 	try(cmn_nproto_service_set_address(this->nproto_service, this, url), 1, fail);
 	try(bind(this->fd, this->address, this->addrlen), -1, fail2);
 	try(listen(this->fd, backlog), -1, fail2);
@@ -80,7 +90,15 @@ fail:
 	return 1;
 }
 
-extern ssize_t cmn_socket2_srecv(struct cmn_socket2* this, char** buff) {
+extern inline ssize_t cmn_socket2_peek(cmn_socket2_t this, uint8_t* buff, uint64_t n) {
+    return this->tproto_service->__ops_vptr->peek(this->tproto_service, this, buff, n);
+}
+
+extern inline ssize_t cmn_socket2_recv(cmn_socket2_t this, uint8_t* buff, uint64_t n) {
+    return this->tproto_service->__ops_vptr->recv(this->tproto_service, this, buff, n);
+}
+
+extern ssize_t cmn_socket2_srecv(cmn_socket2_t this, char** buff) {
 	ssize_t b_recvd = 0;
 	uint8_t* msg;
 	uint8_t* p_msg;
@@ -114,7 +132,7 @@ fail:
 	return -1;
 }
 
-extern ssize_t cmn_socket2_frecv(struct cmn_socket2* this, FILE* file, long fsize) {
+extern ssize_t cmn_socket2_frecv(cmn_socket2_t this, FILE* file, long fsize) {
 	ssize_t b_recvd = 0;
 	uint8_t chunk[CHUNK_SIZE] = { 0 };
 	FILE* ftmp = tmpfile();
@@ -135,7 +153,11 @@ fail:
 	return -1;
 }
 
-extern ssize_t cmn_socket2_ssend(struct cmn_socket2* this, const char* string) {
+extern inline ssize_t cmn_socket2_send(cmn_socket2_t this, const uint8_t* buff, uint64_t n) {
+    return this->tproto_service->__ops_vptr->send(this->tproto_service, this, buff, n);
+}
+
+extern ssize_t cmn_socket2_ssend(cmn_socket2_t this, const char* string) {
 	ssize_t b_sent;
 	try(b_sent = cmn_socket2_send(this, string, strlen(string)), -1, fail);
 	return b_sent;
@@ -143,7 +165,7 @@ fail:
 	return -1;
 }
 
-extern ssize_t cmn_socket2_fsend(struct cmn_socket2* this, FILE* file) {
+extern ssize_t cmn_socket2_fsend(cmn_socket2_t this, FILE* file) {
 	ssize_t b_sent = 0;
 	uint8_t chunk[CHUNK_SIZE] = {0};
 	long flen;
@@ -163,11 +185,11 @@ fail:
 	return -1;
 }
 
-extern int cmn_socket2_get_fd(struct cmn_socket2* this) {
+extern int cmn_socket2_get_fd(cmn_socket2_t this) {
 	return this->fd;
 }
 
-extern int cmn_socket2_set_blocking(struct cmn_socket2* this, bool blocking) {
+extern int cmn_socket2_set_blocking(cmn_socket2_t this, bool blocking) {
 	if (this->fd > 0) {
 #ifdef _WIN32
 		unsigned long mode = blocking ? 0 : 1;

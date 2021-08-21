@@ -22,7 +22,7 @@ typedef struct cmn_socket2* cmn_socket2_t;
 *
 * @return	the initialized socket on success; NULL otherwise.
 */
-extern int cmn_socket2_init(cmn_socket2_t socket, cmn_nproto_service_t nproto_serivce, cmn_tproto_service_t tproto_serivce);
+extern cmn_socket2_t cmn_socket2_init(cmn_nproto_service_t nproto_serivce, cmn_tproto_service_t tproto_serivce);
 
 /*
 * Destroys the socket object.
@@ -44,7 +44,7 @@ extern int cmn_socket2_destroy(cmn_socket2_t socket);
 *
 * @return	the accepted socket on success; NULL otherwise.
 */
-extern int cmn_socket2_accept(cmn_socket2_t socket, cmn_socket2_t accepted);
+extern cmn_socket2_t cmn_socket2_accept(cmn_socket2_t socket);
 
 /*
 * Requests a connection to be made on the socket object.
