@@ -1,22 +1,24 @@
 #pragma once
 
-#include <stddef.h>
-#include <stdint.h>
-
 /*******************************************************************************
 *                                 Member types                                 *
 *******************************************************************************/
 
-typedef struct cmn_socket2* cmn_socket2_t;
+struct cmn_socket2;
 
-typedef cmn_tproto_service_t cmn_tproto_service_t;
+struct cmn_nproto_service {
+    struct cmn_nproto_service_vtbl* __ops_vptr;
+    int domain;
+};
+
+struct cmn_nproto_service_vtbl {
+    int     (*set_address)  (struct cmn_nproto_service* service, struct cmn_socket2* socket, const char* url);
+};
 
 /*******************************************************************************
 *                               Member functions                               *
 *******************************************************************************/
 
-extern ssize_t cmn_tproto_service_peek(cmn_tproto_service_t service, cmn_socket2_t socket, uint8_t* buff, uint64_t n);
-
-extern ssize_t cmn_tproto_service_recv(cmn_tproto_service_t service, cmn_socket2_t socket, uint8_t* buff, uint64_t n);
-
-extern ssize_t cmn_tproto_service_send(cmn_tproto_service_t service, cmn_socket2_t socket, const uint8_t* buff, uint64_t n);
+static inline int cmn_nproto_service_set_address(struct cmn_nproto_service* service, struct cmn_socket2* socket, const char* url) {
+    return service->__ops_vptr->set_address(service, socket, url);
+}
