@@ -13,6 +13,6 @@ target_link_libraries(networking-communication-manager PRIVATE libevent::core li
 target_link_libraries(networking-communication-manager PRIVATE concurrency-tpool)
 target_link_libraries(networking-communication-manager PRIVATE utilities)
 
-if (BUILD_TESTING)
-	add_subdirectory("test")
-endif()
+#if (BUILD_TESTING)
+#	add_subdirectory("test")
+#endif()

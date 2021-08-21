@@ -5,6 +5,7 @@ extern "C" {
 #include "nproto/nproto_service_ipv4.h"
 #include "tproto/tproto_service_tcp.h"
 #include "types/request_handler.h"
+#include "try.h"
 }
 
 #include <cstdint>
@@ -26,7 +27,7 @@ struct simple_handler {
 
 static void foo(cmn_request_handler_t request_handler, cmn_socket2_t socket);
 
-constexpr int request_number = 4096;
+constexpr int request_number = 1;
 
 TEST(cmn_communication_manager, test) {
 	__cmn_request_handler_ops_vtbl.handle_request = foo;
@@ -36,10 +37,11 @@ TEST(cmn_communication_manager, test) {
 			cm,
 			cmn_nproto_service_ipv4,
 			cmn_tproto_service_tcp,
-			"127.0.0.1:1234",
+			"0.0.0.0:1234",
 			(cmn_request_handler_t)&simple_handler
 		);
 	});
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	std::vector<std::thread> clients;
 	for (int i = 0; i < request_number; i++) {
 		clients.push_back(std::thread([] {
@@ -65,10 +67,11 @@ static void foo(cmn_request_handler_t request_handler, cmn_socket2_t socket) {
 	struct simple_handler* handler = (struct simple_handler*)request_handler;
 	cmn_socket2_t accepted;
 	uint8_t buff = 1;
-	accepted = cmn_socket2_accept(socket);
-	handler->m.lock();
-	handler->counter++;
-	handler->m.unlock();
-	cmn_socket2_send(accepted, &buff, 1);
-	cmn_socket2_destroy(accepted);
+	if(accepted = cmn_socket2_accept(socket)) {
+		handler->m.lock();
+		handler->counter++;
+		handler->m.unlock();
+		try(cmn_socket2_send(accepted, &buff, 1), -1);
+		cmn_socket2_destroy(accepted);
+	}
 }
