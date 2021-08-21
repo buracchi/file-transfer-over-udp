@@ -10,6 +10,8 @@
 #include <event2/thread.h>
 
 #include "request_handler.h"
+#include "socket2.h"
+#include "tpool.h"
 #include "try.h"
 #include "utilities.h"
 
@@ -26,33 +28,41 @@
 	#define evthread_use_threads evthread_use_pthreads
 #endif
 
+struct cmn_communication_manager {
+    cmn_request_handler_t handler;
+    cmn_socket2_t socket;
+    cmn_tpool_t thread_pool;
+};
+
 static void stop(evutil_socket_t signal, short events, void* arg);
 static void dispatch_request(evutil_socket_t fd, short events, void* arg);
 static void* handle_request(void* arg);
 
 static struct event_base* event_base;
 
-extern int cmn_communication_manager_init(struct cmn_communication_manager* this, size_t thread_number) {
+extern cmn_communication_manager_t cmn_communication_manager_init(size_t thread_number) {
+	cmn_communication_manager_t this;
+	try(this = malloc(sizeof *this), NULL, fail);
 	if (thread_number) {
 		try(evthread_use_threads(), -1, fail);
-		try(cmn_tpool_init(&(this->thread_pool), thread_number), !0, fail);
+		try(this->thread_pool = cmn_tpool_init(thread_number), NULL, fail);
 	} else {
 		goto fail;	// TODO: handle mono thread case
 	}
-	return 0;
+	return this;
 fail:
-	return 1;
+	return NULL;
 }
 
-extern int cmn_communication_manager_start(struct cmn_communication_manager* this, struct cmn_nproto_service* nproto_serivce, struct cmn_tproto_service* tproto_serivce, const char* url, struct cmn_request_handler* request_handler) {
+extern int cmn_communication_manager_start(cmn_communication_manager_t this, cmn_nproto_service_t nproto_serivce, cmn_tproto_service_t tproto_serivce, const char* url, cmn_request_handler_t request_handler) {
 	struct event* socket_event;
 	struct event* signal_event;
-	try(cmn_socket2_init(&(this->socket), nproto_serivce, tproto_serivce), !0, fail);
-	try(cmn_socket2_set_blocking(&(this->socket), false), 1, fail);
-	try(cmn_socket2_listen(&(this->socket), url, BACKLOG), 1, fail);
+	try(this->socket = cmn_socket2_init(nproto_serivce, tproto_serivce), NULL, fail);
+	try(cmn_socket2_set_blocking(this->socket, false), 1, fail);
+	try(cmn_socket2_listen(this->socket, url, BACKLOG), 1, fail);
 	this->handler = request_handler;
 	try(event_base = event_base_new(), NULL, fail);
-	try(socket_event = event_new(event_base, this->socket.fd, EV_READ | EV_PERSIST, dispatch_request, this), NULL, fail);
+	try(socket_event = event_new(event_base, cmn_socket2_get_fd(this->socket), EV_READ | EV_PERSIST, dispatch_request, this), NULL, fail);
 	try(signal_event = evsignal_new(event_base, SIGINT, stop, (void*)event_base), NULL, fail);
 	try(event_add(socket_event, NULL), -1, fail);
 	try(event_add(signal_event, NULL), -1, fail);
@@ -62,31 +72,32 @@ extern int cmn_communication_manager_start(struct cmn_communication_manager* thi
 	event_free(signal_event);
 	event_base_free(event_base);
 	libevent_global_shutdown();
-	try(cmn_socket2_destroy(&(this->socket)), 1, fail);
+	try(cmn_socket2_destroy(this->socket), 1, fail);
 	return 0;
 fail:
 	return 1;
 }
 
-extern int cmn_communication_manager_stop(struct cmn_communication_manager* this) {
+extern int cmn_communication_manager_stop(cmn_communication_manager_t this) {
 	stop(0, 0, (void*)event_base);
 }
 
-extern int cmn_communication_manager_destroy(struct cmn_communication_manager* this) {
-	try(cmn_tpool_destroy(&(this->thread_pool)), 1, fail);
+extern int cmn_communication_manager_destroy(cmn_communication_manager_t this) {
+	try(cmn_tpool_destroy(this->thread_pool), 1, fail);
+	free(this);
 	return 0;
 fail:
 	return 1;
 }
 
 static void dispatch_request(evutil_socket_t fd, short events, void* arg) {
-	struct cmn_communication_manager* this = (struct cmn_communication_manager*)arg;
-	cmn_tpool_add_work(&(this->thread_pool), handle_request, arg);
+	cmn_communication_manager_t this = (cmn_communication_manager_t)arg;
+	cmn_tpool_add_work(this->thread_pool, handle_request, arg);
 }
 
 static void* handle_request(void* arg) {
-	struct cmn_communication_manager* this = (struct cmn_communication_manager*)arg;
-	cmn_request_handler_handle_request(this->handler, &(this->socket));
+	cmn_communication_manager_t this = (cmn_communication_manager_t)arg;
+	cmn_request_handler_handle_request(this->handler, this->socket);
 }
 
 static void stop(evutil_socket_t signal, short events, void* user_data) {

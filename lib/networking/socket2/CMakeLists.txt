@@ -17,9 +17,8 @@ add_library(
 	"src/socket2.c"
 )
 target_include_directories(networking-socket2 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(networking-socket2 PRIVATE utilities)
-target_link_libraries(networking-socket2 PRIVATE nproto)
-target_link_libraries(networking-socket2 PRIVATE tproto)
+target_link_libraries(networking-socket2 PUBLIC nproto)
+target_link_libraries(networking-socket2 PUBLIC tproto)
 target_link_libraries(networking-socket2 PRIVATE utilities)
 target_link_libraries(networking-socket2 INTERFACE coverage_config)
 
