@@ -19,7 +19,7 @@ int asprintf(char** str, const char* format, ...);
 #define max(a, b) ({    \
     typeof(a) _a = (a); \
     typeof(b) _b = (b); \
-    _a > _b ? _a : _b })
+    _a > _b ? _a : _b; })
 
 #define __tostr(statement) #statement
 #define tostr(statement) __tostr(statement)
@@ -35,32 +35,6 @@ int strtoi(char* str, int* result);
 int str_to_uint16(const char* str, uint16_t * result);
 
 bool is_directory(char* pathname);
-
-/**
- * _new - initialize an object in the heap calling the constructor with
- *        the varaidic arguments.
- * @obj_name:   the name of the object.
- *
- */
-#define new(obj_name, ...) ({                                           \
-        struct obj_name* __ptr = malloc(sizeof(struct obj_name));       \
-        if (__ptr) {                                                    \
-            obj_name##_init(__ptr, ##__VA_ARGS__);                      \
-        }                                                               \
-        __ptr; })
-
- /**
-  * _destroy -  destroy and free an object from the calling the destructor with
-  *             the varaidic arguments.
-  * @ptr:       the pointer to the object.
-  *
-  */
-#define delete(ptr, ...) ({                                             \
-        int __ret = ptr->__ops_vptr->destroy(ptr);                      \
-        if (!__ret) {                                                   \
-            free(ptr);                                                  \
-        }                                                               \
-        __ret; })
 
   /**
    * container_of - cast a member of a structure out to the containing structure

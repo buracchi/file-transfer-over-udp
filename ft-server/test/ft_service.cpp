@@ -12,7 +12,7 @@ extern "C" {
 
 using namespace std;
 
-TEST(ft_service_get_filelist, return_current_directory_regular_file) {
+TEST(ft_service, get_filelist_return_current_directory_regular_filelist) {
 	string path = filesystem::current_path();
 	ft_service_t ftservice = ft_service_init(path.c_str());
 	istringstream is(ft_service_get_filelist(ftservice));

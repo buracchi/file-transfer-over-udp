@@ -1,8 +1,9 @@
-add_library(
-	utilities
-	STATIC
-	"src/utilities.c"
-)
-target_compile_definitions(utilities PRIVATE UTILITIES_VERSION=1)
-target_include_directories(utilities PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(utilities INTERFACE coverage_config)
+#add_subdirectory(argparser)
+add_subdirectory(misc)
+add_subdirectory(try)
+
+add_library(utilities INTERFACE)
+target_compile_definitions(utilities INTERFACE UTILITIES_VERSION=1)
+#target_link_libraries(utilities INTERFACE utilities-argparser)
+target_link_libraries(utilities INTERFACE utilities-misc)
+target_link_libraries(utilities INTERFACE utilities-try)

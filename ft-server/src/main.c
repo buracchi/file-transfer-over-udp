@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <limits.h>
 
-#include "ft_service.h"
 #include "ft_handler.h"
 #include "communication_manager.h"
 #include "utilities.h"
@@ -74,16 +73,16 @@ body:
 }
 
 static void start_server(int port, char* directory) {
-	ft_service_t ft_service;
-	ft_handler_t ft_handler;
+	cmn_request_handler_t ft_handler;
+	cmn_communication_manager_t communication_manager;
+	const char* url = "0.0.0.0:1234";
 	try(is_directory(directory), 0);
-	try(ft_service = ft_service_init(directory), NULL);
-	try(ft_handler = ft_handler_init(ft_service), NULL);
-	try(communication_manager_start(port, ft_handler), 1);
-	ft_handler_destroy(ft_handler);
-	ft_service_destroy(ft_service);
-	free(ft_handler);
-	free(ft_service);
+	try(ft_handler = (cmn_request_handler_t)ft_handler_init(directory), NULL);
+	try(communication_manager = cmn_communication_manager_init(4), NULL);
+	//cmn_communication_manager_set_tproto(communication_manager, tproto_service_gbn);
+	try(cmn_communication_manager_start(communication_manager, url, ft_handler), 1	);
+	cmn_request_handler_destroy(ft_handler);
+	cmn_communication_manager_destroy(communication_manager);
 }
 
 static int usage() {

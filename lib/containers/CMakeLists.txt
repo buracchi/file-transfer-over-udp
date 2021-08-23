@@ -47,7 +47,7 @@ add_library(
 )
 target_include_directories(containers-linked-list PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(containers-linked-list PUBLIC containers-list)
-target_link_libraries(containers-linked-list PRIVATE utilities)
+target_link_libraries(containers-linked-list PRIVATE utilities-try)
 target_link_libraries(containers-linked-list INTERFACE coverage_config)
 
 add_library(
@@ -57,7 +57,7 @@ add_library(
 target_include_directories(containers-linked-list-stack PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(containers-linked-list-stack PUBLIC containers-stack)
 target_link_libraries(containers-linked-list-stack PRIVATE containers-linked-list)
-target_link_libraries(containers-linked-list-stack PRIVATE utilities)
+target_link_libraries(containers-linked-list-stack PRIVATE utilities-try)
 target_link_libraries(containers-linked-list-stack INTERFACE coverage_config)
 
 add_library(
@@ -67,7 +67,7 @@ add_library(
 target_include_directories(containers-double-linked-list-stack-queue PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(containers-double-linked-list-stack-queue PUBLIC containers-queue)
 target_link_libraries(containers-double-linked-list-stack-queue PRIVATE containers-linked-list-stack)
-target_link_libraries(containers-double-linked-list-stack-queue PRIVATE utilities)
+target_link_libraries(containers-double-linked-list-stack-queue PRIVATE utilities-try)
 target_link_libraries(containers-double-linked-list-stack-queue INTERFACE coverage_config)
 
 add_library(
@@ -78,7 +78,8 @@ target_compile_definitions(containers-linked-list-map PRIVATE CONTAINERS_VERSION
 target_include_directories(containers-linked-list-map PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(containers-linked-list-map PUBLIC containers-map)
 target_link_libraries(containers-linked-list-map PRIVATE containers-linked-list)
-target_link_libraries(containers-linked-list-map PRIVATE utilities)
+target_link_libraries(containers-linked-list-map PRIVATE utilities-misc)
+target_link_libraries(containers-linked-list-map PRIVATE utilities-try)
 target_link_libraries(containers-linked-list-map INTERFACE coverage_config)
 
 if (BUILD_TESTING)

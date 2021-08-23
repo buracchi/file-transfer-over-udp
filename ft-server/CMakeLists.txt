@@ -10,47 +10,37 @@ add_executable (
 	ft-server
 	"src/main.c"
 )
-target_link_libraries(ft-server PRIVATE ft-service-lib)
-target_link_libraries(ft-server PRIVATE ft-handler-lib)
-target_link_libraries(ft-server PRIVATE networking-communication-manager-lib)
-target_link_libraries(ft-server PRIVATE socket2)
-target_link_libraries(ft-server PRIVATE try)
+target_link_libraries(ft-server PRIVATE ft-handler)
+target_link_libraries(ft-server PRIVATE networking-communication-manager)
+target_link_libraries(ft-server PRIVATE networking-socket2)
 target_link_libraries(ft-server PRIVATE utilities)
+target_link_libraries(ft-server INTERFACE coverage_config)
 
 # Libraries
 
 add_library(
-	ft-service-lib
+	ft-service
 	STATIC
 	"src/ft_service.h"
 	"src/ft_service.c"
 )
-target_link_libraries(ft-service-lib PRIVATE try)
-target_link_libraries(ft-service-lib PRIVATE utilities)
-target_link_libraries(ft-service-lib INTERFACE coverage_config)
+target_link_libraries(ft-service PRIVATE utilities)
+target_link_libraries(ft-service INTERFACE coverage_config)
 
 add_library(
-	ft-handler-lib
+	ft-handler
 	STATIC
 	"src/ft_handler.c"
 	"src/ft_handler.h"
-	"src/struct_ft_handler.h"
 )
-target_link_libraries(ft-handler-lib PRIVATE networking-handle-request-lib)
-target_link_libraries(ft-handler-lib PRIVATE ft-service-lib)
-target_link_libraries(ft-handler-lib PRIVATE ftcp)
-target_link_libraries(ft-handler-lib PRIVATE socket2)
-target_link_libraries(ft-handler-lib PRIVATE rwfslock)
-target_link_libraries(ft-handler-lib PRIVATE try)
-target_link_libraries(ft-handler-lib PRIVATE utilities)
+target_link_libraries(ft-handler PRIVATE ft-service)
+target_link_libraries(ft-handler PRIVATE ftcp)
+target_link_libraries(ft-handler PRIVATE concurrency-rwfslock)
+target_link_libraries(ft-handler PRIVATE networking-request-handler)
+target_link_libraries(ft-handler PRIVATE networking-socket2)
+target_link_libraries(ft-handler PRIVATE utilities)
+target_link_libraries(ft-handler INTERFACE coverage_config)
 
-# Tests
-
-add_executable (
-	ft-service-test
-	"test/ft_service.cpp"
-)
-target_link_libraries(ft-service-test PRIVATE GTest::GTest GTest::Main)
-target_link_libraries(ft-service-test PRIVATE ft-service-lib)
-target_include_directories(ft-service-test PRIVATE "src/")
-gtest_add_tests(TARGET ft-service-test)
+if (BUILD_TESTING)
+	add_subdirectory("test")
+endif()

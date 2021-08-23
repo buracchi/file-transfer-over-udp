@@ -12,4 +12,6 @@ typedef struct cmn_request_handler* cmn_request_handler_t;
 *                               Member functions                               *
 *******************************************************************************/
 
+extern int cmn_request_handler_destroy(cmn_request_handler_t request_handler);
+
 extern void cmn_request_handler_handle_request(cmn_request_handler_t request_handler, cmn_socket2_t socket);

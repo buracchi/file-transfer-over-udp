@@ -11,6 +11,8 @@
 
 #include "request_handler.h"
 #include "socket2.h"
+#include "nproto/nproto_service_ipv4.h"
+#include "tproto/tproto_service_tcp.h"
 #include "tpool.h"
 #include "try.h"
 #include "utilities.h"
@@ -30,6 +32,8 @@
 
 struct cmn_communication_manager {
     cmn_request_handler_t handler;
+	cmn_nproto_service_t nproto_service;
+	cmn_tproto_service_t tproto_service;
     cmn_socket2_t socket;
     cmn_tpool_t thread_pool;
 };
@@ -45,6 +49,8 @@ extern cmn_communication_manager_t cmn_communication_manager_init(size_t thread_
 	try(this = malloc(sizeof *this), NULL, fail);
 	if (thread_number) {
 		try(evthread_use_threads(), -1, fail);
+		this->nproto_service = cmn_nproto_service_ipv4;
+		this->tproto_service = cmn_tproto_service_tcp;
 		try(this->thread_pool = cmn_tpool_init(thread_number), NULL, fail);
 	} else {
 		goto fail;	// TODO: handle mono thread case
@@ -54,10 +60,18 @@ fail:
 	return NULL;
 }
 
-extern int cmn_communication_manager_start(cmn_communication_manager_t this, cmn_nproto_service_t nproto_serivce, cmn_tproto_service_t tproto_serivce, const char* url, cmn_request_handler_t request_handler) {
+extern void cmn_communication_manager_set_nproto(cmn_communication_manager_t this, cmn_nproto_service_t nproto_service) {
+	this->nproto_service = nproto_service;
+}
+
+extern void cmn_communication_manager_set_tproto(cmn_communication_manager_t this, cmn_tproto_service_t tproto_serivce) {
+	this->tproto_service = tproto_serivce;
+}
+
+extern int cmn_communication_manager_start(cmn_communication_manager_t this, const char* url, cmn_request_handler_t request_handler) {
 	struct event* socket_event;
 	struct event* signal_event;
-	try(this->socket = cmn_socket2_init(nproto_serivce, tproto_serivce), NULL, fail);
+	try(this->socket = cmn_socket2_init(this->nproto_service, this->tproto_service), NULL, fail);
 	try(cmn_socket2_set_blocking(this->socket, false), 1, fail);
 	try(cmn_socket2_listen(this->socket, url, BACKLOG), 1, fail);
 	this->handler = request_handler;

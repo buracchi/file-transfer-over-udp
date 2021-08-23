@@ -44,7 +44,7 @@ install_dependencies("${DEPENDENCY_LIST}")
 
 # Test
 
-option(BUILD_TESTING "Build the testing tree." ON)
+option(BUILD_TESTING "Build test" ON)
 
 if(BUILD_TESTING)
     enable_testing()
@@ -65,9 +65,18 @@ if(ENABLE_TEST_COVERAGE)
   target_link_options(coverage_config INTERFACE --coverage)
 endif()
 
+# Documentation
+
+option(BUILD_DOC "Build documentation" OFF)
+
+set(BUILD_DOC FALSE)
+if(BUILD_DOC)
+    add_subdirectory("docs")
+endif()
+
 # Subproject
 
 add_subdirectory("lib")
-#add_subdirectory("gbnd")
-#add_subdirectory("ft-server")
+add_subdirectory("ft-server")
 #add_subdirectory("ft-client")
+#add_subdirectory("gbnd")
