@@ -13,10 +13,13 @@
 #include "utilities.h"
 #include "try.h"
 
-static char* get_optionals_usage(cmn_list_t optionals);
-static char* get_positionals_usage(cmn_list_t positionals);
-static char* get_optionals_descritpion(cmn_list_t optionals);
-static char* get_positionals_description(cmn_list_t positionals);
+static int get_messages(cmn_list_t optionals, char** usage, char** description, 
+    int (*get_usage)(struct cmn_argparser_argument* arg, char** str, char* str_vararg),
+    int (*get_descritpion)(struct cmn_argparser_argument* arg, char** str, char* str_vararg));
+static int get_optionals_usage(struct cmn_argparser_argument* arg, char** str, char* str_vararg);
+static int get_optionals_descritpion(struct cmn_argparser_argument* arg, char** str, char* str_vararg);
+static int get_positionals_usage(struct cmn_argparser_argument* arg, char** str, char* str_vararg);
+static int get_positionals_description(struct cmn_argparser_argument* arg, char** str, char* str_vararg);
 static char* get_positional_args_string(struct cmn_argparser_argument* arg);
 static char* get_flag_vararg(struct cmn_argparser_argument* arg);
 static char* get_narg_optional(char* vararg);
@@ -25,7 +28,12 @@ static char* get_narg_list(char* vararg);
 static char* get_narg_list_optional(char* vararg);
 
 extern int format_usage(cmn_argparser_t this) {
+    int ret;
     char* prefix = "usage: ";
+    char* optionals_usage;
+    char* positionals_usage;
+    char* optionals_description;
+    char* positionals_description;
     cmn_list_t optionals = (cmn_list_t)cmn_linked_list_init();
     cmn_list_t positionals = (cmn_list_t)cmn_linked_list_init();
     for (size_t i = 0; i < this->nargs; i++) {
@@ -35,113 +43,78 @@ extern int format_usage(cmn_argparser_t this) {
             cmn_list_push_back(optionals, (void*)(&(this->args[i])));
         }
     }
-    char* optionals_usage = get_optionals_usage(optionals);
-    char* positionals_usage = get_positionals_usage(positionals);
-    char* optionals_description = get_optionals_descritpion(optionals);
-    char* positionals_description = get_positionals_description(positionals);
-    asprintf(
-        &this->usage, 
-        "%s%s%s%s\n\n%s\n%s%s", 
-        prefix, 
-        this->program_name, 
-        optionals_usage, 
-        positionals_usage ? positionals_usage : "",
-        this->program_description,
-        positionals_description ? positionals_description : "",
-        optionals_description
-    );
+    get_messages(optionals, &optionals_usage, &optionals_description, get_optionals_usage, get_optionals_descritpion);
+    get_messages(positionals, &positionals_usage, &positionals_description, get_positionals_usage, get_positionals_description);
+    ret = asprintf(&this->usage, "%s%s%s%s", prefix, this->program_name, optionals_usage ? optionals_usage : "", positionals_usage ? positionals_usage : "");
+    ret = asprintf(&this->usage_details, "\n%s\n%s%s", this->program_description, positionals_description ? positionals_description : "", optionals_description ? optionals_description : "");
+    free(optionals_usage);
+    free(positionals_usage);
+    free(optionals_description);
+    free(positionals_description);
     cmn_list_destroy(optionals);
     cmn_list_destroy(positionals);
+    return ret;
+}
+
+static int get_messages(cmn_list_t arg_list, char** usage, char** description, 
+    int (*get_usage)(struct cmn_argparser_argument* arg, char** str, char* str_vararg),
+    int (*get_descritpion)(struct cmn_argparser_argument* arg, char** str, char* str_vararg)) {
+    cmn_iterator_t i;
+    *usage = NULL;
+    *description = NULL;
+    for (i = cmn_list_begin(arg_list); !cmn_iterator_end(i); cmn_iterator_next(i)) {
+        struct cmn_argparser_argument* item = cmn_iterator_data(i);
+        char* str_vararg = get_positional_args_string(item);
+        char* old_usage = *usage;
+        char* old_description = *description;
+        get_usage(item, usage, str_vararg);
+        get_descritpion(item, description, str_vararg);
+        free(str_vararg);
+        free(old_usage);
+        free(old_description);
+    }
+    cmn_iterator_destroy(i);
     return 0;
 }
 
-static char* get_optionals_usage(cmn_list_t optionals) {
-    char* result;
-    asprintf(&result, " %s", "[-h]");
-    cmn_iterator_t iterator = cmn_list_begin(optionals);
-    while (!cmn_iterator_end(iterator)) {
-        struct cmn_argparser_argument* item = cmn_iterator_data(iterator);
-        char* str_vararg = get_positional_args_string(item);
-        asprintf(
-            &result, 
-            "%s %s%s%s%s%s%s", 
-            result,
-            !item->is_required ? "[" : "",
-            item->flag ? "-" : "--",
-            item->flag ? item->flag : item->long_flag,
-            str_vararg ? " " : "",
-            str_vararg ? str_vararg : "",
-            !item->is_required ? "]" : ""
-        );
-        cmn_iterator_next(iterator);
-    }
-    cmn_iterator_destroy(iterator);
-    return result;
-}
-
-static char* get_positionals_usage(cmn_list_t positionals) {
-    char* result = NULL;
-    cmn_iterator_t iterator = cmn_list_begin(positionals);
-    while (!cmn_iterator_end(iterator)) {
-        struct cmn_argparser_argument* item = cmn_iterator_data(iterator);
-        char* str_vararg = get_positional_args_string(item);
-        asprintf(&result, "%s %s", result ? result : "", str_vararg);
-        cmn_iterator_next(iterator);
-    }
-    cmn_iterator_destroy(iterator);
-    return result;
-}
-
-static char* get_optionals_descritpion(cmn_list_t optionals) {
-    char* result;
-    asprintf(
-        &result,
-        "\n%s\n  %s\n",
-        "optional arguments:",
-        "-h, --help\t\tshow this help message and exit"
+static inline int get_optionals_usage(struct cmn_argparser_argument* arg, char** str, char* str_vararg) {
+    return asprintf(
+        str, 
+        "%s %s%s%s%s%s%s", 
+        *str ? *str : "",
+        !arg->is_required ? "[" : "",
+        arg->flag ? "-" : "--",
+        arg->flag ? arg->flag : arg->long_flag,
+        str_vararg ? " " : "",
+        str_vararg ? str_vararg : "",
+        !arg->is_required ? "]" : ""
     );
-    cmn_iterator_t iterator = cmn_list_begin(optionals);
-    while (!cmn_iterator_end(iterator)) {
-        struct cmn_argparser_argument* item = cmn_iterator_data(iterator);
-        char* str_vararg = get_positional_args_string(item);
-        asprintf(
-            &result, 
-            "%s  %s%s%s%s%s%s%s%s%s\t%s\n", 
-            result,
-            item->flag ? "-" : "",
-            item->flag ? item->flag : "",
-            str_vararg ? " " : "",
-            str_vararg ? str_vararg : "",
-            item->flag ? ", " : "",
-            item->long_flag ? "--" : "",
-            item->long_flag ? item->long_flag : "",
-            str_vararg ? " " : "",
-            str_vararg ? str_vararg : "\t",
-            item->help ? item->help : ""
-        );
-        cmn_iterator_next(iterator);
-    }
-    cmn_iterator_destroy(iterator);
-    return result;
 }
 
-static char* get_positionals_description(cmn_list_t positionals) {
-    char* result = NULL;
-    cmn_iterator_t iterator = cmn_list_begin(positionals);
-    while (!cmn_iterator_end(iterator)) {
-        struct cmn_argparser_argument* item = cmn_iterator_data(iterator);
-        char* str_vararg = get_positional_args_string(item);
-        asprintf(
-            &result, 
-            "%s  %s\t\t\t%s\n", 
-            result? result : "\npositional arguments:\n",
-            item->name,
-            item->help ? item->help : ""
-        );
-        cmn_iterator_next(iterator);
-    }
-    cmn_iterator_destroy(iterator);
-    return result;
+static inline int get_optionals_descritpion(struct cmn_argparser_argument* arg, char** str, char* str_vararg) {
+    return asprintf(
+        str, 
+        "%s  %s%s%s%s%s%s%s%s%s\t%s\n", 
+        *str? *str : "\noptional arguments:\n",
+        arg->flag ? "-" : "",
+        arg->flag ? arg->flag : "",
+        str_vararg ? " " : "",
+        str_vararg ? str_vararg : "",
+        arg->flag ? ", " : "",
+        arg->long_flag ? "--" : "",
+        arg->long_flag ? arg->long_flag : "",
+        str_vararg ? " " : "",
+        str_vararg ? str_vararg : "\t",
+        arg->help ? arg->help : ""
+    );
+}
+
+static inline int get_positionals_usage(struct cmn_argparser_argument* arg, char** str, char* str_vararg) {
+    return asprintf(str, "%s %s", *str ? *str : "", str_vararg);
+}
+
+static inline int get_positionals_description(struct cmn_argparser_argument* arg, char** str, char* str_vararg) {
+    return asprintf(str, "%s  %s\t\t\t%s\n", *str? *str : "\npositional arguments:\n", arg->name, arg->help ? arg->help : "");
 }
 
 static char* get_positional_args_string(struct cmn_argparser_argument* arg) {
@@ -149,7 +122,7 @@ static char* get_positional_args_string(struct cmn_argparser_argument* arg) {
     char* vararg;
     bool is_positional = arg->name;
     if (is_positional) {
-        vararg = (char*)arg->name;
+        asprintf(&vararg, "%s", arg->name);
     } else {
         bool needs_arg = (arg->action == CMN_ARGPARSER_ACTION_STORE)
                         || (arg->action == CMN_ARGPARSER_ACTION_APPEND)
@@ -183,11 +156,9 @@ static char* get_positional_args_string(struct cmn_argparser_argument* arg) {
 static char* get_flag_vararg(struct cmn_argparser_argument* arg) {
     char* result;
     if (arg->long_flag) {
-        result = malloc(strlen(arg->long_flag) + 1);
-        strcpy(result, arg->long_flag);
+        asprintf(&result, "%s", arg->long_flag);
     } else {
-        result = malloc(strlen(arg->flag) + 1);
-        strcpy(result, arg->flag);
+        asprintf(&result, "%s", arg->flag);
     }
     char *ptr = result;
     while(*ptr) {

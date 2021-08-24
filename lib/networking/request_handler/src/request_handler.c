@@ -1,5 +1,7 @@
 #include "request_handler.h"
 
+#include <stdlib.h>
+
 #include "socket2.h"
 
 #include "types/request_handler.h"

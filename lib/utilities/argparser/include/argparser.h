@@ -45,6 +45,11 @@ typedef struct cmn_argparser* cmn_argparser_t;
  * @var cmn_argparser_action::CMN_ARGPARSER_ACTION_EXTEND
  *      @brief stores a list, and extends each argument value to the list
  *      @details (e.g. '--foo 1 --foo 2 3 4' will be stored as a KV pair {"foo",{"1", "2", "3", "4", NULL}})
+ * 
+ * @var cmn_argparser_action::CMN_ARGPARSER_ACTION_HELP
+ *      @brief This prints a complete help message for all the options in the
+ *       current parser and then exits.
+ *      @details By default a help action is automatically added to the parser.
  */
 enum cmn_argparser_action {
     CMN_ARGPARSER_ACTION_STORE,
@@ -54,7 +59,8 @@ enum cmn_argparser_action {
     CMN_ARGPARSER_ACTION_APPEND,
     CMN_ARGPARSER_ACTION_APPEND_CONST,
     CMN_ARGPARSER_ACTION_COUNT,
-    CMN_ARGPARSER_ACTION_EXTEND
+    CMN_ARGPARSER_ACTION_EXTEND,
+    CMN_ARGPARSER_ACTION_HELP
 };
 
 /**
@@ -121,8 +127,12 @@ enum cmn_argparser_action_nargs {
  *       The default value of this field is false.
  * 
  * @var cmn_argparser_argument::action
- *      @brief Specify how the argument should be handled. The default action
- *       is @ref CMN_ARGPARSER_ACTION_STORE.
+ *      @brief Specify how the argument should be handled.
+ *      @details Argparser objects associate command-line arguments with
+ *       actions. These actions can do just about anything with the command-line
+ *       arguments associated with them, though most actions simply add a value
+ *       into the map returned by \ref cmn_argparser_parse().
+ *       The default action is @ref CMN_ARGPARSER_ACTION_STORE.
  * 
  * @var cmn_argparser_argument::action_nargs
  *      @brief Specify how to associate different number of command-line

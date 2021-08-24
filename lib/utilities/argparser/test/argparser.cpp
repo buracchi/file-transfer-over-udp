@@ -4,8 +4,8 @@ extern "C" {
     #include "main-mock.h"
 }
 
-TEST(cmn_linked_list, empty_after_initialization) {
-    int argc = 5;
-    const char* argv[]= {"pname", "test", "-f", "11", "--set-bar", nullptr};
+TEST(cmn_utilities_argparser, test) {
+    int argc = 4;
+    const char* argv[]= {"pname", "test", "-f", "11", nullptr};
     ASSERT_EQ(argv[1], mock_main(argc, argv));
 }

@@ -7,9 +7,17 @@
 
 #include "struct_argparser.h"
 #include "map/linked_list_map.h"
+#include "utilities.h"
 #include "try.h"
 
 extern int format_usage(cmn_argparser_t this);
+
+static struct cmn_argparser_argument help_arg = {
+    .flag = "h",
+    .long_flag = "help",
+    .action = CMN_ARGPARSER_ACTION_HELP,
+    .help = "show this help message and exit"
+};
 
 extern cmn_argparser_t cmn_argparser_init(const char* pname, const char* pdesc) {
     cmn_argparser_t this;
@@ -31,22 +39,24 @@ fail:
 }
 
 extern int cmn_argparser_destroy(cmn_argparser_t this) {
+    try(cmn_map_destroy(this->map), 1, fail);
     free(this->program_name);
     free(this->program_description);
     free(this->usage);
-    // TODO: free instanciated map elements
-    return cmn_map_destroy(this->map);
+    free(this);
+    return 0;
+fail:
+    return 1;
 }
 
 extern int cmn_argparser_set_arguments(cmn_argparser_t this, struct cmn_argparser_argument* arguments, size_t number) {
-    this->args = arguments;
-    this->nargs = number;
-    // TODO: check if parameter are ok or throw error
+    this->nargs = number + 1;
+    try(this->args = malloc(sizeof * this->args * this->nargs), NULL, fail);
+    memcpy(this->args, &help_arg, sizeof help_arg);
+    memcpy((this->args + 1), arguments, sizeof * arguments * number);
+    // TODO: Check and throw error if: There are conflicts, ...
     format_usage(this);
-    //printf("%s", this->usage);
     return 0;
-}
-
-extern cmn_map_t cmn_argparser_parse(cmn_argparser_t this, int argc, const char** argv) {
-    return this->map;
+fail:
+    return 1;
 }

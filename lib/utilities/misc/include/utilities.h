@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -23,7 +24,6 @@ int asprintf(char** str, const char* format, ...);
 
 #define __tostr(statement) #statement
 #define tostr(statement) __tostr(statement)
-#define streq(expected, actual) !strncasecmp(actual, expected, max(strlen(expected), strlen(actual)))
 
 typedef struct cmn_pair {
 	void* first;
@@ -33,6 +33,10 @@ typedef struct cmn_pair {
 int strtoi(char* str, int* result);
 
 int str_to_uint16(const char* str, uint16_t * result);
+
+static inline bool streq(const char* str1, const char* str2) {
+  return (strlen(str1) == strlen(str2)) && (!strcmp(str1, str2));
+}
 
 bool is_directory(char* pathname);
 
