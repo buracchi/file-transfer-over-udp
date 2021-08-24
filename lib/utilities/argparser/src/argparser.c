@@ -31,11 +31,13 @@ fail:
 }
 
 extern int cmn_argparser_destroy(cmn_argparser_t this) {
+    int ret;
     free(this->program_name);
     free(this->program_description);
     free(this->usage);
-    // TODO: free instanciated map elements
-    return cmn_map_destroy(this->map);
+    ret = cmn_map_destroy(this->map);
+    free(this);
+    return 0;
 }
 
 extern int cmn_argparser_set_arguments(cmn_argparser_t this, struct cmn_argparser_argument* arguments, size_t number) {
@@ -43,7 +45,7 @@ extern int cmn_argparser_set_arguments(cmn_argparser_t this, struct cmn_argparse
     this->nargs = number;
     // TODO: check if parameter are ok or throw error
     format_usage(this);
-    //printf("%s", this->usage);
+    printf("%s", this->usage);
     return 0;
 }
 
