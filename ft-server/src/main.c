@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <limits.h>
 
+#include "argparser.h"
 #include "ft_handler.h"
 #include "communication_manager.h"
 #include "utilities.h"
@@ -30,15 +31,24 @@ struct option {
 };
 
 static int usage();
-static struct option** get_options(int argc, char* argv[]);
+static struct option** get_options(int argc, const char* argv[]);
 static void start_server(int port, char* directory);
 
-extern int main(int argc, char* argv[]) {
-	enum operation operation = OP_RUN;
+extern int main(int argc, const char* argv[]) {
 	int port = DEFAULT_PORT;
 	char directory[PATH_MAX] = {};
-	struct option** options;
 	getcwd(directory, sizeof(directory));
+	cmn_map_t option_map;
+    cmn_argparser_t argparser;
+    struct cmn_argparser_argument args[] = {
+        { .flag = "p", .long_flag="port", 		.default_value="1234", 		.help="specify the listening port number (default is 1234)"},
+        { .flag = "d", .long_flag="directory",	.default_value=directory, 	.help="specify the shared directory (default directory is the current working directory)"},
+    };
+    argparser = cmn_argparser_init(argv[0], "File transfer server.");
+    cmn_argparser_set_arguments(argparser, args, 2);
+    option_map = cmn_argparser_parse(argparser, argc, argv);
+	enum operation operation = OP_RUN;
+	struct option** options;
 	try(options = get_options(argc, argv), NULL);
 	for (int i = 0; options[i]; i++) {
 		switch (options[i]->flag) {
@@ -56,6 +66,7 @@ extern int main(int argc, char* argv[]) {
 			goto body;
 		}
 	}
+    cmn_argparser_destroy(argparser);
 body:
 	for (int i = 0; options[i]; free(options[i++]));
 	free(options);
@@ -102,7 +113,7 @@ fail:
 	return 1;
 }
 
-static struct option** get_options(int argc, char* argv[]) {
+static struct option** get_options(int argc, const char* argv[]) {
 	struct option** options;
 	int last_index = 0;
 	try(options = malloc(sizeof * options * argc), NULL, fail);
@@ -114,12 +125,12 @@ static struct option** get_options(int argc, char* argv[]) {
 		}
 		else if (argc - (i + 1) > 0 && (streq(argv[i], "-p") || streq(argv[i], "--port"))) {
 			options[last_index]->flag = F_PORT;
-			options[last_index]->value = argv[i + 1];
+			options[last_index]->value = (char*)argv[i + 1];
 			i++;
 		}
 		else if (argc - (i + 1) > 0 && (streq(argv[i], "-d") || streq(argv[i], "--directory"))) {
 			options[last_index]->flag = F_DIRECTORY;
-			options[last_index]->value = argv[i + 1];
+			options[last_index]->value = (char*)argv[i + 1];
 			i++;
 		}
 		else {

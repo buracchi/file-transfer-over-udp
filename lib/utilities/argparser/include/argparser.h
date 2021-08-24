@@ -58,6 +58,44 @@ enum cmn_argparser_action {
 };
 
 /**
+ * @enum cmn_argparser_action_nargs
+ * 
+ * @brief Methods of associating command line arguments with a single action.
+ * 
+ * @var cmn_argparser_action::CMN_ARGPARSER_ACTION_NARGS_SINGLE
+ *      @brief One argument will be consumed from the command line and produced
+ *       as a single item.
+ * 
+ * @var cmn_argparser_action::CMN_ARGPARSER_ACTION_NARGS_OPTIONAL
+ *      @brief One argument will be consumed from the command line if possible,
+ *       and produced as a single item.
+ *      @details If no command-line argument is present, the value from @ref
+ *       default_value will be produced. Note that for optional arguments, there
+ *       is an additional case - the option string is present but not followed
+ *       by a command-line argument. In this case the value from @ref
+ *       const_value will be produced.
+ * 
+ * @var cmn_argparser_action::CMN_ARGPARSER_ACTION_NARGS_LIST_OF_N
+ *      @brief N arguments from the command line will be gathered together into
+ *       a NULL terminated list.
+ * 
+ * @var cmn_argparser_action::CMN_ARGPARSER_ACTION_NARGS_LIST
+ *      @brief special cases of @ref CMN_ARGPARSER_ACTION_STORE_CONST
+ * 
+ * @var cmn_argparser_action::CMN_ARGPARSER_ACTION_NARGS_LIST
+ *      @brief special cases of @ref CMN_ARGPARSER_ACTION_STORE_CONST
+ *      @details the parsing won't fail if no argument is provided.
+ * 
+ */
+enum cmn_argparser_action_nargs {
+    CMN_ARGPARSER_ACTION_NARGS_SINGLE,
+    CMN_ARGPARSER_ACTION_NARGS_OPTIONAL,
+    CMN_ARGPARSER_ACTION_NARGS_LIST_OF_N,
+    CMN_ARGPARSER_ACTION_NARGS_LIST,
+    CMN_ARGPARSER_ACTION_NARGS_LIST_OPTIONAL,
+};
+
+/**
  * @struct cmn_argparser_argument
  * 
  * @brief Argument item.
@@ -86,20 +124,23 @@ enum cmn_argparser_action {
  *      @brief Specify how the argument should be handled. The default action
  *       is @ref CMN_ARGPARSER_ACTION_STORE.
  * 
- * @var cmn_argparser_argument::nargs
- *      @brief Specify the number of arguments from the command line will be
- *       gathered together into a NULL terminated string array.
- *      @details The default value of this field is 0, in case this field is
- *       left to 0 the parse will produce a single item instead of a list.
+ * @var cmn_argparser_argument::action_nargs
+ *      @brief Specify how to associate different number of command-line
+ *       arguments with a single action. 
+ *      @details If @ref CMN_ARGPARSER_ACTION_NARGS_SINGLE or 
+ *       @ref CMN_ARGPARSER_ACTION_NARGS_OPTIONAL are specified then the
+ *       parser will produce a single item. If @ref
+ *       CMN_ARGPARSER_ACTION_NARGS_LIST_OF_N or @ref
+ *       CMN_ARGPARSER_ACTION_NARGS_LIST are specified the parser will gather
+ *       together the arguments from the command line into a NULL terminated
+ *       string array.
  * 
- * @var cmn_argparser_argument::optional_args
- *      @brief Specify that one argument will be consumed from the command line
- *       if possible, and produced as a single item. If no command-line argument
- *       is present, the value from default will be produced. The default falue
- *       is false;
- * 
- * @var cmn_argparser_argument::many_args
- *      @brief All command-line arguments present are gathered into a list.
+ * @var cmn_argparser_argument::nargs_list_size
+ *      @brief Specify the number of elements that will be gathered together
+ *       form the command line if @ref CMN_ARGPARSER_ACTION_NARGS_SINGLE is
+ *       selected as the value of the @ref action_nargs field.
+ *      @details This field is ignored if the @ref action_nargs field constains
+ *       a value different from @ref CMN_ARGPARSER_ACTION_STORE.
  * 
  * @var cmn_argparser_argument::const_value
  *      @brief Specify the value used when the action is set to
@@ -138,9 +179,8 @@ struct cmn_argparser_argument {
     const char* long_flag;
     bool is_required;
     enum cmn_argparser_action action;
-    size_t nargs;
-    bool optional_args;
-    bool many_args;
+    enum cmn_argparser_action_nargs action_nargs;
+    size_t nargs_list_size;
     void* const_value;
     void* default_value;
     char** choices;

@@ -9,7 +9,7 @@
 #include "map/linked_list_map.h"
 #include "try.h"
 
-extern int set_usage_message(cmn_argparser_t this);
+extern int format_usage(cmn_argparser_t this);
 
 extern cmn_argparser_t cmn_argparser_init(const char* pname, const char* pdesc) {
     cmn_argparser_t this;
@@ -39,11 +39,11 @@ extern int cmn_argparser_destroy(cmn_argparser_t this) {
 }
 
 extern int cmn_argparser_set_arguments(cmn_argparser_t this, struct cmn_argparser_argument* arguments, size_t number) {
-    this->arguments = arguments;
-    this->argnum = number;
+    this->args = arguments;
+    this->nargs = number;
     // TODO: check if parameter are ok or throw error
-    set_usage_message(this);
-    printf("%s", this->usage);
+    format_usage(this);
+    //printf("%s", this->usage);
     return 0;
 }
 
