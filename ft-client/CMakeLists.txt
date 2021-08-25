@@ -4,18 +4,13 @@ project(
 	LANGUAGES C
 )
 
-# Executable
-
 add_executable (
 	ft-client
 	"src/main.c"
 )
 target_link_libraries(ft-client PRIVATE ft-client-lib)
-target_link_libraries(ft-client PRIVATE try)
 target_link_libraries(ft-client PRIVATE utilities)
-add_dependencies(ft-client ft-client-lib)
-
-# Libraries
+target_link_libraries(ft-client INTERFACE coverage_config)
 
 add_library(
 	ft-client-lib
@@ -24,8 +19,8 @@ add_library(
 	"src/ftc.c"
 )
 target_link_libraries(ft-client-lib PRIVATE ftcp)
-target_link_libraries(ft-client-lib PRIVATE socket2)
-target_link_libraries(ft-client-lib PRIVATE try)
+target_link_libraries(ft-client-lib PRIVATE networking-socket2)
+target_link_libraries(ft-client-lib PRIVATE nproto-ipv4)
+target_link_libraries(ft-client-lib PRIVATE tproto-tcp)
 target_link_libraries(ft-client-lib PRIVATE utilities)
-
-# Tests
+target_link_libraries(ft-client INTERFACE coverage_config)
