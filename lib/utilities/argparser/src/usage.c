@@ -45,17 +45,8 @@ extern int format_usage(cmn_argparser_t this) {
     }
     get_messages(optionals, &optionals_usage, &optionals_description, get_optionals_usage, get_optionals_descritpion);
     get_messages(positionals, &positionals_usage, &positionals_description, get_positionals_usage, get_positionals_description);
-    ret = asprintf(
-        &this->usage, 
-        "%s%s%s%s\n\n%s\n%s%s", 
-        prefix, 
-        this->program_name, 
-        optionals_usage, 
-        positionals_usage ? positionals_usage : "",
-        this->program_description,
-        positionals_description ? positionals_description : "",
-        optionals_description
-    );
+    ret = asprintf(&this->usage, "%s%s%s%s", prefix, this->program_name, optionals_usage ? optionals_usage : "", positionals_usage ? positionals_usage : "");
+    ret = asprintf(&this->usage_details, "\n%s\n%s%s", this->program_description, positionals_description ? positionals_description : "", optionals_description ? optionals_description : "");
     free(optionals_usage);
     free(positionals_usage);
     free(optionals_description);
@@ -90,7 +81,7 @@ static inline int get_optionals_usage(struct cmn_argparser_argument* arg, char**
     return asprintf(
         str, 
         "%s %s%s%s%s%s%s", 
-        *str,
+        *str ? *str : "",
         !arg->is_required ? "[" : "",
         arg->flag ? "-" : "--",
         arg->flag ? arg->flag : arg->long_flag,

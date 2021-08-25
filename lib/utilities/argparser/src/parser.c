@@ -13,6 +13,7 @@
 #include "try.h"
 
 static struct cmn_argparser_argument* match_arg(cmn_argparser_t this, int argc, const char* args, struct cmn_argparser_argument** used_arg_array);
+static int handle_unrecognized_elements(cmn_argparser_t this, int argc, const char** argv, struct cmn_argparser_argument** used_argv_array);
 
 extern cmn_map_t cmn_argparser_parse(cmn_argparser_t this, int argc, const char** argv) {
     struct cmn_argparser_argument* used_argv_array[argc];
@@ -24,21 +25,26 @@ extern cmn_map_t cmn_argparser_parse(cmn_argparser_t this, int argc, const char*
         struct cmn_argparser_argument* matching_arg;
         matching_arg = match_arg(this, argc, argv[i], used_argv_array);
         if (matching_arg) {
+            bool is_positional = matching_arg->name;
+            bool have_flag = matching_arg->flag;
+            bool have_long_flag = matching_arg->long_flag;
             used_argv_array[i] = matching_arg;
+            switch (matching_arg->action) {
+            case CMN_ARGPARSER_ACTION_HELP:
+                fprintf(stderr, "%s\n", this->usage);
+                fprintf(stderr, "%s", this->usage_details);
+                exit(EXIT_FAILURE);
+                break;
+            case CMN_ARGPARSER_ACTION_STORE:
+
+            default:
+                break;
+            }
         }
     }
-    cmn_list_t error_arg_list = (cmn_list_t) cmn_linked_list_init();
-    for (int i = 1; i < argc ; i++) {
-        if (!used_argv_array[i]) {
-            cmn_list_push_back(error_arg_list, (void*)argv[i]);
-        }
-        if (!cmn_list_is_empty(error_arg_list)) {
-            // print error_message
-            exit(EXIT_FAILURE);
-        }
-    }
-    cmn_list_destroy(error_arg_list);
-    // if required argument is missing throw error
+    // TODO: Set to the default value the unused optional args
+    handle_unrecognized_elements(this, argc, argv, used_argv_array);
+    // TODO: throw error if required arguments are missing
     return this->map;
 }
 
@@ -64,4 +70,23 @@ static struct cmn_argparser_argument* match_arg(cmn_argparser_t this, int argc, 
         }
     }
     return NULL;
+}
+
+static int handle_unrecognized_elements(cmn_argparser_t this, int argc, const char** argv, struct cmn_argparser_argument** used_argv_array) {
+    cmn_list_t error_arg_list = (cmn_list_t) cmn_linked_list_init();
+    for (int i = 1; i < argc ; i++) {
+        if (!used_argv_array[i]) {
+            cmn_list_push_back(error_arg_list, (void*)argv[i]);
+        }
+    }
+    if (!cmn_list_is_empty(error_arg_list)) {
+        fprintf(stderr, "%s\n", this->usage);
+        fprintf(stderr, "%s: %s", this->program_name, "error: unrecognized arguments: ");
+        for (cmn_iterator_t i = cmn_list_begin(error_arg_list); !cmn_iterator_end(i); cmn_iterator_next(i)) {
+            fprintf(stderr, "%s ", (const char*)cmn_iterator_data(i));
+        }
+        fprintf(stderr, "\n");
+        exit(EXIT_FAILURE);
+    }
+    cmn_list_destroy(error_arg_list);
 }

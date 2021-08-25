@@ -56,7 +56,6 @@ extern int cmn_argparser_set_arguments(cmn_argparser_t this, struct cmn_argparse
     memcpy((this->args + 1), arguments, sizeof * arguments * number);
     // TODO: Check and throw error if: There are conflicts, ...
     format_usage(this);
-    printf("%s", this->usage);  // TODO: delete this
     return 0;
 fail:
     return 1;

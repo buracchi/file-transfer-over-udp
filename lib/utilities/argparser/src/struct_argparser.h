@@ -7,6 +7,7 @@ struct cmn_argparser {
     char* program_name;
     char* program_description;
     char* usage;
+    char* usage_details;
     struct cmn_argparser_argument* args;
     size_t nargs;
     cmn_map_t map;
