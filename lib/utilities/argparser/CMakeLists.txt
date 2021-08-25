@@ -2,6 +2,7 @@ add_library(
 	utilities-argparser
 	STATIC
 	"src/argparser.c"
+	"src/parser.c"
 	"src/usage.c"
 )
 target_include_directories(utilities-argparser PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
