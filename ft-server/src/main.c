@@ -1,147 +1,34 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
-#include <limits.h>
 
 #include "argparser.h"
+#include "map.h"
 #include "ft_handler.h"
 #include "communication_manager.h"
 #include "utilities.h"
 #include "try.h"
 
-#define DEFAULT_PORT 1234
-
-enum operation {
-	OP_RUN, 
-	OP_SHOW_HELP, 
-	OP_FAIL 
-};
-
-enum flag {
-	F_INVALID,
-	F_HELP,
-	F_PORT,
-	F_DIRECTORY
-};
-
-struct option {
-	enum flag flag;
-	char* value;
-};
-
-static int usage();
-static struct option** get_options(int argc, const char* argv[]);
-static void start_server(int port, char* directory);
-
 extern int main(int argc, const char* argv[]) {
-	int port = DEFAULT_PORT;
-	char directory[PATH_MAX] = {};
-	getcwd(directory, sizeof(directory));
 	cmn_map_t option_map;
     cmn_argparser_t argparser;
     struct cmn_argparser_argument args[] = {
-        { .flag = "p", .long_flag="port", 		.default_value="1234", 		.help="specify the listening port number (default is 1234)"},
-        { .flag = "d", .long_flag="directory",	.default_value=directory, 	.help="specify the shared directory (default directory is the current working directory)"},
+        { .flag = "u", .long_flag="url", 		.default_value="0.0.0.0:1234",	.help="specify the listening port number (the default value is \"0.0.0.0:1234\")"},
+        { .flag = "d", .long_flag="directory",	.default_value=getcwd(NULL, 0),	.help="specify the shared directory (the default value is the current working directory)"},
     };
     argparser = cmn_argparser_init(argv[0], "File transfer server.");
     cmn_argparser_set_arguments(argparser, args, 2);
     option_map = cmn_argparser_parse(argparser, argc, argv);
-	enum operation operation = OP_RUN;
-	struct option** options;
-	try(options = get_options(argc, argv), NULL);
-	for (int i = 0; options[i]; i++) {
-		switch (options[i]->flag) {
-		case F_PORT:
-			try(strtoi(options[i]->value, &port), 1);
-			break;
-		case F_DIRECTORY:
-			strncpy(directory, options[i]->value, PATH_MAX - 1);
-			break;
-		case F_HELP:
-			operation = OP_SHOW_HELP;
-			goto body;
-		default:
-			operation = OP_FAIL;
-			goto body;
-		}
-	}
+	char* url;
+	char* directory;
+	cmn_map_at(option_map, (void*)"u", (void**)&url);
+	cmn_map_at(option_map, (void*)"d", (void**)&directory);
+	try(is_directory(directory), 0);
     cmn_argparser_destroy(argparser);
-body:
-	for (int i = 0; options[i]; free(options[i++]));
-	free(options);
-	switch (operation) {
-	case OP_FAIL:
-		try(usage(), 1);
-		return EXIT_FAILURE;
-	case OP_SHOW_HELP:
-		try(usage(), 1);
-		return EXIT_SUCCESS;
-	default:
-		start_server(port, directory);
-	}
-	return EXIT_SUCCESS;
-}
-
-static void start_server(int port, char* directory) {
 	cmn_request_handler_t ft_handler;
 	cmn_communication_manager_t communication_manager;
-	const char* url = "0.0.0.0:1234";
-	try(is_directory(directory), 0);
 	try(ft_handler = (cmn_request_handler_t)ft_handler_init(directory), NULL);
 	try(communication_manager = cmn_communication_manager_init(4), NULL);
-	//cmn_communication_manager_set_tproto(communication_manager, tproto_service_gbn);
-	try(cmn_communication_manager_start(communication_manager, url, ft_handler), 1	);
+	try(cmn_communication_manager_start(communication_manager, url, ft_handler), 1);
 	cmn_request_handler_destroy(ft_handler);
 	cmn_communication_manager_destroy(communication_manager);
-}
-
-static int usage() {
-	try(fprintf(
-			stderr,
-			"Usage: server [-p port] [-d directory]\n\
-			\r\t-p, --port\n\
-			\r\t\tspecify the port number (default port is " tostr(DEFAULT_PORT) ")\n\
-			\r\t-d, --directory\n\
-			\r\t\tspecify the shared directory (default directory is the current working directory)\n"
-		) < 0,
-		!0,
-		fail
-	);
 	return 0;
-fail:
-	return 1;
-}
-
-static struct option** get_options(int argc, const char* argv[]) {
-	struct option** options;
-	int last_index = 0;
-	try(options = malloc(sizeof * options * argc), NULL, fail);
-	memset(options, 0, sizeof * options * argc);
-	for (int i = 1; i < argc; i++) {
-		try(options[last_index] = malloc(sizeof(struct option)), NULL, fail_with_resources);
-		if (streq(argv[i], "-h") || streq(argv[i], "--help")) {
-			options[last_index]->flag = F_HELP;
-		}
-		else if (argc - (i + 1) > 0 && (streq(argv[i], "-p") || streq(argv[i], "--port"))) {
-			options[last_index]->flag = F_PORT;
-			options[last_index]->value = (char*)argv[i + 1];
-			i++;
-		}
-		else if (argc - (i + 1) > 0 && (streq(argv[i], "-d") || streq(argv[i], "--directory"))) {
-			options[last_index]->flag = F_DIRECTORY;
-			options[last_index]->value = (char*)argv[i + 1];
-			i++;
-		}
-		else {
-			options[last_index]->flag = F_INVALID;
-		}
-		last_index++;
-	}
-	return options;
-fail_with_resources:
-	for (int i = 0; options[i]; free(options[i++]));
-	free(options);
-fail:
-	return NULL;
 }
