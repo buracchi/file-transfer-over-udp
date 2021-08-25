@@ -1,7 +1,5 @@
 #include "argparser.h"
 
-#include <stdio.h>
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -36,11 +34,11 @@ extern int format_usage(cmn_argparser_t this) {
     char* positionals_description;
     cmn_list_t optionals = (cmn_list_t)cmn_linked_list_init();
     cmn_list_t positionals = (cmn_list_t)cmn_linked_list_init();
-    for (size_t i = 0; i < this->nargs; i++) {
-        if (this->args[i].name) {
-            cmn_list_push_back(positionals, (void*)(&(this->args[i])));
+    for (struct cmn_argparser_argument** arg = this->args; *arg; arg++) {
+        if ((*arg)->name) {
+            cmn_list_push_back(positionals, (void*)*arg);
         } else {
-            cmn_list_push_back(optionals, (void*)(&(this->args[i])));
+            cmn_list_push_back(optionals, (void*)*arg);
         }
     }
     get_messages(optionals, &optionals_usage, &optionals_description, get_optionals_usage, get_optionals_descritpion);

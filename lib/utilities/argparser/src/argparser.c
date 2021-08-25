@@ -50,10 +50,13 @@ fail:
 }
 
 extern int cmn_argparser_set_arguments(cmn_argparser_t this, struct cmn_argparser_argument* arguments, size_t number) {
-    this->nargs = number + 1;
-    try(this->args = malloc(sizeof * this->args * this->nargs), NULL, fail);
-    memcpy(this->args, &help_arg, sizeof help_arg);
-    memcpy((this->args + 1), arguments, sizeof * arguments * number);
+    size_t size = number + 2;
+    try(this->args = malloc(sizeof * this->args * size), NULL, fail);
+    this->args[0] = &help_arg;
+    for (size_t i = 1; i < number + 1; i++) {
+        this->args[i] = arguments++;
+    }
+    this->args[size - 1] = NULL;
     // TODO: Check and throw error if: There are conflicts, ...
     format_usage(this);
     return 0;

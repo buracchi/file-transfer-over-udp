@@ -81,10 +81,10 @@ static struct cmn_argparser_argument* match_arg(cmn_argparser_t this, int argc, 
     bool match_positional = (args[0] != '-');
     bool match_optional = !match_positional && args[1];
     bool match_long_flag = match_optional && (args[1] == '-') && args[2];
-    for (int i = 0; i < this->nargs; i++) {
+    for (struct cmn_argparser_argument** arg = this->args; *arg; arg++) {
         bool is_arg_used = false;
         for (int j = 1; j < argc; j++) {
-            if (used_arg_array[j] == &(this->args[i])) {
+            if (used_arg_array[j] == *arg) {
                 is_arg_used = true;
                 break;
             }
@@ -92,10 +92,10 @@ static struct cmn_argparser_argument* match_arg(cmn_argparser_t this, int argc, 
         if (is_arg_used) {
             continue;
         }
-        if (match_positional && this->args[i].name
-            || match_optional && this->args[i].flag && streq(args + 1, this->args[i].flag)
-            || match_long_flag && this->args[i].long_flag && streq(args + 2, this->args[i].long_flag)) {
-            return &(this->args[i]);
+        if (match_positional && (*arg)->name
+            || match_optional && (*arg)->flag && streq(args + 1, (*arg)->flag)
+            || match_long_flag && (*arg)->long_flag && streq(args + 2, (*arg)->long_flag)) {
+            return *arg;
         }
     }
     return NULL;
@@ -124,9 +124,10 @@ static int handle_required_missing_elements(cmn_argparser_t this, int argc, cons
     cmn_iterator_t i;
     cmn_list_t missing_required_arg_list = (cmn_list_t) cmn_linked_list_init();
     cmn_list_t required_arg_list = (cmn_list_t) cmn_linked_list_init();
-    for (int i = 1; i < this->nargs ; i++) {
-        if (this->args[i].name || this->args[i].is_required) {
-            cmn_list_push_back(required_arg_list, (void*)&(this->args[i]));
+    for (struct cmn_argparser_argument** arg = this->args; *arg; arg++) {
+        // TODO: the check is incomplete
+        if ((*arg)->name || (*arg)->is_required) {
+            cmn_list_push_back(required_arg_list, (void*)*arg);
         }
     }
     for (i = cmn_list_begin(required_arg_list); !cmn_iterator_end(i); cmn_iterator_next(i)) {
@@ -174,9 +175,9 @@ static int handle_optional_missing_elements(cmn_argparser_t this, int argc, cons
     cmn_iterator_t i;
     cmn_list_t missing_optional_arg_list = (cmn_list_t) cmn_linked_list_init();
     cmn_list_t optional_arg_list = (cmn_list_t) cmn_linked_list_init();
-    for (int i = 1; i < this->nargs ; i++) {
-        if (!(this->args[i].name) && !(this->args[i].is_required)) {
-            cmn_list_push_back(optional_arg_list, (void*)&(this->args[i]));
+    for (struct cmn_argparser_argument** arg = this->args; *arg; arg++) {
+        if (!(*arg)->name && !(*arg)->is_required) {
+            cmn_list_push_back(optional_arg_list, (void*)*arg);
         }
     }
     for (i = cmn_list_begin(optional_arg_list); !cmn_iterator_end(i); cmn_iterator_next(i)) {
