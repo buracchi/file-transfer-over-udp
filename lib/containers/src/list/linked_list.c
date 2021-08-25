@@ -12,29 +12,29 @@
 #include "try.h"
 
 static struct cmn_list_vtbl* get_list_vtbl();
-static int destroy(cmn_list_t list);
-static void* front(cmn_list_t list);
-static void* back(cmn_list_t list);
-static cmn_iterator_t begin(cmn_list_t list);
-static cmn_iterator_t end(cmn_list_t list);
-static bool is_empty(cmn_list_t list);
-static size_t size(cmn_list_t list);
-static void clear(cmn_list_t list);
-static int insert(cmn_list_t list, cmn_iterator_t position, void* value, cmn_iterator_t* inserted);
-static int erase(cmn_list_t list, cmn_iterator_t position, cmn_iterator_t* iterator);
-static int push_front(cmn_list_t list, void* value);
-static int push_back(cmn_list_t list, void* value);
-static void pop_front(cmn_list_t list);
-static void pop_back(cmn_list_t list);
-static int resize(cmn_list_t list, size_t s, void* value);
-static void swap(cmn_list_t list, cmn_list_t other);
-static int merge(cmn_list_t list, cmn_list_t other, int(*comp)(void* a, void* b, bool* result));
-static void splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t pos, cmn_iterator_t first, cmn_iterator_t last);
-static size_t remove(cmn_list_t list, void* value);
-static int remove_if(cmn_list_t list, int(*p)(void* a, bool* result), size_t* removed);
-static void reverse(cmn_list_t list);
-static int unique(cmn_list_t list, int(*comp)(void* a, void* b, bool* result), size_t* removed);
-static int sort(cmn_list_t list, int(*comp)(void* a, void* b, bool* result));
+static int _destroy(cmn_list_t list);
+static void* _front(cmn_list_t list);
+static void* _back(cmn_list_t list);
+static cmn_iterator_t _begin(cmn_list_t list);
+static cmn_iterator_t _end(cmn_list_t list);
+static bool _is_empty(cmn_list_t list);
+static size_t _size(cmn_list_t list);
+static void _clear(cmn_list_t list);
+static int _insert(cmn_list_t list, cmn_iterator_t position, void* value, cmn_iterator_t* inserted);
+static int _erase(cmn_list_t list, cmn_iterator_t position, cmn_iterator_t* iterator);
+static int _push_front(cmn_list_t list, void* value);
+static int _push_back(cmn_list_t list, void* value);
+static void _pop_front(cmn_list_t list);
+static void _pop_back(cmn_list_t list);
+static int _resize(cmn_list_t list, size_t s, void* value);
+static void _swap(cmn_list_t list, cmn_list_t other);
+static int _merge(cmn_list_t list, cmn_list_t other, int(*comp)(void* a, void* b, bool* result));
+static void _splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t pos, cmn_iterator_t first, cmn_iterator_t last);
+static size_t _remove(cmn_list_t list, void* value);
+static int _remove_if(cmn_list_t list, int(*p)(void* a, bool* result), size_t* removed);
+static void _reverse(cmn_list_t list);
+static int _unique(cmn_list_t list, int(*comp)(void* a, void* b, bool* result), size_t* removed);
+static int _sort(cmn_list_t list, int(*comp)(void* a, void* b, bool* result));
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -63,35 +63,35 @@ extern int cmn_linked_list_ctor(cmn_linked_list_t list) {
 static struct cmn_list_vtbl* get_list_vtbl() {
 	struct cmn_list_vtbl vtbl_zero = { 0 };
 	if (!memcmp(&vtbl_zero, &__cmn_list_ops_vtbl, sizeof vtbl_zero)) {
-		__cmn_list_ops_vtbl.destroy = destroy;
-		__cmn_list_ops_vtbl.front = front;
-		__cmn_list_ops_vtbl.back = back;
-		__cmn_list_ops_vtbl.begin = begin;
-		__cmn_list_ops_vtbl.end = end;
-		__cmn_list_ops_vtbl.is_empty = is_empty;
-		__cmn_list_ops_vtbl.size = size;
-		__cmn_list_ops_vtbl.clear = clear;
-		__cmn_list_ops_vtbl.insert = insert;
-		__cmn_list_ops_vtbl.erase = erase;
-		__cmn_list_ops_vtbl.push_front = push_front;
-		__cmn_list_ops_vtbl.push_back = push_back;
-		__cmn_list_ops_vtbl.pop_front = pop_front;
-		__cmn_list_ops_vtbl.pop_back = pop_back;
-		__cmn_list_ops_vtbl.resize = resize;
-		__cmn_list_ops_vtbl.swap = swap;
-		__cmn_list_ops_vtbl.merge = merge;
-		__cmn_list_ops_vtbl.splice = splice;
-		__cmn_list_ops_vtbl.remove = remove;
-		__cmn_list_ops_vtbl.remove_if = remove_if;
-		__cmn_list_ops_vtbl.reverse = reverse;
-		__cmn_list_ops_vtbl.unique = unique;
-		__cmn_list_ops_vtbl.sort = sort;
+		__cmn_list_ops_vtbl.destroy = _destroy;
+		__cmn_list_ops_vtbl.front = _front;
+		__cmn_list_ops_vtbl.back = _back;
+		__cmn_list_ops_vtbl.begin = _begin;
+		__cmn_list_ops_vtbl.end = _end;
+		__cmn_list_ops_vtbl.is_empty = _is_empty;
+		__cmn_list_ops_vtbl.size = _size;
+		__cmn_list_ops_vtbl.clear = _clear;
+		__cmn_list_ops_vtbl.insert = _insert;
+		__cmn_list_ops_vtbl.erase = _erase;
+		__cmn_list_ops_vtbl.push_front = _push_front;
+		__cmn_list_ops_vtbl.push_back = _push_back;
+		__cmn_list_ops_vtbl.pop_front = _pop_front;
+		__cmn_list_ops_vtbl.pop_back = _pop_back;
+		__cmn_list_ops_vtbl.resize = _resize;
+		__cmn_list_ops_vtbl.swap = _swap;
+		__cmn_list_ops_vtbl.merge = _merge;
+		__cmn_list_ops_vtbl.splice = _splice;
+		__cmn_list_ops_vtbl.remove = _remove;
+		__cmn_list_ops_vtbl.remove_if = _remove_if;
+		__cmn_list_ops_vtbl.reverse = _reverse;
+		__cmn_list_ops_vtbl.unique = _unique;
+		__cmn_list_ops_vtbl.sort = _sort;
 	}
 	return &__cmn_list_ops_vtbl;
 }
 
-static int destroy(cmn_list_t list) {
-	clear(list);
+static int _destroy(cmn_list_t list) {
+	_clear(list);
 	return 0;
 }
 
@@ -99,12 +99,12 @@ static int destroy(cmn_list_t list) {
 *                                Element access                                *
 *******************************************************************************/
 
-static void* front(cmn_list_t list) {
+static void* _front(cmn_list_t list) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 	return _this->head->data;
 }
 
-static void* back(cmn_list_t list) {
+static void* _back(cmn_list_t list) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 	return _this->tail->data;
 }
@@ -113,12 +113,12 @@ static void* back(cmn_list_t list) {
 *                                   Iterators                                  *
 *******************************************************************************/
 
-static cmn_iterator_t begin(cmn_list_t list) {
+static cmn_iterator_t _begin(cmn_list_t list) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 	return &(linked_list_iterator_init(_this, _this->head)->super);
 }
 
-static cmn_iterator_t end(cmn_list_t list) {
+static cmn_iterator_t _end(cmn_list_t list) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 	return &(linked_list_iterator_init(_this, NULL)->super);
 }
@@ -127,12 +127,12 @@ static cmn_iterator_t end(cmn_list_t list) {
 *                                   Capacity                                   *
 *******************************************************************************/
 
-static bool is_empty(cmn_list_t list) {
+static bool _is_empty(cmn_list_t list) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 	return _this->size == 0;
 }
 
-static size_t size(cmn_list_t list) {
+static size_t _size(cmn_list_t list) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 	return _this->size;
 }
@@ -141,13 +141,13 @@ static size_t size(cmn_list_t list) {
 *                                   Modifiers                                  *
 *******************************************************************************/
 
-static void clear(cmn_list_t list) {
-	while (!is_empty(list)) {
-		pop_front(list);
+static void _clear(cmn_list_t list) {
+	while (!_is_empty(list)) {
+		_pop_front(list);
 	}
 }
 
-static int insert(cmn_list_t list, cmn_iterator_t position, void* value, cmn_iterator_t* inserted) {
+static int _insert(cmn_list_t list, cmn_iterator_t position, void* value, cmn_iterator_t* inserted) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 	struct linked_list_iterator* _position = (struct linked_list_iterator *)position;
 	struct list_element* new_element;
@@ -172,7 +172,7 @@ static int insert(cmn_list_t list, cmn_iterator_t position, void* value, cmn_ite
 	return 1;
 }
 
-static int erase(cmn_list_t list, cmn_iterator_t position, cmn_iterator_t* iterator) {
+static int _erase(cmn_list_t list, cmn_iterator_t position, cmn_iterator_t* iterator) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 	struct linked_list_iterator* _position = (struct linked_list_iterator *)position;
 
@@ -204,7 +204,7 @@ static int erase(cmn_list_t list, cmn_iterator_t position, cmn_iterator_t* itera
 	return 0;
 }
 
-static int push_front(cmn_list_t list, void* value) {
+static int _push_front(cmn_list_t list, void* value) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 
 	struct list_element* new_element;
@@ -220,7 +220,7 @@ static int push_front(cmn_list_t list, void* value) {
 	return ENOMEM;
 }
 
-static int push_back(cmn_list_t list, void* value) {
+static int _push_back(cmn_list_t list, void* value) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 
 	struct list_element* new_element;
@@ -239,7 +239,7 @@ static int push_back(cmn_list_t list, void* value) {
 	return ENOMEM;
 }
 
-static void pop_front(cmn_list_t list) {
+static void _pop_front(cmn_list_t list) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 
 	if (_this->size == 1) {
@@ -256,7 +256,7 @@ static void pop_front(cmn_list_t list) {
 	_this->size--;
 }
 
-static void pop_back(cmn_list_t list) {
+static void _pop_back(cmn_list_t list) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 
 	if (_this->size == 1) {
@@ -274,22 +274,22 @@ static void pop_back(cmn_list_t list) {
 	_this->size--;
 }
 
-static int resize(cmn_list_t list, size_t s, void* value) {
+static int _resize(cmn_list_t list, size_t s, void* value) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 
 	int ret = 0;
 	while (_this->size != s) {
 		if (_this->size > s) {
-			pop_back(list);
+			_pop_back(list);
 		}
-		else if ((ret = push_back(list, value))) {
+		else if ((ret = _push_back(list, value))) {
 			return ret;
 		}
 	}
 	return 0;
 }
 
-static void swap(cmn_list_t list, cmn_list_t other) {
+static void _swap(cmn_list_t list, cmn_list_t other) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 	cmn_linked_list_t _other = (cmn_linked_list_t)other;
 
@@ -313,7 +313,7 @@ static void swap(cmn_list_t list, cmn_list_t other) {
 /*
 * TODO: implement common_linked_list_sort()
 */
-static int merge(cmn_list_t list, cmn_list_t other, int(*comp)(void* a, void* b, bool* result)) {
+static int _merge(cmn_list_t list, cmn_list_t other, int(*comp)(void* a, void* b, bool* result)) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 	cmn_linked_list_t _other = (cmn_linked_list_t)other;
 
@@ -322,10 +322,10 @@ static int merge(cmn_list_t list, cmn_list_t other, int(*comp)(void* a, void* b,
 	_other->head = NULL;
 	_other->tail = NULL;
 	_other->size = 0;
-	return sort(list, comp);
+	return _sort(list, comp);
 }
 
-static void splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t position, cmn_iterator_t first, cmn_iterator_t last) {
+static void _splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t position, cmn_iterator_t first, cmn_iterator_t last) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 	cmn_linked_list_t _other = (cmn_linked_list_t)other;
 	struct linked_list_iterator* _position = (struct linked_list_iterator *)position;
@@ -346,16 +346,16 @@ static void splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t position, c
 	get_previous_element(_other, _last->element)->next = _position->element;
 }
 
-static size_t remove(cmn_list_t list, void* value) {
+static size_t _remove(cmn_list_t list, void* value) {
 	struct linked_list_iterator* iterator;
 	struct linked_list_iterator* tmp;
 	int _removed = 0;
 
-	iterator = (struct linked_list_iterator*)begin(list);
+	iterator = (struct linked_list_iterator*)_begin(list);
 	while (!cmn_iterator_end(&(iterator->super))) {
 		if (iterator->element->data == value) {
 			tmp = iterator;
-			erase(list, &(iterator->super), (cmn_iterator_t*)&iterator);
+			_erase(list, &(iterator->super), (cmn_iterator_t*)&iterator);
 			cmn_iterator_destroy(&(tmp->super));
 			_removed++;
 		}
@@ -367,20 +367,20 @@ static size_t remove(cmn_list_t list, void* value) {
 	return _removed;
 }
 
-static int remove_if(cmn_list_t list, int(*pred)(void* a, bool* result), size_t* removed) {
+static int _remove_if(cmn_list_t list, int(*pred)(void* a, bool* result), size_t* removed) {
 	struct linked_list_iterator* iterator;
 	struct linked_list_iterator* tmp;
 	bool result;
 	size_t _removed = 0;
 
-	iterator = (struct linked_list_iterator*)begin(list);
+	iterator = (struct linked_list_iterator*)_begin(list);
 	while (!cmn_iterator_end(&(iterator->super))) {
 		if (pred(iterator->element->data, &result)) {
 			return 1;
 		}
 		if (result) {
 			tmp = iterator;
-			erase(list, &(iterator->super), (cmn_iterator_t*)&iterator);
+			_erase(list, &(iterator->super), (cmn_iterator_t*)&iterator);
 			cmn_iterator_destroy(&(tmp->super));
 			_removed++;
 		}
@@ -395,7 +395,7 @@ static int remove_if(cmn_list_t list, int(*pred)(void* a, bool* result), size_t*
 	return 0;
 }
 
-static void reverse(cmn_list_t list) {
+static void _reverse(cmn_list_t list) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 
 	if (_this->size == 0) {
@@ -414,12 +414,12 @@ static void reverse(cmn_list_t list) {
 	_this->tail = walk;
 }
 
-static inline int default_compeq(void* a, void* b, bool* result) {
+static inline int _default_compeq(void* a, void* b, bool* result) {
 	*result = (a == b);
 	return 0;
 }
 
-static int unique(cmn_list_t list, int(*comp)(void* a, void* b, bool* result), size_t* removed) {
+static int _unique(cmn_list_t list, int(*comp)(void* a, void* b, bool* result), size_t* removed) {
 	cmn_linked_list_t _this = (cmn_linked_list_t)list;
 
 	struct linked_list_iterator* iterator1;
@@ -429,9 +429,9 @@ static int unique(cmn_list_t list, int(*comp)(void* a, void* b, bool* result), s
 	size_t _removed = 0;
 
 	if (!comp) {
-		comp = default_compeq;
+		comp = _default_compeq;
 	}
-	iterator1 = (struct linked_list_iterator*)begin(list);
+	iterator1 = (struct linked_list_iterator*)_begin(list);
 	iterator2 = linked_list_iterator_init(_this, NULL);
 	while (!cmn_iterator_end(&(iterator1->super))) {
 		iterator2->element = iterator1->element->next;
@@ -445,7 +445,7 @@ static int unique(cmn_list_t list, int(*comp)(void* a, void* b, bool* result), s
 			}
 			if (result) {
 				tmp = iterator2;
-				erase(list, &(iterator2->super), (cmn_iterator_t*)&iterator2);
+				_erase(list, &(iterator2->super), (cmn_iterator_t*)&iterator2);
 				cmn_iterator_destroy(&(tmp->super));
 				_removed++;
 			}
@@ -464,7 +464,7 @@ static int unique(cmn_list_t list, int(*comp)(void* a, void* b, bool* result), s
 	return 0;
 }
 
-static inline int default_complt(void* a, void* b, bool* result) {
+static inline int _default_complt(void* a, void* b, bool* result) {
 	*result = (a < b);
 	return 0;
 }
@@ -472,6 +472,6 @@ static inline int default_complt(void* a, void* b, bool* result) {
 /*
 * TODO: it needs an algorithm library
 */
-static int sort(cmn_list_t list, int (*comp)(void* a, void* b, bool* result)) {
+static int _sort(cmn_list_t list, int (*comp)(void* a, void* b, bool* result)) {
 	return 1;
 }

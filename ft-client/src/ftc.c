@@ -8,10 +8,10 @@
 
 #include "ftcp.h"
 #include "socket2.h"
-#include "nproto/nproto_ipv4.h"
-#include "tproto/tproto_tcp.h"
-#include "try.h"
+#include "nproto/nproto_service_ipv4.h"
+#include "tproto/tproto_service_tcp.h"
 #include "utilities.h"
+#include "try.h"
 
 enum client_operation { INVALID, EXIT, HELP };
 
@@ -20,19 +20,15 @@ static enum client_operation get_client_operation(char* buffer);
 static enum ftcp_operation get_ftcp_operation(char* buffer);
 
 static int help();
-static int require_list(struct socket2* socket);
-static int require_download(struct socket2* socket, char* filename);
-static int require_upload(struct socket2* socket, char* filename);
+static int require_list(cmn_socket2_t socket);
+static int require_download(cmn_socket2_t socket, char* filename);
+static int require_upload(cmn_socket2_t socket, char* filename);
 
 #define get_arg(buffer) (buffer + 4)
 
 extern int ftc_start(const char* url) {
-	struct socket2* socket;
-	struct nproto_ipv4 ipv4;
-	struct tproto_tcp tcp;
+	cmn_socket2_t socket;
 	char* buff;
-	nproto_ipv4_init(&ipv4);
-	tproto_tcp_init(&tcp);
 	printf("File Transfer Client\n\nType 'help' to get help.\n\n");
 	for (;;) {
 		printf("FTC> ");
@@ -45,8 +41,8 @@ extern int ftc_start(const char* url) {
 			help();
 			break;
 		default:
-			try(socket = new(socket2, &tcp.super.tproto, &ipv4.super.nproto, true), NULL);
-			try(socket2_connect(socket, url), 1);
+			try(socket = cmn_socket2_init(cmn_nproto_service_ipv4, cmn_tproto_service_tcp), NULL);
+			try(cmn_socket2_connect(socket, url), 1);
 			switch (get_ftcp_operation(buff)) {
 			case LIST:
 				require_list(socket);
@@ -61,7 +57,7 @@ extern int ftc_start(const char* url) {
 				printf("Invalid request\n");
 				break;
 			}
-			try(delete(socket), 1);
+			try(cmn_socket2_destroy(socket), 1);
 		}
 		free(buff);
 	}
@@ -109,17 +105,17 @@ static enum ftcp_operation get_ftcp_operation(char* buffer) {
 	return INVALID_OPERATION;
 }
 
-static int require_list(struct socket2* socket) {
+static int require_list(cmn_socket2_t socket) {
 	ftcp_pp_t request;
 	ftcp_pp_t response;
 	char* filelist;
 	try(request = ftcp_pp_init(COMMAND, LIST, NULL, 0), NULL, fail);
-	socket2_send(socket, request, ftcp_pp_size());
+	cmn_socket2_send(socket, request, ftcp_pp_size());
 	free(request);
 	try(response = malloc(ftcp_pp_size()), NULL, fail);
-	socket2_recv(socket, response, ftcp_pp_size());
+	cmn_socket2_recv(socket, response, ftcp_pp_size());
 	free(response);
-	socket2_srecv(socket, &filelist);
+	cmn_socket2_srecv(socket, &filelist);
 	try(printf("%s\n", filelist) < 0, true, fail);
 	free(filelist);
 	return 0;
@@ -127,16 +123,16 @@ fail:
 	return 1;
 }
 
-static int require_download(struct socket2* socket, char* filename) {
+static int require_download(cmn_socket2_t socket, char* filename) {
 	ftcp_pp_t request;
 	ftcp_pp_t response;
 	char filename_buff[256] = { 0 };
 	strcpy(filename_buff, filename);
 	try(request = ftcp_pp_init(COMMAND, GET, filename_buff, 0), NULL, fail);
-	socket2_send(socket, request, ftcp_pp_size());
+	cmn_socket2_send(socket, request, ftcp_pp_size());
 	free(request);
 	try(response = malloc(ftcp_pp_size()), NULL, fail);
-	socket2_recv(socket, response, ftcp_pp_size());
+	cmn_socket2_recv(socket, response, ftcp_pp_size());
 	if (ftcp_get_result(response) == FILE_EXIST) {
 		if (!access(filename, F_OK)) {
 			printf("%s already exists. Do you want to replace it? [y/n]\n", filename);
@@ -148,7 +144,7 @@ static int require_download(struct socket2* socket, char* filename) {
 		}
 		FILE* file;
 		file = fopen(filename, "w");
-		socket2_frecv(socket, file, ftcp_get_dplen(response));
+		cmn_socket2_frecv(socket, file, ftcp_get_dplen(response));
 		try(printf("File downloaded\n") < 0, true, fail);
 		fclose(file);
 	}
@@ -162,7 +158,7 @@ fail:
 	return 1;
 }
 
-static int require_upload(struct socket2* socket, char* filename) {
+static int require_upload(cmn_socket2_t socket, char* filename) {
 	ftcp_pp_t request;
 	ftcp_pp_t response;
 	char filename_buff[256] = { 0 };
@@ -174,10 +170,10 @@ static int require_upload(struct socket2* socket, char* filename) {
 	flen = ftell(file);
 	fseek(file, 0L, SEEK_SET);
 	try(request = ftcp_pp_init(COMMAND, PUT, filename_buff, flen), NULL, fail);
-	socket2_send(socket, request, ftcp_pp_size());
+	cmn_socket2_send(socket, request, ftcp_pp_size());
 	free(request);
 	try(response = malloc(ftcp_pp_size()), NULL, fail);
-	socket2_recv(socket, response, ftcp_pp_size());
+	cmn_socket2_recv(socket, response, ftcp_pp_size());
 	if (ftcp_get_result(response) == FILE_EXIST) {
 		printf("%s already exists. Do you want to replace it? [y/n]\n", filename);
 		char choise[2] = { getchar(), 0 };
@@ -186,8 +182,8 @@ static int require_upload(struct socket2* socket, char* filename) {
 			goto end;
 		}
 	}
-	socket2_fsend(socket, file);
-	socket2_recv(socket, response, ftcp_pp_size());
+	cmn_socket2_fsend(socket, file);
+	cmn_socket2_recv(socket, response, ftcp_pp_size());
 	try(printf("File uploaded\n") < 0, true, fail);
 end:
 	fclose(file);

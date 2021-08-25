@@ -4,19 +4,14 @@ project(
 	LANGUAGES C
 )
 
-# Executable
-
 add_executable (
 	ft-server
 	"src/main.c"
 )
 target_link_libraries(ft-server PRIVATE ft-handler)
 target_link_libraries(ft-server PRIVATE networking-communication-manager)
-target_link_libraries(ft-server PRIVATE networking-socket2)
 target_link_libraries(ft-server PRIVATE utilities)
 target_link_libraries(ft-server INTERFACE coverage_config)
-
-# Libraries
 
 add_library(
 	ft-service
