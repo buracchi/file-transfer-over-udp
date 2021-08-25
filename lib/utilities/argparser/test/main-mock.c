@@ -15,7 +15,7 @@ const char * mock_main(int argc, const char** argv) {
     argparser = cmn_argparser_init(argv[0], "An example program.");
     cmn_argparser_set_arguments(argparser, args, 3);
     option_map = cmn_argparser_parse(argparser, argc, argv);
-    cmn_map_at(option_map, (void*)"foo", (void**)&result);
+    cmn_map_at(option_map, (void*)"arg", (void**)&result);
     cmn_argparser_destroy(argparser);
     return result;
 }
