@@ -4,6 +4,7 @@ add_library(
 	"main-mock.h"
 )
 target_link_libraries(main-mock PRIVATE utilities-argparser)
+target_link_libraries(main-mock INTERFACE coverage_config)
 
 add_executable (
 	test_utilities_argparser
