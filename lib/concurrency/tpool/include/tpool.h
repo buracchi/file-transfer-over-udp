@@ -62,13 +62,3 @@ extern int cmn_tpool_destroy(cmn_tpool_t tpool);
  *  otherwise, an error number shall be returned to indicate the error.
  */
 extern int cmn_tpool_add_work(cmn_tpool_t tpool, void* (*work_routine) (void*), void* arg);
-
-/**
- * @brief Block untill each thread in the thread pool have finished its assigned
- *  work.
- * 
- * @param tpool 
- * @return If successful \a cmn_tpool_wait() function shall return zero; 
- *  otherwise, an error number shall be returned to indicate the error.
- */
-extern int cmn_tpool_wait(cmn_tpool_t tpool);

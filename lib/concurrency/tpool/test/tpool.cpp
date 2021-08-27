@@ -25,12 +25,12 @@ TEST(cmn_tpool, tpool_execute_routine) {
 
 TEST(cmn_tpool, tpool_execute_a_single_work_only_once) {
 	cmn_tpool_t tpool;
-	constexpr int work_number = 4096;
+	constexpr int work_number = 8192;
 	std::tuple<std::mutex, std::mutex, int, int> arg;
 	std::get<0>(arg).lock();
 	std::get<2>(arg) = 0;
 	std::get<3>(arg) = work_number;
-	tpool = cmn_tpool_init(8);
+	tpool = cmn_tpool_init(64);
 	for (int i = 0; i < work_number; i++) {
 		cmn_tpool_add_work(tpool, bar, (void*)&arg);
 	}
