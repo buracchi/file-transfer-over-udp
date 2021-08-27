@@ -3,12 +3,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <pthread.h>
+#include <threads.h>
+#include <semaphore.h>
 #include <sys/types.h>
 
 #include "queue/double_linked_list_stack_queue.h"
-#include "try.h"
 #include "utilities.h"
+#include "try.h"
+
 
 struct work {
     void* (*routine) (void*);
@@ -16,65 +18,69 @@ struct work {
 };
 
 struct cmn_tpool {
-    size_t thread_cnt;
-    size_t working_cnt;
-    cmn_queue_t job_queue;
-    pthread_mutex_t mutex;
-    pthread_cond_t work_available_cond;
-    pthread_cond_t none_working_cond;
-    bool stop;
+    thrd_t* threads;
+    cmn_queue_t work_queue;
+    mtx_t work_queue_lock;
+    sem_t available_work_semaphore;
+    bool shutdown;
+    mtx_t shutdown_lock;
 };
 
-static void* worker_routine(void* arg);
-
-#define exist_thread_running(tpool) (tpool->thread_cnt)
-#define exist_thread_working(tpool) (tpool->working_cnt)
-#define is_job_queue_empty(tpool) cmn_queue_is_empty(tpool->job_queue)
+static int _worker_routine(cmn_tpool_t tpool);
 
 extern cmn_tpool_t cmn_tpool_init(size_t tnumber) {
     cmn_tpool_t this;
+    size_t thread_array_size;
+    thread_array_size = (tnumber + 1) * sizeof *this->threads;
     try(this = malloc(sizeof *this), NULL, fail);
     memset(this, 0, sizeof *this);
-    this->thread_cnt = tnumber;
-    this->working_cnt = 0;
-    try(this->job_queue = (cmn_queue_t)cmn_double_linked_list_stack_queue_init(), NULL, fail);
-    try_pthread_mutex_init(&(this->mutex), fail2);
-    try_pthread_cond_init(&(this->work_available_cond), fail3);
-    try_pthread_cond_init(&(this->none_working_cond), fail4);
-    this->stop = false;
-    pthread_t thread;
+    try(this->threads = malloc(thread_array_size), NULL, fail2); 
+    memset(this->threads, 0, thread_array_size);
+    try(this->work_queue = (cmn_queue_t)cmn_double_linked_list_stack_queue_init(), NULL, fail3);
+    try(sem_init(&(this->available_work_semaphore), 0, 0), -1, fail4);
+    try(mtx_init(&(this->work_queue_lock), mtx_plain), thrd_error, fail5);
+    this->shutdown = false;
+    try(mtx_init(&(this->shutdown_lock), mtx_plain), thrd_error, fail6);
     for (size_t i = 0; i < tnumber; i++) {
-        try_pthread_create(&thread, NULL, worker_routine, this, fail5);
-        try_pthread_detach(thread, fail6);
+        thrd_create(this->threads + i, (thrd_start_t)_worker_routine, this);
     }
     return this;
 fail6:
-    pthread_join(thread, NULL);
+    mtx_destroy(&(this->work_queue_lock));
 fail5:
-    pthread_cond_destroy(&(this->none_working_cond));
+    sem_destroy(&(this->available_work_semaphore));
 fail4:
-    pthread_cond_destroy(&(this->work_available_cond));
+    cmn_queue_destroy(this->work_queue);
 fail3:
-    pthread_mutex_destroy(&(this->mutex));
+    free(this->threads);
 fail2:
-    cmn_queue_destroy(this->job_queue);
+    free(this);
 fail:
     return NULL;
 }
 
 extern int cmn_tpool_destroy(cmn_tpool_t this) {
-    try_pthread_mutex_lock(&(this->mutex), fail);
-    while (!is_job_queue_empty(this)) {
-        free(cmn_queue_dequeue(this->job_queue));
+    try(mtx_lock(&(this->shutdown_lock)), thrd_error, fail);
+    this->shutdown = true;
+    try(mtx_unlock(&(this->shutdown_lock)), thrd_error, fail);
+    // TODO: add an option to empty the queue (i.e. bool cancel_futures)
+    try(mtx_lock(&(this->work_queue_lock)), thrd_error, fail);
+    while (!cmn_queue_is_empty(this->work_queue)) {
+        free(cmn_queue_dequeue(this->work_queue));
     }
-    this->stop = true;
-    try_pthread_cond_broadcast(&(this->work_available_cond), fail);
-    try_pthread_mutex_unlock(&(this->mutex), fail);
-    try(cmn_tpool_wait(this), 1, fail);
-    cmn_queue_destroy(this->job_queue);
-    try_pthread_mutex_destroy(&(this->mutex), fail);
-    try_pthread_cond_destroy(&(this->work_available_cond), fail);
-    try_pthread_cond_destroy(&(this->none_working_cond), fail);
+    try(mtx_unlock(&(this->work_queue_lock)), thrd_error, fail);
+    for (thrd_t* ptr = this->threads; *ptr; ptr++) {
+        // Send a wake-up to prevent threads from permanently blocking
+        try(sem_post(&(this->available_work_semaphore)), -1, fail);
+        }
+    for (thrd_t* ptr = this->threads; *ptr; ptr++) {
+        try(thrd_join(*ptr, NULL), thrd_error, fail);
+        }
+    try(cmn_queue_destroy(this->work_queue), 1, fail);
+    try(sem_destroy(&(this->available_work_semaphore)), -1, fail);
+    mtx_destroy(&(this->work_queue_lock));
+    mtx_destroy(&(this->shutdown_lock));
+    free(this->threads);
     free(this);
     return 0;
 fail:
@@ -82,73 +88,48 @@ fail:
 }
 
 extern int cmn_tpool_add_work(cmn_tpool_t this, void* (*work_routine) (void*), void* arg) {
-    if (this->stop) {
-        return 1;
-    }
     struct work* work;
-    work = malloc(sizeof * work);
-    if (work) {
-        work->routine = work_routine;
-        work->arg = arg;
-        try_pthread_mutex_lock(&(this->mutex), fail);
-        try(cmn_queue_enqueue(this->job_queue, work), !0, fail2);
-        try_pthread_cond_broadcast(&(this->work_available_cond), fail3);
-        try_pthread_mutex_unlock(&(this->mutex), fail3);
+    try(work = malloc(sizeof * work), NULL, fail);
+    work->routine = work_routine;
+    work->arg = arg;
+    try(mtx_lock(&(this->shutdown_lock)), thrd_error, fail2);
+    if (this->shutdown) {
+        try(mtx_unlock(&(this->shutdown_lock)), thrd_error, fail2);
+        free(work);
         return 0;
     }
-fail3:
-    cmn_queue_dequeue(this->job_queue);
-fail2:
-    pthread_mutex_unlock(&(this->mutex));
-fail:
-    free(work);
-    return 1;
-}
-
-extern int cmn_tpool_wait(cmn_tpool_t this) {
-    try_pthread_mutex_lock(&(this->mutex), fail);
-    for (;;) {
-        if ((!this->stop && exist_thread_working(this)) || (this->stop && exist_thread_running(this))) {
-            try_pthread_cond_wait(&(this->none_working_cond), &(this->mutex), fail);
-        }
-        else {
-            break;
-        }
-    }
-    try_pthread_mutex_unlock(&(this->mutex), fail);
+    try(mtx_lock(&(this->work_queue_lock)), thrd_error, fail3);
+    try(cmn_queue_enqueue(this->work_queue, work), !0, fail4);
+    try(mtx_unlock(&(this->work_queue_lock)), thrd_error, fail5);
+    try(sem_post(&(this->available_work_semaphore)), -1, fail5);
+    try(mtx_unlock(&(this->shutdown_lock)), thrd_error, fail);
     return 0;
+fail5:
+    cmn_queue_dequeue(this->work_queue);
+fail4:
+    mtx_unlock(&(this->work_queue_lock));
+fail3:
+    mtx_unlock(&(this->shutdown_lock));
+fail2:
+    free(work);
 fail:
     return 1;
 }
 
-static void* worker_routine(void* arg) {
-    cmn_tpool_t this = arg;
-    struct work* work = NULL;
-    for (;;) {
-        try_pthread_mutex_lock(&(this->mutex), fail);
-        while (is_job_queue_empty(this) && !this->stop) {
-            try_pthread_cond_wait(&(this->work_available_cond), &(this->mutex), fail);
-        }
-        if (this->stop) {
+static int _worker_routine(cmn_tpool_t tpool) {
+    struct work* work;
+    while (true) {
+        try(sem_wait(&(tpool->available_work_semaphore)), -1, fail);
+        if (tpool->shutdown) {
             break;
         }
-        this->working_cnt++;
-        if (!is_job_queue_empty(this)) {
-            work = cmn_queue_dequeue(this->job_queue);
-        }
-        try_pthread_mutex_unlock(&(this->mutex), fail);
+        try(mtx_lock(&(tpool->work_queue_lock)), thrd_error, fail);
+        work = cmn_queue_dequeue(tpool->work_queue);
+        try(mtx_unlock(&(tpool->work_queue_lock)), thrd_error, fail);
         work->routine(work->arg);
         free(work);
-        try_pthread_mutex_lock(&(this->mutex), fail);
-        this->working_cnt--;
-        if (!this->stop && !exist_thread_working(this) && is_job_queue_empty(this)) {
-            try_pthread_cond_signal(&(this->none_working_cond), fail);
-        }
-        try_pthread_mutex_unlock(&(this->mutex), fail);
     }
-    this->thread_cnt--;
-    try_pthread_cond_signal(&(this->none_working_cond), fail);
-    try_pthread_mutex_unlock(&(this->mutex), fail);
+    return 0;
 fail:
-    return NULL;
+    return 1;   // TODO: implement a worker error handler
 }
