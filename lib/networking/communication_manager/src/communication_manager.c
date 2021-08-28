@@ -38,7 +38,12 @@ struct cmn_communication_manager {
     cmn_tpool_t thread_pool;
 };
 
-static void stop(evutil_socket_t signal, short events, void* arg);
+struct hadler_info {
+    cmn_request_handler_t handler;
+    cmn_socket2_t socket;
+};
+
+static void _stop(evutil_socket_t signal, short events, void* arg);
 static void dispatch_request(evutil_socket_t fd, short events, void* arg);
 static void* handle_request(void* arg);
 
@@ -77,7 +82,7 @@ extern int cmn_communication_manager_start(cmn_communication_manager_t this, con
 	this->handler = request_handler;
 	try(event_base = event_base_new(), NULL, fail);
 	try(socket_event = event_new(event_base, cmn_socket2_get_fd(this->socket), EV_READ | EV_PERSIST, dispatch_request, this), NULL, fail);
-	try(signal_event = evsignal_new(event_base, SIGINT, stop, (void*)event_base), NULL, fail);
+	try(signal_event = evsignal_new(event_base, SIGINT, _stop, (void*)event_base), NULL, fail);
 	try(event_add(socket_event, NULL), -1, fail);
 	try(event_add(signal_event, NULL), -1, fail);
 	try((printf("Server started.\n") < 0), true, fail);
@@ -89,11 +94,12 @@ extern int cmn_communication_manager_start(cmn_communication_manager_t this, con
 	try(cmn_socket2_destroy(this->socket), 1, fail);
 	return 0;
 fail:
+	printf("%s\n",strerror(errno));
 	return 1;
 }
 
 extern int cmn_communication_manager_stop(cmn_communication_manager_t this) {
-	stop(0, 0, (void*)event_base);
+	_stop(0, 0, (void*)event_base);
 }
 
 extern int cmn_communication_manager_destroy(cmn_communication_manager_t this) {
@@ -106,15 +112,24 @@ fail:
 
 static void dispatch_request(evutil_socket_t fd, short events, void* arg) {
 	cmn_communication_manager_t this = (cmn_communication_manager_t)arg;
-	cmn_tpool_add_work(this->thread_pool, handle_request, arg);
+	struct hadler_info* info = malloc(sizeof * info);
+	if (info) {
+		info->handler = this->handler;
+		info->socket = cmn_socket2_accept(this->socket);
+		cmn_tpool_add_work(this->thread_pool, handle_request, info);
+	}
 }
 
 static void* handle_request(void* arg) {
-	cmn_communication_manager_t this = (cmn_communication_manager_t)arg;
-	cmn_request_handler_handle_request(this->handler, this->socket);
+	struct hadler_info* info = arg;
+	cmn_request_handler_handle_request(info->handler, info->socket);
+	if (info->socket) {
+		cmn_socket2_destroy(info->socket);
+	}
+	free(arg);
 }
 
-static void stop(evutil_socket_t signal, short events, void* user_data) {
+static void _stop(evutil_socket_t signal, short events, void* user_data) {
 	struct event_base* base = user_data;
 	struct timeval delay = { 1, 0 };
 	printf("\nShutting down...\n");
