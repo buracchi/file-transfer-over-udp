@@ -59,31 +59,28 @@ static int destroy(cmn_request_handler_t handler) {
 
 static void handle_request(cmn_request_handler_t handler, cmn_socket2_t socket) {
 	ft_handler_t this = (ft_handler_t)handler;
-	cmn_socket2_t accepted;
 	ftcp_pp_t request;
-	accepted = cmn_socket2_accept(socket);
 	request = malloc(ftcp_pp_size());
-	cmn_socket2_recv(accepted, request, ftcp_pp_size());
+	cmn_socket2_recv(socket, request, ftcp_pp_size());
 	switch (ftcp_get_type(request)) {
 	case COMMAND:
 		switch (ftcp_get_operation(request)) {
 		case LIST:
-			handle_list_request(this, accepted, request);
+			handle_list_request(this, socket, request);
 			break;
 		case GET:
-			handle_get_request(this, accepted, request);
+			handle_get_request(this, socket, request);
 			break;
 		case PUT:
-			handle_put_request(this, accepted, request);
+			handle_put_request(this, socket, request);
 			break;
 		default:
-			handle_invalid_request(this, accepted, request);
+			handle_invalid_request(this, socket, request);
 		}
 		break;
 	default:
-		handle_invalid_request(this, accepted, request);
+		handle_invalid_request(this, socket, request);
 	}
-	cmn_socket2_destroy(accepted);
 	free(request);
 }
 

@@ -7,8 +7,8 @@
 #include <string.h>
 
 #include "types/socket2.h"
-#include "try.h"
 #include "utilities.h"
+#include "try.h"
 
 #ifdef __unix__
 #include <unistd.h>
@@ -34,8 +34,13 @@ extern cmn_socket2_t cmn_socket2_init(cmn_nproto_service_t nproto_serivce, cmn_t
 	int domain = this->nproto_service->domain;
 	int type = this->tproto_service->type;
 	int protocol = this->tproto_service->protocol;
-	try(this->fd = socket(domain, type, protocol), INVALID_SOCKET, fail);
+	try(this->fd = socket(domain, type, protocol), INVALID_SOCKET, fail2);
+	try(setsockopt(this->fd, SOL_SOCKET, SO_LINGER, &(struct linger){.l_onoff=1, .l_linger=0}, sizeof(struct linger)), -1, fail3);
 	return this;
+fail3:
+	close(this->fd);
+fail2:
+	free(this);
 fail:
 	return NULL;
 }
@@ -51,7 +56,7 @@ fail:
 
 extern cmn_socket2_t cmn_socket2_accept(cmn_socket2_t this) {
     cmn_socket2_t accepted;
-	accepted = cmn_socket2_init(this->nproto_service, this->tproto_service);
+	try(accepted = cmn_socket2_init(this->nproto_service, this->tproto_service), NULL, fail);
     try(accepted->address = malloc(this->addrlen), NULL, fail2);
 	while ((accepted->fd = accept(this->fd, accepted->address, &accepted->addrlen)) == -1) {
 		try(errno != EMFILE, true, fail3);

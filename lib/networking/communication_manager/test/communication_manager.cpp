@@ -27,19 +27,13 @@ struct simple_handler {
 
 static void foo(cmn_request_handler_t request_handler, cmn_socket2_t socket);
 
-constexpr int request_number = 1;
+constexpr int request_number = 1024;
 
 TEST(cmn_communication_manager, test) {
 	__cmn_request_handler_ops_vtbl.handle_request = foo;
 	cmn_communication_manager_t cm = cmn_communication_manager_init(8);
 	std::thread server([&cm] {
-		cmn_communication_manager_start(
-			cm,
-			cmn_nproto_service_ipv4,
-			cmn_tproto_service_tcp,
-			"0.0.0.0:1234",
-			(cmn_request_handler_t)&simple_handler
-		);
+		cmn_communication_manager_start(cm, "0.0.0.0:1234", (cmn_request_handler_t)&simple_handler);
 	});
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	std::vector<std::thread> clients;
@@ -65,13 +59,9 @@ TEST(cmn_communication_manager, test) {
 
 static void foo(cmn_request_handler_t request_handler, cmn_socket2_t socket) {
 	struct simple_handler* handler = (struct simple_handler*)request_handler;
-	cmn_socket2_t accepted;
 	uint8_t buff = 1;
-	if(accepted = cmn_socket2_accept(socket)) {
-		handler->m.lock();
-		handler->counter++;
-		handler->m.unlock();
-		try(cmn_socket2_send(accepted, &buff, 1), -1);
-		cmn_socket2_destroy(accepted);
-	}
+	handler->m.lock();
+	handler->counter++;
+	handler->m.unlock();
+	try(cmn_socket2_send(socket, &buff, 1), -1);
 }
