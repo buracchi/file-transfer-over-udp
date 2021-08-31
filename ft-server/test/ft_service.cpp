@@ -10,18 +10,16 @@ extern "C" {
 #include <iostream>
 #include <filesystem>
 
-using namespace std;
-
 TEST(ft_service, get_filelist_return_current_directory_regular_filelist) {
-	string path = filesystem::current_path();
+	std::string path = std::filesystem::current_path();
 	ft_service_t ftservice = ft_service_init(path.c_str());
-	istringstream is(ft_service_get_filelist(ftservice));
-	unordered_set<string> actual = unordered_set<string>(
-		istream_iterator<string>(is),
-		istream_iterator<string>()
+	std::istringstream is(ft_service_get_filelist(ftservice));
+	std::unordered_set<std::string> actual = std::unordered_set<std::string>(
+		std::istream_iterator<std::string>(is),
+		std::istream_iterator<std::string>()
 	);
-	unordered_set<string> expected;
-	for (const auto& entry : filesystem::directory_iterator(path)) {
+	std::unordered_set<std::string> expected;
+	for (const auto& entry : std::filesystem::directory_iterator(path)) {
 		if (entry.is_regular_file()) {
 			expected.insert(entry.path().filename());
 		}

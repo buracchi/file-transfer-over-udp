@@ -32,13 +32,18 @@ static void handle_put_request(ft_handler_t this, cmn_socket2_t socket, ftcp_pp_
 static void handle_invalid_request(ft_handler_t this, cmn_socket2_t socket, ftcp_pp_t request);
 
 extern ft_handler_t ft_handler_init(const char* base_dir_path) {
-	ft_handler_t this = malloc(sizeof * this);
-	if (this) {
-		this->super.__ops_vptr = get_request_handler_vtbl();
-		this->ft_service = ft_service_init(base_dir_path);
-		this->rwfslock = cmn_rwfslock_init();
-	}
+	ft_handler_t this;
+	try(this = malloc(sizeof * this), NULL, fail);
+	this->super.__ops_vptr = get_request_handler_vtbl();
+	try(this->ft_service = ft_service_init(base_dir_path), NULL, fail2);
+	try(this->rwfslock = cmn_rwfslock_init(), NULL, fail3);
 	return this;
+fail3:
+	ft_service_destroy(this->ft_service);
+fail2:
+	free(this);
+fail:
+	return 0;
 }
 
 static struct cmn_request_handler_vtbl* get_request_handler_vtbl() {
@@ -52,16 +57,18 @@ static struct cmn_request_handler_vtbl* get_request_handler_vtbl() {
 
 static int destroy(cmn_request_handler_t handler) {
 	ft_handler_t this = (ft_handler_t)handler;
-	ft_service_destroy(this->ft_service);
-	cmn_rwfslock_destroy(this->rwfslock);
+	try(ft_service_destroy(this->ft_service), 1, fail);
+	try(cmn_rwfslock_destroy(this->rwfslock), 1, fail);
 	return 0;
+fail:
+	return 1;
 }
 
 static void handle_request(cmn_request_handler_t handler, cmn_socket2_t socket) {
 	ft_handler_t this = (ft_handler_t)handler;
 	ftcp_pp_t request;
-	request = malloc(ftcp_pp_size());
-	cmn_socket2_recv(socket, request, ftcp_pp_size());
+	try(request = malloc(ftcp_pp_size()), NULL);
+	try(cmn_socket2_recv(socket, request, ftcp_pp_size()), -1);
 	switch (ftcp_get_type(request)) {
 	case COMMAND:
 		switch (ftcp_get_operation(request)) {
@@ -88,8 +95,8 @@ static void handle_list_request(ft_handler_t this, cmn_socket2_t socket, ftcp_pp
 	ftcp_pp_t reply;
 	char* filelist = ft_service_get_filelist(this->ft_service);
 	reply = ftcp_pp_init(RESPONSE, SUCCESS, NULL, strlen(filelist));
-	cmn_socket2_send(socket, reply, ftcp_pp_size());
-	cmn_socket2_ssend(socket, filelist);
+	try(cmn_socket2_send(socket, reply, ftcp_pp_size()), -1);
+	try(cmn_socket2_ssend(socket, filelist), -1);
 	free(filelist);
 	free(reply);
 }

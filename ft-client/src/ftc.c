@@ -41,6 +41,7 @@ extern int ftc_start(const char* url) {
 			help();
 			break;
 		default:
+			//try(socket = cmn_socket2_init(cmn_nproto_service_ipv4, cmn_tproto_service_gbn), NULL);
 			try(socket = cmn_socket2_init(cmn_nproto_service_ipv4, cmn_tproto_service_tcp), NULL);
 			try(cmn_socket2_connect(socket, url), 1);
 			switch (get_ftcp_operation(buff)) {
