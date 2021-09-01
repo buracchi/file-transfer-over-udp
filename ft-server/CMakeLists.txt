@@ -10,6 +10,7 @@ add_executable (
 )
 target_link_libraries(ft-server PRIVATE ft-handler)
 target_link_libraries(ft-server PRIVATE networking-communication-manager)
+target_link_libraries(ft-server PRIVATE tproto-gbn)
 target_link_libraries(ft-server PRIVATE utilities)
 target_link_libraries(ft-server INTERFACE coverage_config)
 

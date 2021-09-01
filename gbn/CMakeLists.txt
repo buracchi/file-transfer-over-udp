@@ -1,16 +1,17 @@
 find_package(Libevent CONFIG REQUIRED)
 
 add_library(
-	tproto-gbnd
+	tproto-gbn
 	STATIC
 	"src/tproto_service_gbn.c"
+	"src/gbn_sender.c"
+	"src/gbn_receiver.c"
 )
-target_include_directories(tproto-gbnd PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_include_directories(tproto-gbnd PRIVATE "${LIBEVENT_INCLUDE_DIR}")
-target_link_libraries(tproto-gbnd PRIVATE pthread)
-target_link_libraries(tproto-gbnd PRIVATE socket2)
-target_link_libraries(tproto-gbnd PRIVATE tproto)
-target_link_libraries(tproto-gbnd PRIVATE nproto)
-target_link_libraries(tproto-gbnd PRIVATE libevent::core libevent::extra libevent::pthreads)
-target_link_libraries(tproto-gbnd PRIVATE try)
-target_link_libraries(tproto-gbnd PRIVATE utilities)
+target_include_directories(tproto-gbn PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(tproto-gbn PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_include_directories(tproto-gbn PRIVATE "${LIBEVENT_INCLUDE_DIR}")
+target_link_libraries(tproto-gbn PRIVATE libevent::core libevent::extra libevent::pthreads)
+target_link_libraries(tproto-gbn PRIVATE networking-socket2)
+target_link_libraries(tproto-gbn PRIVATE tproto)
+target_link_libraries(tproto-gbn PRIVATE nproto)
+target_link_libraries(tproto-gbn PRIVATE utilities)
