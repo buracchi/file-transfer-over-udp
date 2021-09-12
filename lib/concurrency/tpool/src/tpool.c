@@ -34,7 +34,7 @@ extern cmn_tpool_t cmn_tpool_init(size_t tnumber) {
     thread_array_size = (tnumber + 1) * sizeof *this->threads;
     try(this = malloc(sizeof *this), NULL, fail);
     memset(this, 0, sizeof *this);
-    try(this->threads = malloc(thread_array_size), NULL, fail2); 
+    try(this->threads = malloc(thread_array_size), NULL, fail2);
     memset(this->threads, 0, thread_array_size);
     try(this->work_queue = (cmn_queue_t)cmn_double_linked_list_stack_queue_init(), NULL, fail3);
     try(sem_init(&(this->available_work_semaphore), 0, 0), -1, fail4);

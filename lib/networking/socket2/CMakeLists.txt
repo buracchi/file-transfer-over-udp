@@ -48,14 +48,6 @@ target_include_directories(tproto-tcp PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/includ
 target_link_libraries(tproto-tcp PRIVATE utilities)
 target_link_libraries(tproto-tcp INTERFACE coverage_config)
 
-add_library(
-	tproto-udp
-	"src/tproto/tproto_service_udp.c"
-)
-target_include_directories(tproto-udp PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(tproto-udp PRIVATE utilities)
-target_link_libraries(tproto-udp INTERFACE coverage_config)
-
 if (BUILD_TESTING)
 	add_subdirectory("test")
 endif()

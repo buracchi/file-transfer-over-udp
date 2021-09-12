@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <signal.h>
-#include <pthread.h>
 
 #include <event2/event.h>
 #include <event2/thread.h>
@@ -16,11 +15,6 @@
 #include "tpool.h"
 #include "try.h"
 #include "utilities.h"
-
-#ifdef __unix__
-	#include <sys/sysinfo.h>
-	#include <unistd.h>
-#endif
 
 #define BACKLOG 4096
 
@@ -43,7 +37,7 @@ struct hadler_info {
     cmn_socket2_t socket;
 };
 
-static void _stop(evutil_socket_t signal, short events, void* arg);
+static void stop(evutil_socket_t signal, short events, void* user_data);
 static void dispatch_request(evutil_socket_t fd, short events, void* arg);
 static void* handle_request(void* arg);
 
@@ -82,7 +76,7 @@ extern int cmn_communication_manager_start(cmn_communication_manager_t this, con
 	this->handler = request_handler;
 	try(event_base = event_base_new(), NULL, fail);
 	try(socket_event = event_new(event_base, cmn_socket2_get_fd(this->socket), EV_READ | EV_PERSIST, dispatch_request, this), NULL, fail);
-	try(signal_event = evsignal_new(event_base, SIGINT, _stop, (void*)event_base), NULL, fail);
+	try(signal_event = evsignal_new(event_base, SIGINT, stop, (void*)event_base), NULL, fail);
 	try(event_add(socket_event, NULL), -1, fail);
 	try(event_add(signal_event, NULL), -1, fail);
 	try((printf("Server started.\n") < 0), true, fail);
@@ -99,7 +93,8 @@ fail:
 }
 
 extern int cmn_communication_manager_stop(cmn_communication_manager_t this) {
-	_stop(0, 0, (void*)event_base);
+	stop(0, 0, (void*)event_base);
+    return 0;
 }
 
 extern int cmn_communication_manager_destroy(cmn_communication_manager_t this) {
@@ -127,9 +122,10 @@ static void* handle_request(void* arg) {
 		cmn_socket2_destroy(info->socket);
 	}
 	free(arg);
+    return NULL;
 }
 
-static void _stop(evutil_socket_t signal, short events, void* user_data) {
+static void stop(evutil_socket_t signal, short events, void* user_data) {
 	struct event_base* base = user_data;
 	struct timeval delay = { 1, 0 };
 	printf("\nShutting down...\n");

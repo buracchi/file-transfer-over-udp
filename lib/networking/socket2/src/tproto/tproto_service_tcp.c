@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -13,14 +14,22 @@
 #include "try.h"
 #include "utilities.h"
 
+static int _accept(cmn_tproto_service_t service, cmn_socket2_t socket, struct sockaddr* addr, socklen_t* addr_len);
+static int _connect(cmn_tproto_service_t service, cmn_socket2_t socket, struct sockaddr* addr, socklen_t addr_len);
+static int _listen(cmn_tproto_service_t service, cmn_socket2_t socket, int backlog);
 static ssize_t _peek(cmn_tproto_service_t service, cmn_socket2_t socket, uint8_t* buff, uint64_t n);
 static ssize_t _recv(cmn_tproto_service_t service, cmn_socket2_t socket, uint8_t* buff, uint64_t n);
 static ssize_t _send(cmn_tproto_service_t service, cmn_socket2_t socket, const uint8_t* buff, uint64_t n);
+static int _close(cmn_tproto_service_t service, cmn_socket2_t socket);
 
-static struct cmn_tproto_service_vtbl __cmn_tproto_service_ops_vtbl = { 
+static struct cmn_tproto_service_vtbl __cmn_tproto_service_ops_vtbl = {
+    .accept = _accept,
+    .connect = _connect,
+    .listen = _listen,
     .peek = _peek,
     .recv = _recv,
-    .send = _send
+    .send = _send,
+    .close = _close
 };
 
 static struct cmn_tproto_service_tcp service = {
@@ -37,6 +46,18 @@ static struct cmn_tproto_service_tcp service = {
     cmn_tproto_service_t cmn_tproto_service_tcp = &(service.super);
 #endif
 
+static int _accept(cmn_tproto_service_t service, cmn_socket2_t socket, struct sockaddr* addr, socklen_t* addr_len) {
+    return accept(socket->fd, addr, addr_len);
+}
+
+static int _connect(cmn_tproto_service_t service, cmn_socket2_t socket, struct sockaddr* addr, socklen_t addr_len) {
+    return connect(socket->fd, addr, addr_len);
+}
+
+static int _listen(cmn_tproto_service_t service, cmn_socket2_t socket, int backlog) {
+    return listen(socket->fd, backlog);
+}
+
 static ssize_t _peek(cmn_tproto_service_t service, cmn_socket2_t socket, uint8_t* buff, uint64_t n) {
     return recv(socket->fd, buff, n, MSG_PEEK);
 }
@@ -47,4 +68,8 @@ static ssize_t _recv(cmn_tproto_service_t service, cmn_socket2_t socket, uint8_t
 
 static ssize_t _send(cmn_tproto_service_t service, cmn_socket2_t socket, const uint8_t* buff, uint64_t n) {
     return send(socket->fd, buff, n, 0);
+}
+
+static int _close(cmn_tproto_service_t service, cmn_socket2_t socket) {
+    return close(socket->fd);
 }

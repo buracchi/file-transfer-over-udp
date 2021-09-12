@@ -46,7 +46,7 @@ fail:
 }
 
 extern int cmn_socket2_destroy(cmn_socket2_t this) {
-	try(close(this->fd), -1, fail);
+	try(cmn_tproto_service_close(this->tproto_service, this), -1, fail);
 	free(this->address);
 	free(this);
 	return 0;
@@ -58,7 +58,7 @@ extern cmn_socket2_t cmn_socket2_accept(cmn_socket2_t this) {
     cmn_socket2_t accepted;
 	try(accepted = cmn_socket2_init(this->nproto_service, this->tproto_service), NULL, fail);
     try(accepted->address = malloc(this->addrlen), NULL, fail2);
-	while ((accepted->fd = accept(this->fd, accepted->address, &accepted->addrlen)) == -1) {
+	while ((accepted->fd = cmn_tproto_service_accept(this->tproto_service, this, accepted->address, &accepted->addrlen)) == -1) {
 		try(errno != EMFILE, true, fail3);
 		usleep(1);
 	}
@@ -74,7 +74,7 @@ fail:
 
 extern int cmn_socket2_connect(cmn_socket2_t this, const char* url) {
 	try(cmn_nproto_service_set_address(this->nproto_service, this, url), 1, fail);
-	try(connect(this->fd, this->address, this->addrlen), SOCKET_ERROR, fail2);
+	try(cmn_tproto_service_connect(this->tproto_service, this, this->address, this->addrlen), SOCKET_ERROR, fail2);
 	return 0;
 fail2:
 	free(this->address);
@@ -86,7 +86,7 @@ fail:
 extern int cmn_socket2_listen(cmn_socket2_t this, const char* url, int backlog) {
 	try(cmn_nproto_service_set_address(this->nproto_service, this, url), 1, fail);
 	try(bind(this->fd, this->address, this->addrlen), -1, fail2);
-	try(listen(this->fd, backlog), -1, fail2);
+	try(cmn_tproto_service_listen(this->tproto_service, this, backlog), -1, fail2);
 	return 0;
 fail2:
 	free(this->address);
@@ -96,11 +96,11 @@ fail:
 }
 
 extern inline ssize_t cmn_socket2_peek(cmn_socket2_t this, uint8_t* buff, uint64_t n) {
-    return this->tproto_service->__ops_vptr->peek(this->tproto_service, this, buff, n);
+	return cmn_tproto_service_peek(this->tproto_service, this, buff, n);
 }
 
 extern inline ssize_t cmn_socket2_recv(cmn_socket2_t this, uint8_t* buff, uint64_t n) {
-    return this->tproto_service->__ops_vptr->recv(this->tproto_service, this, buff, n);
+	return cmn_tproto_service_recv(this->tproto_service, this, buff, n);
 }
 
 extern ssize_t cmn_socket2_srecv(cmn_socket2_t this, char** buff) {
@@ -159,7 +159,7 @@ fail:
 }
 
 extern inline ssize_t cmn_socket2_send(cmn_socket2_t this, const uint8_t* buff, uint64_t n) {
-    return this->tproto_service->__ops_vptr->send(this->tproto_service, this, buff, n);
+    return cmn_tproto_service_send(this->tproto_service, this, buff, n);
 }
 
 extern ssize_t cmn_socket2_ssend(cmn_socket2_t this, const char* string) {
