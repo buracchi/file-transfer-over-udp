@@ -5,10 +5,8 @@
 #include <stdbool.h>
 #include <threads.h>
 #include <semaphore.h>
-#include <sys/types.h>
 
 #include "queue/double_linked_list_stack_queue.h"
-#include "utilities.h"
 #include "try.h"
 
 

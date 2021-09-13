@@ -23,17 +23,17 @@ extern ft_service_t ft_service_init(const char *base_dir) {
     return service;
 }
 
-extern int ft_service_destroy(const ft_service_t this) {
+extern int ft_service_destroy(ft_service_t this) {
     free(this->base_dir);
     free(this);
     return 0;
 }
 
-extern const char *ft_service_get_base_dir(const ft_service_t this) {
+extern const char *ft_service_get_base_dir(ft_service_t this) {
     return this->base_dir;
 }
 
-extern char *ft_service_get_filelist(const ft_service_t this) {
+extern char *ft_service_get_filelist(ft_service_t this) {
     static const char *list_command;
     try(asprintf((char **) &list_command, "ls %s -p | grep -v /", this->base_dir), -1, fail);
     FILE *pipe;

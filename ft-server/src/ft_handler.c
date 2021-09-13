@@ -2,11 +2,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 #ifdef __unix__
 
-#include <sys/sysinfo.h>
 #include <unistd.h>
 
 #endif
@@ -156,7 +154,7 @@ static void handle_put_request(ft_handler_t this, cmn_socket2_t socket, ftcp_pp_
     reply = ftcp_pp_init(RESPONSE, result, NULL, 0);
     cmn_socket2_send(socket, reply, ftcp_pp_size());
     free(reply);
-    cmn_socket2_frecv(socket, file, ftcp_get_dplen(request));
+    cmn_socket2_frecv(socket, file, (long) ftcp_get_dplen(request));
     reply = ftcp_pp_init(RESPONSE, SUCCESS, NULL, 0);
     cmn_socket2_send(socket, reply, ftcp_pp_size());
     fclose(file);

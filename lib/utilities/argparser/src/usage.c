@@ -9,7 +9,6 @@
 #include "list/linked_list.h"
 #include "struct_argparser.h"
 #include "utilities.h"
-#include "try.h"
 
 static int get_messages(cmn_list_t optionals, char **usage, char **description,
                         int (*get_usage)(struct cmn_argparser_argument *arg, char **str, char *str_vararg),

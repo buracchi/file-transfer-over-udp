@@ -149,7 +149,7 @@ extern int cmn_list_insert(cmn_list_t list, cmn_iterator_t position, void *value
 
 /*
 * Removes from the list container the element at the specified position.
-*  The iterator position must be valid and dereferenceable. Thus the end()
+*  The iterator position must be valid and dereferenceable. Thus, the end()
 *  iterator (which is valid, but is not dereferenceable) cannot be used as a
 *  value for position.
 *

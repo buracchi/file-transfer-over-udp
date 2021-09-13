@@ -22,7 +22,7 @@ static void *dequeue(cmn_queue_t queue);
 extern cmn_double_linked_list_stack_queue_t cmn_double_linked_list_stack_queue_init() {
     cmn_double_linked_list_stack_queue_t queue;
     try(queue = malloc(sizeof *queue), NULL, fail);
-    try(cmn_double_linked_list_stack_queue_ctor(queue), 1, fail);
+    try(cmn_double_linked_list_stack_queue_ctor(queue), 1, fail2);
     return queue;
 fail2:
     free(queue);

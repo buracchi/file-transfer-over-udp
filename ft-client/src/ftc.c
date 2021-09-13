@@ -31,7 +31,7 @@ static int require_download(cmn_socket2_t socket, char *filename);
 
 static int require_upload(cmn_socket2_t socket, char *filename);
 
-#define get_arg(buffer) (buffer + 4)
+#define get_arg(buffer) ((buffer) + 4)
 
 extern int ftc_start(const char *url) {
     cmn_socket2_t socket;
@@ -39,7 +39,7 @@ extern int ftc_start(const char *url) {
     printf("File Transfer Client\n\nType 'help' to get help.\n\n");
     for (;;) {
         printf("FTC> ");
-        try(get_input(&buff), -1, fail);
+        try(get_input(&buff), 1, fail);
         switch (get_client_operation(buff)) {
             case EXIT:
                 free(buff);
@@ -136,7 +136,7 @@ static int require_download(cmn_socket2_t socket, char *filename) {
     ftcp_pp_t response;
     char filename_buff[256] = {0};
     strcpy(filename_buff, filename);
-    try(request = ftcp_pp_init(COMMAND, GET, filename_buff, 0), NULL, fail);
+    try(request = ftcp_pp_init(COMMAND, GET, (uint8_t *) filename_buff, 0), NULL, fail);
     cmn_socket2_send(socket, request, ftcp_pp_size());
     free(request);
     try(response = malloc(ftcp_pp_size()), NULL, fail);
@@ -144,15 +144,15 @@ static int require_download(cmn_socket2_t socket, char *filename) {
     if (ftcp_get_result(response) == FILE_EXIST) {
         if (!access(filename, F_OK)) {
             printf("%s already exists. Do you want to replace it? [y/n]\n", filename);
-            char choise[2] = {getchar(), 0};
-            try(getchar() != '\n' || !choise[0], true, fail);
-            if (!streq(choise, "y")) {
+            char choice[2] = {(char) getchar(), 0};
+            try(getchar() != '\n' || !choice[0], true, fail);
+            if (!streq(choice, "y")) {
                 goto end;
             }
         }
         FILE *file;
         file = fopen(filename, "w");
-        cmn_socket2_frecv(socket, file, ftcp_get_dplen(response));
+        cmn_socket2_frecv(socket, file, (long) ftcp_get_dplen(response));
         try(printf("File downloaded\n") < 0, true, fail);
         fclose(file);
     }
@@ -177,16 +177,16 @@ static int require_upload(cmn_socket2_t socket, char *filename) {
     fseek(file, 0L, SEEK_END);
     flen = ftell(file);
     fseek(file, 0L, SEEK_SET);
-    try(request = ftcp_pp_init(COMMAND, PUT, filename_buff, flen), NULL, fail);
+    try(request = ftcp_pp_init(COMMAND, PUT, (uint8_t *) filename_buff, flen), NULL, fail);
     cmn_socket2_send(socket, request, ftcp_pp_size());
     free(request);
     try(response = malloc(ftcp_pp_size()), NULL, fail);
     cmn_socket2_recv(socket, response, ftcp_pp_size());
     if (ftcp_get_result(response) == FILE_EXIST) {
         printf("%s already exists. Do you want to replace it? [y/n]\n", filename);
-        char choise[2] = {getchar(), 0};
-        try(getchar() != '\n' || !choise[0], true, fail);
-        if (!streq(choise, "y")) {
+        char choice[2] = {(char) getchar(), 0};
+        try(getchar() != '\n' || !choice[0], true, fail);
+        if (!streq(choice, "y")) {
             goto end;
         }
     }

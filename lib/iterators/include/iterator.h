@@ -46,7 +46,7 @@ extern void *cmn_iterator_data(cmn_iterator_t iterator);
 /*
 * Increments iterator this by 1 element.
 *
-* If the iterator doesn't points to an end container element this function
+* If the iterator doesn't point to an end container element this function
 * never fails. Otherwise, it causes undefined behavior.
 *
 * @param	iterator	-	the iterator object.
@@ -58,7 +58,7 @@ extern cmn_iterator_t cmn_iterator_next(cmn_iterator_t iterator);
 /*
 * Decrements iterator this by 1 element.
 *
-* If the iterator doesn't points to a begin container element this function
+* If the iterator doesn't point to a beginning container element this function
 * never fails. Otherwise, it causes undefined behavior.
 *
 * @param	iterator	-	the iterator object.

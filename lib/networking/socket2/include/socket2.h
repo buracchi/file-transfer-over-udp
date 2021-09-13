@@ -137,7 +137,7 @@ extern ssize_t cmn_socket2_fsend(cmn_socket2_t socket, FILE *file);
 extern int cmn_socket2_get_fd(cmn_socket2_t socket);
 
 /*
-* Set whether the socket is blocking or non blocking.
+* Set whether the socket is blocking or non-blocking.
 *
 * @param	handle	-	the socket object.
 * @param	blocking

@@ -1,18 +1,9 @@
 #include "tproto_service.h"
-#include "tproto/tproto_service_tcp.h"
 
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 #include <unistd.h>
-
-#include <sys/socket.h>
-#include <sys/types.h>
 
 #include "types/tproto/tproto_service_tcp.h"
 #include "types/socket2.h"
-#include "try.h"
-#include "utilities.h"
 
 static int _accept(cmn_tproto_service_t service, cmn_socket2_t socket, struct sockaddr *addr, socklen_t *addr_len);
 

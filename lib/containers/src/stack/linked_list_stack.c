@@ -26,7 +26,7 @@ static void *pop(cmn_stack_t stack);
 extern cmn_linked_list_stack_t cmn_linked_list_stack_init() {
     cmn_linked_list_stack_t stack;
     try(stack = malloc(sizeof *stack), NULL, fail);
-    try(cmn_linked_list_stack_ctor(stack), 1, fail);
+    try(cmn_linked_list_stack_ctor(stack), 1, fail2);
     return stack;
 fail2:
     free(stack);

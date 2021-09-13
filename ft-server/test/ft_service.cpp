@@ -5,7 +5,6 @@ extern "C" {
 }
 
 #include <string>
-#include <vector>
 #include <unordered_set>
 #include <iostream>
 #include <filesystem>

@@ -54,7 +54,7 @@ static inline int dflt_cmp(void *arg1, void *arg2, bool *result) {
 extern cmn_linked_list_map_t cmn_linked_list_map_init() {
     cmn_linked_list_map_t map;
     try(map = malloc(sizeof *map), NULL, fail);
-    try(cmn_linked_list_map_ctor(map), 1, fail);
+    try(cmn_linked_list_map_ctor(map), 1, fail2);
     return map;
 fail2:
     free(map);
@@ -142,7 +142,7 @@ static size_t _size(cmn_map_t map) {
     return cmn_list_size((cmn_list_t) this->list);
 }
 
-static void _set_key_comparer(cmn_map_t map, int (*comp)(void *a, void *b, bool *result)) {
+static void _set_key_comparer(cmn_map_t map, int (*comp)(void *, void *, bool *)) {
     cmn_linked_list_map_t this = (cmn_linked_list_map_t) map;
     this->super.comp = comp;
 }

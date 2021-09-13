@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "list/linked_list.h"
-#include "linked_list_element.h"
-
 static struct cmn_iterator_vtbl *get_iterator_vtbl();
 
 int destroy(struct cmn_iterator *iterator);

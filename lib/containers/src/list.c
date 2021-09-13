@@ -73,7 +73,7 @@ extern inline void cmn_list_swap(cmn_list_t list, cmn_list_t other) {
     list->__ops_vptr->swap(list, other);
 }
 
-extern inline int cmn_list_merge(cmn_list_t list, cmn_list_t other, int (*comp)(void *a, void *b, bool *result)) {
+extern inline int cmn_list_merge(cmn_list_t list, cmn_list_t other, int (*comp)(void *, void *, bool *)) {
     return list->__ops_vptr->merge(list, other, comp);
 }
 
@@ -86,7 +86,7 @@ extern inline size_t cmn_list_remove(cmn_list_t list, void *value) {
     return list->__ops_vptr->remove(list, value);
 }
 
-extern inline int cmn_list_remove_if(cmn_list_t list, int (*pred)(void *a, bool *result), size_t *removed) {
+extern inline int cmn_list_remove_if(cmn_list_t list, int (*pred)(void *, bool *), size_t *removed) {
     return list->__ops_vptr->remove_if(list, pred, removed);
 }
 
@@ -94,10 +94,10 @@ extern inline void cmn_list_reverse(cmn_list_t list) {
     list->__ops_vptr->reverse(list);
 }
 
-extern inline int cmn_list_unique(cmn_list_t list, int (*comp)(void *a, void *b, bool *result), size_t *removed) {
+extern inline int cmn_list_unique(cmn_list_t list, int (*comp)(void *, void *, bool *), size_t *removed) {
     return list->__ops_vptr->unique(list, comp, removed);
 }
 
-extern inline int cmn_list_sort(cmn_list_t list, int(*comp)(void *a, void *b, bool *result)) {
+extern inline int cmn_list_sort(cmn_list_t list, int(*comp)(void *, void *, bool *)) {
     return list->__ops_vptr->sort(list, comp);
 }

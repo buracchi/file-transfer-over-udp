@@ -6,7 +6,6 @@ extern "C" {
 
 #include <mutex>
 #include <thread>
-#include <vector>
 
 static void *foo(void *);
 
@@ -44,7 +43,7 @@ static void *foo(void *arg) {
     auto pair = (std::pair<std::mutex, bool> *) arg;
     pair->first.unlock();
     pair->second = true;
-    return NULL;
+    return nullptr;
 }
 
 static void *bar(void *arg) {
@@ -55,5 +54,5 @@ static void *bar(void *arg) {
         std::get<0>(*tuple).unlock();
     }
     std::get<1>(*tuple).unlock();
-    return NULL;
+    return nullptr;
 }

@@ -1,6 +1,3 @@
-#include "nproto_service.h"
-#include "nproto/nproto_service_unix.h"
-
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -9,7 +6,6 @@
 #include "types/nproto/nproto_service_unix.h"
 #include "types/socket2.h"
 #include "try.h"
-#include "utilities.h"
 
 static int set_address(cmn_nproto_service_t service, cmn_socket2_t socket, const char *url);
 

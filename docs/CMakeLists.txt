@@ -10,10 +10,10 @@ set(DOXYGEN_OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 configure_file(${DOXYGEN_INPUT_FILE} ${DOXYGEN_OUTPUT_FILE} @ONLY)
 
 add_custom_target(
-  GenerateDocs ALL
-  COMMENT "Generating API documentation with Doxygen"
-  COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUTPUT_FILE}
-  COMMAND echo "Docs written to: ${DOXYGEN_OUTPUT_DIRECTORY}"
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  VERBATIM
+        GenerateDocs ALL
+        COMMENT "Generating API documentation with Doxygen"
+        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUTPUT_FILE}
+        COMMAND echo "Docs written to: ${DOXYGEN_OUTPUT_DIRECTORY}"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        VERBATIM
 )

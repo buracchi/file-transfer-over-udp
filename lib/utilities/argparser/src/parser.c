@@ -8,9 +8,7 @@
 
 #include "struct_argparser.h"
 #include "list/linked_list.h"
-#include "map/linked_list_map.h"
 #include "utilities.h"
-#include "try.h"
 
 static int
 parse_arg_n(cmn_argparser_t this, int argc, const char **argv, struct cmn_argparser_argument **used_argv_array, int n);
@@ -56,7 +54,6 @@ parse_arg_n(cmn_argparser_t this, int argc, const char **argv, struct cmn_argpar
             case CMN_ARGPARSER_ACTION_HELP:
                 fprintf(stderr, "%s\n%s", this->usage, this->usage_details);
                 exit(EXIT_FAILURE);
-                break;
             case CMN_ARGPARSER_ACTION_STORE:
                 switch (matching_arg->action_nargs) {
                     case CMN_ARGPARSER_ACTION_NARGS_SINGLE:

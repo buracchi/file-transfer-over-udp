@@ -41,7 +41,7 @@ extern int cmn_map_destroy(cmn_map_t map);
 *
 * @param	map	-	the map object.
 * @param	key		-	the key of the element to find.
-* @param	value	-	the pointer that will reference the the mapped value of
+* @param	value	-	the pointer that will reference the mapped value of
 *						the requested element.
 *
 * @return	On success, this function returns zero.  On error, an errno ERANGE.
@@ -170,7 +170,7 @@ extern int cmn_map_insert_or_assign(cmn_map_t map, void *key, void *value, cmn_i
 
 /*
 * Removes from the container the element at the specified position.
-* The iterator position must be valid and dereferenceable. Thus the end()
+* The iterator position must be valid and dereferenceable. Thus, the end()
 * iterator (which is valid, but is not dereferenceable) cannot be used as a
 * value for position.
 *

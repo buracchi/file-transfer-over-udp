@@ -1,17 +1,7 @@
-#include "nproto_service.h"
-#include "nproto/nproto_service_ipv4.h"
-
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <arpa/inet.h>
-#include <netinet/in.h>
-
-#include <unistd.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/un.h>
 
 #include "types/nproto/nproto_service_ipv4.h"
 #include "types/socket2.h"

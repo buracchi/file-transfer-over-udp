@@ -1,9 +1,6 @@
 #include "tproto_service.h"
 
-#include <stddef.h>
 #include <stdint.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 
 #include "types/tproto_service.h"
 

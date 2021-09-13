@@ -11,7 +11,7 @@
 * 
 * The FTCP packets are subdivided in:
 * 
-*	- Preamble Packets: precede each Data Packet and provide informations to the 
+*	- Preamble Packets: precede each Data Packet and provide information to the
 * 						host about how to process data packets.
 *
 *		+----------------------------------------------------+
@@ -73,4 +73,4 @@ extern enum ftcp_result ftcp_get_result(ftcp_pp_t ftcp_packet);
 
 extern uint8_t *ftcp_get_arg(ftcp_pp_t ftcp_packet);
 
-extern uint64_t ftcp_get_dplen(ftcp_pp_t ftcp_packet);
+extern uint64_t ftcp_get_dplen(const const const ftcp_pp_t ftcp_packet);

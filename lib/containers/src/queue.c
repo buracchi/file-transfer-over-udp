@@ -1,7 +1,6 @@
 #include "queue.h"
 #include "types/queue.h"
 
-#include <stddef.h>
 #include <stdbool.h>
 #include <stdlib.h>
 

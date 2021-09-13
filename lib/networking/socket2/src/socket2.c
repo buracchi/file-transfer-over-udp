@@ -7,7 +7,6 @@
 #include <string.h>
 
 #include "types/socket2.h"
-#include "utilities.h"
 #include "try.h"
 
 #ifdef __unix__
@@ -15,10 +14,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stddef.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/un.h>
 #include <errno.h>
 
 #endif

@@ -1,13 +1,10 @@
 #include "argparser.h"
 
 #include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "struct_argparser.h"
-#include "map/linked_list_map.h"
-#include "utilities.h"
 #include "try.h"
 
 extern int format_usage(cmn_argparser_t this);

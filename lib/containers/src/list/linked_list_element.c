@@ -1,7 +1,6 @@
 #include "linked_list_element.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 extern inline struct list_element *list_element_init(void *data, struct list_element *next) {
     struct list_element *element;

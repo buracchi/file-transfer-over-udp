@@ -4,7 +4,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include "list.h"
 #include "iterator.h"
 #include "types/list/linked_list.h"
 #include "linked_list_element.h"
@@ -66,7 +65,7 @@ static int _sort(cmn_list_t list, int(*comp)(void *a, void *b, bool *result));
 extern cmn_linked_list_t cmn_linked_list_init() {
     cmn_linked_list_t list;
     try(list = malloc(sizeof *list), NULL, fail);
-    try(cmn_linked_list_ctor(list), 1, fail);
+    try(cmn_linked_list_ctor(list), 1, fail2);
     return list;
 fail2:
     free(list);
@@ -300,7 +299,7 @@ static void _pop_back(cmn_list_t list) {
 static int _resize(cmn_list_t list, size_t s, void *value) {
     cmn_linked_list_t _this = (cmn_linked_list_t) list;
 
-    int ret = 0;
+    int ret;
     while (_this->size != s) {
         if (_this->size > s) {
             _pop_back(list);
