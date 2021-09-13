@@ -7,7 +7,7 @@
 
 struct cmn_linked_list_stack {
     struct cmn_stack super;
-	cmn_linked_list_t list;
+    cmn_linked_list_t list;
 };
 
 extern int cmn_linked_list_stack_ctor(cmn_linked_list_stack_t stack);

@@ -43,18 +43,24 @@
 * 
 */
 
-typedef uint8_t* ftcp_pp_t;
-typedef uint8_t* ftcp_dp_t;
+typedef uint8_t *ftcp_pp_t;
+typedef uint8_t *ftcp_dp_t;
 
-enum ftcp_type { INVALID_TYPE, COMMAND, RESPONSE };
-enum ftcp_operation { INVALID_OPERATION, LIST, GET, PUT };
-enum ftcp_result { INVALID_RESULT, SUCCESS, ERROR, FILE_EXIST, FILE_NOT_EXIST, INVALID_ARGUMENT };
+enum ftcp_type {
+    INVALID_TYPE, COMMAND, RESPONSE
+};
+enum ftcp_operation {
+    INVALID_OPERATION, LIST, GET, PUT
+};
+enum ftcp_result {
+    INVALID_RESULT, SUCCESS, ERROR, FILE_EXIST, FILE_NOT_EXIST, INVALID_ARGUMENT
+};
 
 extern ftcp_pp_t ftcp_pp_init(
-	enum ftcp_type type,
-	enum ftcp_operation operation,
-	uint8_t arg[256],
-	uint64_t dplen
+        enum ftcp_type type,
+        enum ftcp_operation operation,
+        uint8_t arg[256],
+        uint64_t dplen
 );
 
 #define ftcp_pp_size() 266
@@ -65,6 +71,6 @@ extern enum ftcp_operation ftcp_get_operation(ftcp_pp_t ftcp_packet);
 
 extern enum ftcp_result ftcp_get_result(ftcp_pp_t ftcp_packet);
 
-extern uint8_t* ftcp_get_arg(ftcp_pp_t ftcp_packet);
+extern uint8_t *ftcp_get_arg(ftcp_pp_t ftcp_packet);
 
 extern uint64_t ftcp_get_dplen(ftcp_pp_t ftcp_packet);

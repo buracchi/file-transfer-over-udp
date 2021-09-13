@@ -6,7 +6,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-typedef struct cmn_double_linked_list_stack_queue* cmn_double_linked_list_stack_queue_t;
+typedef struct cmn_double_linked_list_stack_queue *cmn_double_linked_list_stack_queue_t;
 
 /*******************************************************************************
 *                               Member functions                               *

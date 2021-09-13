@@ -11,7 +11,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-typedef struct cmn_socket2* cmn_socket2_t;
+typedef struct cmn_socket2 *cmn_socket2_t;
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -53,7 +53,7 @@ extern cmn_socket2_t cmn_socket2_accept(cmn_socket2_t socket);
 *
 * @return	0 on success; 1 otherwise and errno is set to indicate the error.
 */
-extern int cmn_socket2_connect(cmn_socket2_t socket, const char* url);
+extern int cmn_socket2_connect(cmn_socket2_t socket, const char *url);
 
 /*
 * Bind a name to a socket, listen for socket connections and limit the queue of
@@ -61,7 +61,7 @@ extern int cmn_socket2_connect(cmn_socket2_t socket, const char* url);
 *
 * @return	1 and set properly errno on error
 */
-extern int cmn_socket2_listen(cmn_socket2_t socket, const char* url, int backlog);
+extern int cmn_socket2_listen(cmn_socket2_t socket, const char *url, int backlog);
 
 /*
 * Peek a message from a connected socket
@@ -71,7 +71,7 @@ extern int cmn_socket2_listen(cmn_socket2_t socket, const char* url, int backlog
 *
 * @return	the number of byte read or -1 on error
 */
-extern ssize_t cmn_socket2_peek(cmn_socket2_t socket, uint8_t* buff, uint64_t n);
+extern ssize_t cmn_socket2_peek(cmn_socket2_t socket, uint8_t *buff, uint64_t n);
 
 /*
 * Receive a message from a connected socket
@@ -81,7 +81,7 @@ extern ssize_t cmn_socket2_peek(cmn_socket2_t socket, uint8_t* buff, uint64_t n)
 * 
 * @return	the number of byte read or -1 on error
 */
-extern ssize_t cmn_socket2_recv(cmn_socket2_t socket, uint8_t* buff, uint64_t n);
+extern ssize_t cmn_socket2_recv(cmn_socket2_t socket, uint8_t *buff, uint64_t n);
 
 /*
 * Receive a message from a connected socket
@@ -91,7 +91,7 @@ extern ssize_t cmn_socket2_recv(cmn_socket2_t socket, uint8_t* buff, uint64_t n)
 *
 * @return	the number of byte read or -1 on error
 */
-extern ssize_t cmn_socket2_srecv(cmn_socket2_t socket, char** buff);
+extern ssize_t cmn_socket2_srecv(cmn_socket2_t socket, char **buff);
 
 /*
 * Receive a message from a connected socket
@@ -100,28 +100,28 @@ extern ssize_t cmn_socket2_srecv(cmn_socket2_t socket, char** buff);
 *
 * @return	the number of byte read or -1 on error
 */
-extern ssize_t cmn_socket2_frecv(cmn_socket2_t socket, FILE* file, long fsize);
+extern ssize_t cmn_socket2_frecv(cmn_socket2_t socket, FILE *file, long fsize);
 
 /*
 * Send n bytes form a connected socket.
 * 
 * @return number of bytes sent.
 */
-extern ssize_t cmn_socket2_send(cmn_socket2_t socket, const uint8_t* buff, uint64_t n);
+extern ssize_t cmn_socket2_send(cmn_socket2_t socket, const uint8_t *buff, uint64_t n);
 
 /*
 * Send a string form a connected socket.
 *
 * @return number of bytes sent.
 */
-extern ssize_t cmn_socket2_ssend(cmn_socket2_t socket, const char* string);
+extern ssize_t cmn_socket2_ssend(cmn_socket2_t socket, const char *string);
 
 /*
 * Send a file form a connected socket.
 *
 * @return number of bytes sent.
 */
-extern ssize_t cmn_socket2_fsend(cmn_socket2_t socket, FILE* file);
+extern ssize_t cmn_socket2_fsend(cmn_socket2_t socket, FILE *file);
 
 /*******************************************************************************
 *                             Modifiers functions                              *

@@ -7,7 +7,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-typedef struct cmn_stack* cmn_stack_t;
+typedef struct cmn_stack *cmn_stack_t;
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -38,7 +38,7 @@ extern int cmn_stack_destroy(cmn_stack_t stack);
  * @param stack the stack object.
  * @return A reference to the first element in the container.
  */
-extern void* cmn_stack_peek(cmn_stack_t stack);
+extern void *cmn_stack_peek(cmn_stack_t stack);
 
 /*******************************************************************************
 *                                   Capacity                                   *
@@ -78,7 +78,7 @@ extern size_t cmn_stack_get_size(cmn_stack_t stack);
 *
 * @return	0 on success; non-zero otherwise.
 */
-extern int cmn_stack_push(cmn_stack_t stack, void* item);
+extern int cmn_stack_push(cmn_stack_t stack, void *item);
 
 /*
 * Removes the top element from the stack.
@@ -90,4 +90,4 @@ extern int cmn_stack_push(cmn_stack_t stack, void* item);
 * @return	the pointer that will reference the value of the popped element, if 
 *			the parameter is NULL the value is ignored.
 */
-extern void* cmn_stack_pop(cmn_stack_t stack);
+extern void *cmn_stack_pop(cmn_stack_t stack);

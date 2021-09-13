@@ -9,7 +9,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-typedef struct cmn_list* cmn_list_t;
+typedef struct cmn_list *cmn_list_t;
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -42,7 +42,7 @@ extern int cmn_list_destroy(cmn_list_t list);
 *
 * @return	A reference to the first element in the list container.
 */
-extern void* cmn_list_front(cmn_list_t list);
+extern void *cmn_list_front(cmn_list_t list);
 
 /*
 * Returns a direct reference to the last element in the list container.
@@ -54,7 +54,7 @@ extern void* cmn_list_front(cmn_list_t list);
 *
 * @return	A reference to the last element in the list container.
 */
-extern void* cmn_list_back(cmn_list_t list);
+extern void *cmn_list_back(cmn_list_t list);
 
 /*******************************************************************************
 *                                   Iterators                                  *
@@ -145,7 +145,7 @@ extern void cmn_list_clear(cmn_list_t list);
 *                       If NULL the iterator will not be returned.
 * @return   On error, this function returns not zero.
 */
-extern int cmn_list_insert(cmn_list_t list, cmn_iterator_t position, void* value, cmn_iterator_t* inserted);
+extern int cmn_list_insert(cmn_list_t list, cmn_iterator_t position, void *value, cmn_iterator_t *inserted);
 
 /*
 * Removes from the list container the element at the specified position.
@@ -166,7 +166,7 @@ extern int cmn_list_insert(cmn_list_t list, cmn_iterator_t position, void* value
 *                       iterator will not be returned.
 * @return   On error, this function returns not zero.
 */
-extern int cmn_list_erase(cmn_list_t list, cmn_iterator_t position, cmn_iterator_t* iterator);
+extern int cmn_list_erase(cmn_list_t list, cmn_iterator_t position, cmn_iterator_t *iterator);
 
 /*
 * Prepends a new element to the beginning of the list.
@@ -178,7 +178,7 @@ extern int cmn_list_erase(cmn_list_t list, cmn_iterator_t position, cmn_iterator
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-extern int cmn_list_push_front(cmn_list_t list, void* value);
+extern int cmn_list_push_front(cmn_list_t list, void *value);
 
 /*
 * Appends the given element value to the end of the list.
@@ -190,7 +190,7 @@ extern int cmn_list_push_front(cmn_list_t list, void* value);
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-extern int cmn_list_push_back(cmn_list_t list, void* value);
+extern int cmn_list_push_back(cmn_list_t list, void *value);
 
 /*
 * Removes the first element of the list.
@@ -237,7 +237,7 @@ extern void cmn_list_pop_back(cmn_list_t list);
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-extern int cmn_list_resize(cmn_list_t list, size_t s, void* value);
+extern int cmn_list_resize(cmn_list_t list, size_t s, void *value);
 
 /*
 * Exchanges the contents of the list with those of other. Does not invoke any
@@ -280,7 +280,7 @@ extern void cmn_list_swap(cmn_list_t list, cmn_list_t other);
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-extern int cmn_list_merge(cmn_list_t list, cmn_list_t other, int (*comp)(void* a, void* b, bool* result));
+extern int cmn_list_merge(cmn_list_t list, cmn_list_t other, int (*comp)(void *a, void *b, bool *result));
 
 /*
 * Transfers the elements in the range [first, last) from another list into this.
@@ -301,7 +301,8 @@ extern int cmn_list_merge(cmn_list_t list, cmn_list_t other, int (*comp)(void* a
 *
 * @return	This function returns no value.
 */
-extern void cmn_list_splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t position, cmn_iterator_t first, cmn_iterator_t last);
+extern void
+cmn_list_splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t position, cmn_iterator_t first, cmn_iterator_t last);
 
 /*
 * Removes from the container all elements that are equal to value.
@@ -314,7 +315,7 @@ extern void cmn_list_splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t po
 *
 * @return	The number of elements removed.
 */
-extern size_t cmn_list_remove(cmn_list_t list, void* value);
+extern size_t cmn_list_remove(cmn_list_t list, void *value);
 
 /*
 * Removes all elements for which predicate pred returns true.
@@ -335,7 +336,7 @@ extern size_t cmn_list_remove(cmn_list_t list, void* value);
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-extern int cmn_list_remove_if(cmn_list_t list, int (*pred)(void* a, bool* result), size_t* removed);
+extern int cmn_list_remove_if(cmn_list_t list, int (*pred)(void *a, bool *result), size_t *removed);
 
 /*
 * Reverses the order of the elements in the list.
@@ -368,7 +369,7 @@ extern void cmn_list_reverse(cmn_list_t list);
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-extern int cmn_list_unique(cmn_list_t list, int (*comp)(void* a, void* b, bool* result), size_t* removed);
+extern int cmn_list_unique(cmn_list_t list, int (*comp)(void *a, void *b, bool *result), size_t *removed);
 
 /*
 * Sorts the elements in ascending order. The order of equal elements is
@@ -383,4 +384,4 @@ extern int cmn_list_unique(cmn_list_t list, int (*comp)(void* a, void* b, bool* 
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-extern int cmn_list_sort(cmn_list_t list, int(*comp)(void* a, void* b, bool* result));
+extern int cmn_list_sort(cmn_list_t list, int(*comp)(void *a, void *b, bool *result));

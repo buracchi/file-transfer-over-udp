@@ -9,7 +9,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-typedef struct cmn_map* cmn_map_t;
+typedef struct cmn_map *cmn_map_t;
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -46,7 +46,7 @@ extern int cmn_map_destroy(cmn_map_t map);
 *
 * @return	On success, this function returns zero.  On error, an errno ERANGE.
 */
-extern int cmn_map_at(cmn_map_t map, void* key, void** value);
+extern int cmn_map_at(cmn_map_t map, void *key, void **value);
 
 /*******************************************************************************
 *                                   Iterators                                  *
@@ -115,7 +115,7 @@ extern size_t cmn_map_size(cmn_map_t map);
 *
 * @return	This function returns no value.
 */
-extern void cmn_map_set_key_comparer(cmn_map_t map, int (*comp)(void* a, void* b, bool* result));
+extern void cmn_map_set_key_comparer(cmn_map_t map, int (*comp)(void *a, void *b, bool *result));
 
 /*
 * Removes all elements from the container, leaving the container with a size
@@ -148,7 +148,7 @@ extern void cmn_map_clear(cmn_map_t map);
 *                       If NULL the iterator will not be returned.
 * @return   On error, this function returns not zero.
 */
-extern int cmn_map_insert(cmn_map_t map, void* key, void* value, cmn_iterator_t* inserted);
+extern int cmn_map_insert(cmn_map_t map, void *key, void *value, cmn_iterator_t *inserted);
 
 /*
 * Inserts an element into the container, if a key equivalent to key already 
@@ -166,7 +166,7 @@ extern int cmn_map_insert(cmn_map_t map, void* key, void* value, cmn_iterator_t*
 *                       If NULL the iterator will not be returned.
 * @return   On error, this function returns not zero.
 */
-extern int cmn_map_insert_or_assign(cmn_map_t map, void* key, void* value, cmn_iterator_t* inserted);
+extern int cmn_map_insert_or_assign(cmn_map_t map, void *key, void *value, cmn_iterator_t *inserted);
 
 /*
 * Removes from the container the element at the specified position.
@@ -188,7 +188,7 @@ extern int cmn_map_insert_or_assign(cmn_map_t map, void* key, void* value, cmn_i
 *                       iterator will not be returned.
 * @return   On error, this function returns not zero.
 */
-extern int cmn_map_erase(cmn_map_t map, cmn_iterator_t position, cmn_iterator_t* iterator);
+extern int cmn_map_erase(cmn_map_t map, cmn_iterator_t position, cmn_iterator_t *iterator);
 
 /*
 * Exchanges the contents of the container  with those of other. Does not invoke
@@ -226,7 +226,7 @@ extern void cmn_map_swap(cmn_map_t map, cmn_map_t other);
 * 
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-extern int cmn_map_count(cmn_map_t map, void* key, size_t* count);
+extern int cmn_map_count(cmn_map_t map, void *key, size_t *count);
 
 /*
 * Finds an element with key equivalent to key.
@@ -241,7 +241,7 @@ extern int cmn_map_count(cmn_map_t map, void* key, size_t* count);
 *
 * @return	On success, this function returns zero.  On error, an errno [...].
 */
-extern int cmn_map_find(cmn_map_t map, void* key, cmn_iterator_t* iterator);
+extern int cmn_map_find(cmn_map_t map, void *key, cmn_iterator_t *iterator);
 
 /*
 * Checks if there is an element with key equivalent to key.
@@ -251,4 +251,4 @@ extern int cmn_map_find(cmn_map_t map, void* key, cmn_iterator_t* iterator);
 *
 * @return	true if there is such an element, otherwise false.
 */
-extern bool cmn_map_contains(cmn_map_t map, void* key);
+extern bool cmn_map_contains(cmn_map_t map, void *key);

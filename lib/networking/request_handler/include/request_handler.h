@@ -6,7 +6,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-typedef struct cmn_request_handler* cmn_request_handler_t;
+typedef struct cmn_request_handler *cmn_request_handler_t;
 
 /*******************************************************************************
 *                               Member functions                               *

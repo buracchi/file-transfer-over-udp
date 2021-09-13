@@ -1,6 +1,6 @@
-add_executable (
-	test_communication_manager
-	"communication_manager.cpp"
+add_executable(
+        test_communication_manager
+        "communication_manager.cpp"
 )
 target_link_libraries(test_communication_manager PRIVATE GTest::GTest GTest::Main)
 target_link_libraries(test_communication_manager PRIVATE networking-communication-manager)

@@ -7,7 +7,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-typedef struct cmn_iterator* cmn_iterator_t;
+typedef struct cmn_iterator *cmn_iterator_t;
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -41,7 +41,7 @@ extern int cmn_iterator_destroy(cmn_iterator_t iterator);
 * @return	A reference to the data  associated to the container element
 *			pointed by the iterator.
 */
-extern void* cmn_iterator_data(cmn_iterator_t iterator);
+extern void *cmn_iterator_data(cmn_iterator_t iterator);
 
 /*
 * Increments iterator this by 1 element.

@@ -13,12 +13,13 @@
 
 
 struct work {
-    void* (*routine) (void*);
-	void* arg;
+    void *(*routine)(void *);
+
+    void *arg;
 };
 
 struct cmn_tpool {
-    thrd_t* threads;
+    thrd_t *threads;
     cmn_queue_t work_queue;
     mtx_t work_queue_lock;
     sem_t available_work_semaphore;
@@ -36,13 +37,13 @@ extern cmn_tpool_t cmn_tpool_init(size_t tnumber) {
     memset(this, 0, sizeof *this);
     try(this->threads = malloc(thread_array_size), NULL, fail2);
     memset(this->threads, 0, thread_array_size);
-    try(this->work_queue = (cmn_queue_t)cmn_double_linked_list_stack_queue_init(), NULL, fail3);
+    try(this->work_queue = (cmn_queue_t) cmn_double_linked_list_stack_queue_init(), NULL, fail3);
     try(sem_init(&(this->available_work_semaphore), 0, 0), -1, fail4);
     try(mtx_init(&(this->work_queue_lock), mtx_plain), thrd_error, fail5);
     this->shutdown = false;
     try(mtx_init(&(this->shutdown_lock), mtx_plain), thrd_error, fail6);
     for (size_t i = 0; i < tnumber; i++) {
-        thrd_create(this->threads + i, (thrd_start_t)_worker_routine, this);
+        thrd_create(this->threads + i, (thrd_start_t) _worker_routine, this);
     }
     return this;
 fail6:
@@ -69,13 +70,13 @@ extern int cmn_tpool_destroy(cmn_tpool_t this) {
         free(cmn_queue_dequeue(this->work_queue));
     }
     try(mtx_unlock(&(this->work_queue_lock)), thrd_error, fail);
-    for (thrd_t* ptr = this->threads; *ptr; ptr++) {
+    for (thrd_t *ptr = this->threads; *ptr; ptr++) {
         // Send a wake-up to prevent threads from permanently blocking
         try(sem_post(&(this->available_work_semaphore)), -1, fail);
-        }
-    for (thrd_t* ptr = this->threads; *ptr; ptr++) {
+    }
+    for (thrd_t *ptr = this->threads; *ptr; ptr++) {
         try(thrd_join(*ptr, NULL), thrd_error, fail);
-        }
+    }
     try(cmn_queue_destroy(this->work_queue), 1, fail);
     try(sem_destroy(&(this->available_work_semaphore)), -1, fail);
     mtx_destroy(&(this->work_queue_lock));
@@ -87,9 +88,9 @@ fail:
     return 1;
 }
 
-extern int cmn_tpool_add_work(cmn_tpool_t this, void* (*work_routine) (void*), void* arg) {
-    struct work* work;
-    try(work = malloc(sizeof * work), NULL, fail);
+extern int cmn_tpool_add_work(cmn_tpool_t this, void *(*work_routine)(void *), void *arg) {
+    struct work *work;
+    try(work = malloc(sizeof *work), NULL, fail);
     work->routine = work_routine;
     work->arg = arg;
     try(mtx_lock(&(this->shutdown_lock)), thrd_error, fail2);
@@ -117,7 +118,7 @@ fail:
 }
 
 static int _worker_routine(cmn_tpool_t tpool) {
-    struct work* work;
+    struct work *work;
     while (true) {
         try(sem_wait(&(tpool->available_work_semaphore)), -1, fail);
         if (tpool->shutdown) {

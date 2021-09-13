@@ -8,10 +8,10 @@
 
 extern inline int cmn_request_handler_destroy(cmn_request_handler_t this) {
     int ret = this->__ops_vptr->destroy(this);
-	if (!ret) {
-		free(this);
-	}
-	return ret;
+    if (!ret) {
+        free(this);
+    }
+    return ret;
 }
 
 extern inline void cmn_request_handler_handle_request(cmn_request_handler_t this, cmn_socket2_t socket) {

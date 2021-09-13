@@ -6,7 +6,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-typedef struct cmn_linked_list* cmn_linked_list_t;
+typedef struct cmn_linked_list *cmn_linked_list_t;
 
 /*******************************************************************************
 *                               Member functions                               *

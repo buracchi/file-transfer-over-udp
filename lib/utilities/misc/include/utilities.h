@@ -14,7 +14,9 @@
 #ifdef _WIN32
 int asprintf(LPTSTR* str, LPCTSTR format, ...);
 #elif __unix__
-int asprintf(char** str, const char* format, ...);
+
+int asprintf(char **str, const char *format, ...);
+
 #endif
 
 #define max(a, b) ({    \
@@ -26,27 +28,27 @@ int asprintf(char** str, const char* format, ...);
 #define tostr(statement) __tostr(statement)
 
 typedef struct cmn_pair {
-	void* first;
-	void* second;
+    void *first;
+    void *second;
 } *cmn_pair_t;
 
-int strtoi(char* str, int* result);
+int strtoi(char *str, int *result);
 
-int str_to_uint16(const char* str, uint16_t * result);
+int str_to_uint16(const char *str, uint16_t *result);
 
-static inline bool streq(const char* str1, const char* str2) {
-  return (strlen(str1) == strlen(str2)) && (!strcmp(str1, str2));
+static inline bool streq(const char *str1, const char *str2) {
+    return (strlen(str1) == strlen(str2)) && (!strcmp(str1, str2));
 }
 
-bool is_directory(char* pathname);
+bool is_directory(char *pathname);
 
-  /**
-   * container_of - cast a member of a structure out to the containing structure
-   * @ptr:        the pointer to the member.
-   * @type:       the type of the container struct this is embedded in.
-   * @member:     the name of the member within the struct.
-   *
-   */
+/**
+ * container_of - cast a member of a structure out to the containing structure
+ * @ptr:        the pointer to the member.
+ * @type:       the type of the container struct this is embedded in.
+ * @member:     the name of the member within the struct.
+ *
+ */
 #define container_of(ptr, type, member) ({                      \
         const typeof(((type *)0)->member) * __mptr = (ptr);     \
         (type *)((char *)__mptr - offsetof(type, member)); })

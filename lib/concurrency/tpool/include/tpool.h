@@ -6,7 +6,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-typedef struct cmn_tpool* cmn_tpool_t;
+typedef struct cmn_tpool *cmn_tpool_t;
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -61,4 +61,4 @@ extern int cmn_tpool_destroy(cmn_tpool_t tpool);
  * @return If successful \a cmn_tpool_add_work() function shall return zero;
  *  otherwise, an error number shall be returned to indicate the error.
  */
-extern int cmn_tpool_add_work(cmn_tpool_t tpool, void* (*work_routine) (void*), void* arg);
+extern int cmn_tpool_add_work(cmn_tpool_t tpool, void *(*work_routine)(void *), void *arg);

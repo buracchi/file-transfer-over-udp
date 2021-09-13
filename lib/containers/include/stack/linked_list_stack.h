@@ -6,7 +6,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-typedef struct cmn_linked_list_stack* cmn_linked_list_stack_t;
+typedef struct cmn_linked_list_stack *cmn_linked_list_stack_t;
 
 /*******************************************************************************
 *                               Member functions                               *

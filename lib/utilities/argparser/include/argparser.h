@@ -10,7 +10,7 @@
 
 #include "map.h"
 
-typedef struct cmn_argparser* cmn_argparser_t;
+typedef struct cmn_argparser *cmn_argparser_t;
 
 /**
  * @enum cmn_argparser_action
@@ -184,18 +184,18 @@ enum cmn_argparser_action_nargs {
  *       characters to make sure the string is a valid attribute name.
  */
 struct cmn_argparser_argument {
-    const char* name;
-    const char* flag;
-    const char* long_flag;
+    const char *name;
+    const char *flag;
+    const char *long_flag;
     bool is_required;
     enum cmn_argparser_action action;
     enum cmn_argparser_action_nargs action_nargs;
     size_t nargs_list_size;
-    void* const_value;
-    void* default_value;
-    char** choices;
-    const char* help;
-    const char* destination;
+    void *const_value;
+    void *default_value;
+    char **choices;
+    const char *help;
+    const char *destination;
 };
 
 /**
@@ -205,7 +205,7 @@ struct cmn_argparser_argument {
  * @param pdesc 
  * @return cmn_argparser_t 
  */
-extern cmn_argparser_t cmn_argparser_init(const char* pname, const char* pdesc);
+extern cmn_argparser_t cmn_argparser_init(const char *pname, const char *pdesc);
 
 /**
  * @brief 
@@ -223,7 +223,8 @@ extern int cmn_argparser_destroy(cmn_argparser_t argparser);
  * @param number 
  * @return int 
  */
-extern int cmn_argparser_set_arguments(cmn_argparser_t argparser, struct cmn_argparser_argument* arguments, size_t number);
+extern int
+cmn_argparser_set_arguments(cmn_argparser_t argparser, struct cmn_argparser_argument *arguments, size_t number);
 
 /**
  * @brief 
@@ -233,4 +234,4 @@ extern int cmn_argparser_set_arguments(cmn_argparser_t argparser, struct cmn_arg
  * @param argv 
  * @return cmn_map_t 
  */
-extern cmn_map_t cmn_argparser_parse(cmn_argparser_t argparser, int argc, const char** argv);
+extern cmn_map_t cmn_argparser_parse(cmn_argparser_t argparser, int argc, const char **argv);

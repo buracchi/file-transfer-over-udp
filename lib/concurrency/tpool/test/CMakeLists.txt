@@ -1,6 +1,6 @@
-add_executable (
-	test_tpool
-	"tpool.cpp"
+add_executable(
+        test_tpool
+        "tpool.cpp"
 )
 target_link_libraries(test_tpool PRIVATE GTest::GTest GTest::Main)
 target_link_libraries(test_tpool PRIVATE concurrency-tpool)

@@ -7,13 +7,13 @@
 
 extern inline int cmn_stack_destroy(cmn_stack_t stack) {
     int ret = stack->__ops_vptr->destroy(stack);
-	if (!ret) {
-		free(stack);
-	}
-	return ret;
+    if (!ret) {
+        free(stack);
+    }
+    return ret;
 }
 
-extern inline void* cmn_stack_peek(cmn_stack_t stack) {
+extern inline void *cmn_stack_peek(cmn_stack_t stack) {
     return stack->__ops_vptr->peek(stack);
 }
 
@@ -25,10 +25,10 @@ extern inline size_t cmn_stack_get_size(cmn_stack_t stack) {
     return stack->__ops_vptr->get_size(stack);
 }
 
-extern inline int cmn_stack_push(cmn_stack_t stack, void* item) {
+extern inline int cmn_stack_push(cmn_stack_t stack, void *item) {
     return stack->__ops_vptr->push(stack, item);
 }
 
-extern inline void* cmn_stack_pop(cmn_stack_t stack) {
+extern inline void *cmn_stack_pop(cmn_stack_t stack) {
     return stack->__ops_vptr->pop(stack);
 }

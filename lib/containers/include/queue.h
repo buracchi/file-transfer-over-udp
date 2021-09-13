@@ -6,7 +6,7 @@
 *                                 Member types                                 *
 *******************************************************************************/
 
-typedef struct cmn_queue* cmn_queue_t;
+typedef struct cmn_queue *cmn_queue_t;
 
 /*******************************************************************************
 *                               Member functions                               *
@@ -35,7 +35,7 @@ extern bool cmn_queue_is_empty(cmn_queue_t queue);
  * @param item the item to enqueue into the queue.
  * @return 0 on success; non-zero otherwise. 
  */
-extern int cmn_queue_enqueue(cmn_queue_t queue, void* item);
+extern int cmn_queue_enqueue(cmn_queue_t queue, void *item);
 
 /**
  * @brief Dequeue an item out a queue.
@@ -43,4 +43,4 @@ extern int cmn_queue_enqueue(cmn_queue_t queue, void* item);
  * @param queue the queue to dequeue the item out.
  * @return void* the pointer that will reference the item.
  */
-extern void* cmn_queue_dequeue(cmn_queue_t queue);
+extern void *cmn_queue_dequeue(cmn_queue_t queue);
