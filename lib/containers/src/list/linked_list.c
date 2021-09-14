@@ -347,8 +347,7 @@ static int _merge(cmn_list_t list, cmn_list_t other, int(*comp)(void *a, void *b
     return _sort(list, comp);
 }
 
-static void
-_splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t position, cmn_iterator_t first, cmn_iterator_t last) {
+static void _splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t position, cmn_iterator_t first, cmn_iterator_t last) {
     cmn_linked_list_t _this = (cmn_linked_list_t) list;
     cmn_linked_list_t _other = (cmn_linked_list_t) other;
     struct linked_list_iterator *_position = (struct linked_list_iterator *) position;

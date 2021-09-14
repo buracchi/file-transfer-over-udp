@@ -10,11 +10,11 @@
 #include "list/linked_list.h"
 #include "utilities.h"
 
-static int
-parse_arg_n(cmn_argparser_t this, int argc, const char **argv, struct cmn_argparser_argument **used_argv_array, int n);
+static int parse_arg_n(cmn_argparser_t this, int argc, const char **argv,
+                       struct cmn_argparser_argument **used_argv_array, int n);
 
-static struct cmn_argparser_argument *
-match_arg(cmn_argparser_t this, int argc, const char *args, struct cmn_argparser_argument **used_arg_array);
+static struct cmn_argparser_argument *match_arg(cmn_argparser_t this, int argc, const char *args,
+                                                struct cmn_argparser_argument **used_arg_array);
 
 static int handle_unrecognized_elements(cmn_argparser_t this, int argc, const char **argv,
                                         struct cmn_argparser_argument **used_argv_array);
@@ -42,8 +42,8 @@ extern cmn_map_t cmn_argparser_parse(cmn_argparser_t this, int argc, const char 
     return this->map;
 }
 
-static int
-parse_arg_n(cmn_argparser_t this, int argc, const char **argv, struct cmn_argparser_argument **used_argv_array, int n) {
+static int parse_arg_n(cmn_argparser_t this, int argc, const char **argv,
+                       struct cmn_argparser_argument **used_argv_array, int n) {
     // TODO: handle al cases
     struct cmn_argparser_argument *matching_arg;
     matching_arg = match_arg(this, argc, argv[n], used_argv_array);
@@ -86,8 +86,8 @@ parse_arg_n(cmn_argparser_t this, int argc, const char **argv, struct cmn_argpar
     return 0;
 }
 
-static struct cmn_argparser_argument *
-match_arg(cmn_argparser_t this, int argc, const char *args, struct cmn_argparser_argument **used_arg_array) {
+static struct cmn_argparser_argument *match_arg(cmn_argparser_t this, int argc, const char *args,
+                                                struct cmn_argparser_argument **used_arg_array) {
     bool match_positional = (args[0] != '-');
     bool match_optional = !match_positional && args[1];
     bool match_long_flag = match_optional && (args[1] == '-') && args[2];

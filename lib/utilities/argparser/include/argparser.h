@@ -223,8 +223,8 @@ extern int cmn_argparser_destroy(cmn_argparser_t argparser);
  * @param number 
  * @return int 
  */
-extern int
-cmn_argparser_set_arguments(cmn_argparser_t argparser, struct cmn_argparser_argument *arguments, size_t number);
+extern int cmn_argparser_set_arguments(cmn_argparser_t argparser, struct cmn_argparser_argument *arguments,
+                                       size_t number);
 
 /**
  * @brief 

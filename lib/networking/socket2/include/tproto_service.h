@@ -29,7 +29,7 @@ extern ssize_t cmn_tproto_service_peek(cmn_tproto_service_t service, cmn_socket2
 
 extern ssize_t cmn_tproto_service_recv(cmn_tproto_service_t service, cmn_socket2_t socket, uint8_t *buff, uint64_t n);
 
-extern ssize_t
-cmn_tproto_service_send(cmn_tproto_service_t service, cmn_socket2_t socket, const uint8_t *buff, uint64_t n);
+extern ssize_t cmn_tproto_service_send(cmn_tproto_service_t service, cmn_socket2_t socket, const uint8_t *buff,
+                                       uint64_t n);
 
 extern int cmn_tproto_service_close(cmn_tproto_service_t service, cmn_socket2_t socket);

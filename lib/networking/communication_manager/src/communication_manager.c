@@ -62,13 +62,13 @@ fail:
     return NULL;
 }
 
-extern void
-cmn_communication_manager_set_nproto(cmn_communication_manager_t this, cmn_nproto_service_t nproto_service) {
+extern void cmn_communication_manager_set_nproto(cmn_communication_manager_t this,
+                                                 cmn_nproto_service_t nproto_service) {
     this->nproto_service = nproto_service;
 }
 
-extern void
-cmn_communication_manager_set_tproto(cmn_communication_manager_t this, cmn_tproto_service_t tproto_serivce) {
+extern void cmn_communication_manager_set_tproto(cmn_communication_manager_t this,
+                                                 cmn_tproto_service_t tproto_serivce) {
     this->tproto_service = tproto_serivce;
 }
 

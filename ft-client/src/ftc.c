@@ -10,6 +10,7 @@
 #include "socket2.h"
 #include "nproto/nproto_service_ipv4.h"
 #include "tproto/tproto_service_tcp.h"
+#include "tproto/tproto_service_gbn.h"
 #include "utilities.h"
 #include "try.h"
 

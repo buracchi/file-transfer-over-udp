@@ -77,8 +77,8 @@ extern inline int cmn_list_merge(cmn_list_t list, cmn_list_t other, int (*comp)(
     return list->__ops_vptr->merge(list, other, comp);
 }
 
-extern inline void
-cmn_list_splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t position, cmn_iterator_t first, cmn_iterator_t last) {
+extern inline void cmn_list_splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t position, cmn_iterator_t first,
+                                   cmn_iterator_t last) {
     list->__ops_vptr->splice(list, other, position, first, last);
 }
 

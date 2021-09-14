@@ -301,8 +301,7 @@ extern int cmn_list_merge(cmn_list_t list, cmn_list_t other, int (*comp)(void *a
 *
 * @return	This function returns no value.
 */
-extern void
-cmn_list_splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t position, cmn_iterator_t first, cmn_iterator_t last);
+extern void cmn_list_splice(cmn_list_t list, cmn_list_t other, cmn_iterator_t position, cmn_iterator_t first, cmn_iterator_t last);
 
 /*
 * Removes from the container all elements that are equal to value.
