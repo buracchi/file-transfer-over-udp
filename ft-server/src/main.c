@@ -4,7 +4,7 @@
 #include "map.h"
 #include "ft_handler.h"
 #include "communication_manager.h"
-#include "tproto/tproto_service_gbn.h"
+//#include "tproto/tproto_service_gbn.h"
 #include "utilities.h"
 #include "try.h"
 
