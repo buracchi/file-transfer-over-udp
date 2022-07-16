@@ -73,4 +73,4 @@ extern enum ftcp_result ftcp_get_result(ftcp_pp_t ftcp_packet);
 
 extern uint8_t *ftcp_get_arg(ftcp_pp_t ftcp_packet);
 
-extern uint64_t ftcp_get_dplen(const const const ftcp_pp_t ftcp_packet);
+extern uint64_t ftcp_get_dplen(const ftcp_pp_t ftcp_packet);

@@ -1,19 +1,19 @@
 #include <unistd.h>
 
-#include "argparser.h"
-#include "map.h"
+#include <buracchi/common/argparser/argparser.h>
+#include <buracchi/common/containers/map.h>
+#include <buracchi/common/networking/communication_manager.h>
+#include <buracchi/common/utilities/utilities.h>
+#include <buracchi/common/utilities/try.h>
 #include "ft_handler.h"
-#include "communication_manager.h"
 //#include "tproto/tproto_service_gbn.h"
-#include "utilities.h"
-#include "try.h"
 
 extern int main(int argc, const char *argv[]) {
     cmn_argparser_t argparser;
     cmn_map_t option_map;
     struct cmn_argparser_argument args[] = {
-            {.flag = "u", .long_flag="url",         .default_value="0.0.0.0:1234",          .help="specify the listening port number (the default value is \"0.0.0.0:1234\")"},
-            {.flag = "d", .long_flag="directory",   .default_value=getcwd(NULL,0), .help="specify the shared directory (the default value is the current working directory)"},
+            {.flag = "u", .long_flag="url",         .default_value="0.0.0.0:1234",  .help="specify the listening port number (the default value is \"0.0.0.0:1234\")"},
+            {.flag = "d", .long_flag="directory",   .default_value=getcwd(NULL,0),  .help="specify the shared directory (the default value is the current working directory)"},
     };
     argparser = cmn_argparser_init(argv[0], "File transfer server.");
     cmn_argparser_set_arguments(argparser, args, 2);

@@ -9,13 +9,13 @@
 
 #endif
 
-#include "types/request_handler.h"
+#include <buracchi/common/concurrency/rwfslock.h>
+#include <buracchi/common/networking/types/request_handler.h>
+#include <buracchi/common/networking/socket2.h>
+#include <buracchi/common/utilities/utilities.h>
+#include <buracchi/common/utilities/try.h>
 #include "ft_service.h"
 #include "ftcp.h"
-#include "socket2.h"
-#include "rwfslock.h"
-#include "try.h"
-#include "utilities.h"
 
 struct ft_handler {
     struct cmn_request_handler super;

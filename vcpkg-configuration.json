@@ -1,0 +1,15 @@
+{
+  "default-registry": {
+    "kind": "git",
+    "repository": "https://github.com/microsoft/vcpkg",
+    "baseline": "14e7bb4ae24616ec54ff6b2f6ef4e8659434ea44"
+  },
+  "registries": [
+    {
+      "kind": "git",
+      "repository": "https://github.com/buracchi/vcpkg-registry",
+      "baseline": "e826044fb366796a6cbbf90740be5cd4416cc01c",
+      "packages": [ "libcommon" ]
+    }
+  ]
+}

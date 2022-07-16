@@ -1,0 +1,14 @@
+{
+  "name": "file-transfer-over-udp",
+  "version": "1.0",
+  "dependencies": [
+    "libcommon",
+    "libevent"
+  ],
+  "features": {
+    "tests": {
+      "description": "Build Tests",
+      "dependencies": [ "gtest" ]
+    }
+  }
+}

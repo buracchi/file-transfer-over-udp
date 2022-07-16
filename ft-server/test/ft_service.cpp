@@ -13,7 +13,7 @@ TEST(ft_service, get_filelist_return_current_directory_regular_filelist) {
     std::string path = std::filesystem::current_path();
     ft_service_t ftservice = ft_service_init(path.c_str());
     std::istringstream is(ft_service_get_filelist(ftservice));
-    std::unordered_set<std::string> actual = std::unordered_set<std::string>(
+    auto actual = std::unordered_set<std::string>(
             std::istream_iterator<std::string>(is),
             std::istream_iterator<std::string>()
     );

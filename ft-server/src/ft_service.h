@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdio.h>
-
 typedef struct ft_service *ft_service_t;
 
 extern ft_service_t ft_service_init(const char *base_dir);

@@ -1,41 +1,37 @@
-name: Ubuntu
+name: Build Ubuntu
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 env:
-  BUILD_TYPE: Release
+  PRESET: x64-linux-release
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build_client:
+    runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v2.3.4
-
-    - uses: actions/cache@v2.1.6
-      id: vcpkg-cache
+    - uses: actions/checkout@v3.0.0
       with:
-        path: '**/vcpkg'
-        key: ${{ runner.os }}-vcpkg-${{ hashFiles('**/.dependencies') }}
+        submodules: recursive
+
+    - name: Install ninja-build tool
+      uses: seanmiddleditch/gha-setup-ninja@v3
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_TEST_COVERAGE=ON
+      working-directory: ${{github.workspace}}
+      run: cmake --preset ${{env.PRESET}} #-DENABLE_TEST_COVERAGE=ON
       
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      working-directory: ${{github.workspace}}
+      run: cmake --build --preset ${{env.PRESET}}
 
 #    - name: Setup tmate session
 #      uses: mxschmitt/action-tmate@v3
 
     - name: Test
-      working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
-
-    - name: Codecov
-      run: bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
+      working-directory: ${{github.workspace}}
+      run: ctest --preset ${{env.PRESET}}

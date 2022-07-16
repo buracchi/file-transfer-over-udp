@@ -1,20 +1,125 @@
 {
-  "version": 2,
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
   "configurePresets": [
     {
-      "name": "linux-default",
-      "displayName": "Linux Debug",
-      "description": "Imposta come destinazione il sottosistema Windows per Linux (WSL) o un sistema Linux remoto.",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "name": "ninja",
+      "hidden": true,
+      "description": "Generate Ninja project files",
+      "generator": "Ninja"
+    },
+    {
+      "name": "vcpkg",
+      "hidden": true,
+      "description": "Configure with vcpkg toolchain",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}"
+        "CMAKE_TOOLCHAIN_FILE": {
+          "value": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+          "type": "FILEPATH"
+        }
+      }
+    },
+    {
+      "name": "x64-debug",
+      "hidden": true,
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "x64-release",
+      "hidden": true,
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "default",
+      "hidden": true,
+      "description": "Default configuration presets",
+      "inherits": [ "ninja", "vcpkg" ],
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/out/install/${presetName}"
+    },
+    {
+      "name": "linux-default",
+      "hidden": true,
+      "inherits": "default",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
       },
       "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": { "hostOS": [ "Linux" ] },
-        "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": { "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}" }
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Linux" ]
+        },
+        "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
+          "sourceDir": "$env{HOME}/.vs/${sourceDirName}",
+          "forceWSL1Toolset": true
+        }
       }
+    },
+    {
+      "name": "x64-linux-debug",
+      "displayName": "x64 Debug",
+      "inherits": [ "linux-default", "x64-debug" ],
+      "cacheVariables": {
+        "CMAKE_C_FLAGS_DEBUG": "-Wall -Wextra -pedantic",
+        "CMAKE_CXX_FLAGS_DEBUG": "-std=c++20 -Wall -Wextra -pedantic"
+      }
+    },
+    {
+      "name": "x64-linux-release",
+      "displayName": "x64 Release",
+      "inherits": [ "linux-default", "x64-release" ],
+      "cacheVariables": {
+        "CMAKE_C_FLAGS_RELEASE": "-Wall -Wextra -pedantic -O3",
+        "CMAKE_CXX_FLAGS_RELEASE": "-std=c++20"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "x64-linux-debug",
+      "configurePreset": "x64-linux-debug"
+    },
+    {
+      "name": "x64-linux-release",
+      "configurePreset": "x64-linux-release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "hidden": true,
+      "output": { "outputOnFailure": true },
+      "execution": {
+        "noTestsAction": "ignore",
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "x64-linux-debug",
+      "inherits": "default",
+      "configurePreset": "x64-linux-debug"
+    },
+    {
+      "name": "x64-linux-release",
+      "inherits": "default",
+      "configurePreset": "x64-linux-release"
     }
   ]
 }

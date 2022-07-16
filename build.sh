@@ -8,7 +8,10 @@
 # and gcc or clang. In remote system is required to also install openssh-server.
 #
 
-BUILD_TYPE=Release
+BUILD_TYPE=release
+PRESET=x64-linux-$BUILD_TYPE
+BUILD_DIR=./out/build/x64-linux-$BUILD_TYPE
 
-cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-cmake --build build -j $(nproc) --config $BUILD_TYPE
+cmake -S . --preset $PRESET
+cmake --build --preset $PRESET -j $(nproc)
+echo "Build successfull. Executable are located inside $BUILD_DIR"

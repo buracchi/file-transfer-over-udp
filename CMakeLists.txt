@@ -1,62 +1,40 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required (VERSION 3.21)
 
-include("${CMAKE_CURRENT_SOURCE_DIR}/.cmake/Vcpkg.cmake")
-include(GoogleTest)
+option(BUILD_TESTS "Build test programs" ON)
+option(ENABLE_TEST_COVERAGE "Enable coverage reporting" OFF)
+option(BUILD_DOC "Build documentation" OFF)
 
-# Project Configuration
+if (BUILD_TESTS)
+    list(APPEND VCPKG_MANIFEST_FEATURES "tests")
+    include(GoogleTest)
+endif ()
 
-project(
-        "File transfer over UDP"
-        VERSION 1.0.0
-)
+project("File transfer over UDP" VERSION 1.0)
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-# Debug configuration
-
-if (CMAKE_BUILD_TYPE MATCHES DEBUG)
-    if (MSVC)
-        add_compile_options(/Wall /fsanitize=address)
-    else ()
-        add_compile_options(-Wall -Wextra -pedantic -fms-extensions -fsanitize=address)
-        add_link_options(-fsanitize=address)
-    endif (MSVC)
-endif (CMAKE_BUILD_TYPE MATCHES DEBUG)
 
 # Guards
 
 if (PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
     message(
-            FATAL_ERROR
-            "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there."
+        FATAL_ERROR
+        "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there."
     )
 endif ()
 
-# Dependencies
-
-file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/.dependencies" DEPENDENCY_LIST)
-install_dependencies("${DEPENDENCY_LIST}")
-
 # Test
 
-option(BUILD_TESTING "Build test" ON)
-
-if (BUILD_TESTING)
+if (BUILD_TESTS)
     enable_testing()
     find_package(GTest REQUIRED)
-    # Notice that GTest::GTest and GTest::Main are deprecated since CMake 3.20 
-    # and should be replaced with GTest::gtest and GTest::gtest_main but this
-    # will make CMake 3.16.3 fails.
 endif ()
 
 # Code Coverage Configuration
-
-option(ENABLE_TEST_COVERAGE "Enable coverage reporting" OFF)
 
 add_library(coverage_config INTERFACE)
 
@@ -65,18 +43,9 @@ if (ENABLE_TEST_COVERAGE)
     target_link_options(coverage_config INTERFACE --coverage)
 endif ()
 
-# Documentation
-
-option(BUILD_DOC "Build documentation" OFF)
-
-set(BUILD_DOC FALSE)
-if (BUILD_DOC)
-    add_subdirectory("docs")
-endif ()
-
 # Subproject
 
 add_subdirectory("lib")
 add_subdirectory("ft-server")
 add_subdirectory("ft-client")
-add_subdirectory("gbn")
+#add_subdirectory("gbn")

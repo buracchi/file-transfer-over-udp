@@ -9,6 +9,7 @@
 #define WINDOW_SIZE 5
 #define TIMEOUT 5000
 #define PAYLOAD_LENGTH 1024
+#define GBN_HEADER_LENGTH ((size_t)(&(((struct gbn_packet*)0)->data)))
 
 /**
  * @brief Packet types
@@ -25,7 +26,6 @@
 /**
  * @brief GBN over UDP packet
  * 
- * @param p pippo
  * +------------------+------------------+
  * |   SOURCE PORT    | DESTINATION PORT |
  * +------------------+------------------+
@@ -48,8 +48,8 @@ struct gbn_packet {
     uint8_t data[PAYLOAD_LENGTH];
 };
 
-static inline void
-make_pkt(struct gbn_packet *pkt, uint8_t type, uint32_t seqnum, const uint8_t *data, uint16_t data_length) {
+static inline void make_pkt(struct gbn_packet *pkt, uint8_t type, uint32_t seqnum, const uint8_t *data,
+                            uint16_t data_length) {
     memset(pkt, 0, sizeof *pkt);
     pkt->seqnum = seqnum;
     pkt->rcv_wndw = WINDOW_SIZE;

@@ -1,8 +1,0 @@
-﻿add_subdirectory(request_handler)
-add_subdirectory(communication_manager)
-add_subdirectory(socket2)
-
-add_library(networking INTERFACE)
-target_compile_definitions(networking INTERFACE NETWORKING_VERSION=1)
-target_link_libraries(networking INTERFACE networking-socket2)
-target_link_libraries(networking INTERFACE networking-request-handler)

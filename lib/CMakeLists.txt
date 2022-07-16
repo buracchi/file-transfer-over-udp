@@ -1,7 +1,2 @@
-add_subdirectory("concurrency")
-add_subdirectory("containers")
-add_subdirectory("iterators")
 add_subdirectory("ftcp")
-add_subdirectory("networking")
 add_subdirectory("statemachine")
-add_subdirectory("utilities")
