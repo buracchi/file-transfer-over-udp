@@ -47,5 +47,5 @@ endif ()
 
 add_subdirectory("lib")
 add_subdirectory("ft-server")
-add_subdirectory("ft-client")
+add_subdirectory("client")
 #add_subdirectory("gbn")
