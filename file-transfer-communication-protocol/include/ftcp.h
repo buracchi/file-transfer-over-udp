@@ -6,6 +6,10 @@
 #include <string.h>
 #include <limits.h>
 
+#ifndef typeof
+#define typeof __typeof
+#endif
+
 /******************************************************************************
 *                    File Transfer Communication Protocol                     *
 ******************************************************************************/
@@ -158,11 +162,11 @@ static inline uint8_t *ftcp_encode_data_packet_length(uint8_t(*dest)[FTCP_PREAMB
 	return (uint8_t *) dest;
 }
 
-static inline uint64_t ftcp_decode_data_packet_length(uint8_t const (*src)[FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE]) {
+static inline uint64_t ftcp_decode_data_packet_length(uint8_t const src[const FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE]) {
 	const size_t src_size = FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE;
 	uint64_t result = 0;
 	for (size_t i = 0; i < src_size; i++) {
-		result += (((uint64_t) (*src)[i] & 0xFF) << (src_size * (src_size - 1 - i)));
+		result += (((uint64_t) src[i] & 0xFF) << (src_size * (src_size - 1 - i)));
 	}
 	return result;
 }
@@ -175,9 +179,9 @@ static inline void ftcp_preamble_packet_init_internal(ftcp_preamble_packet_t *pa
 						      struct ftcp_type type,
 						      uint8_t second_field_value,
 						      size_t second_field_value_size,
-						      uint8_t const (*arg)[FTCP_PREAMBLE_PACKET_ARG_SIZE],
+						      uint8_t(*const arg)[FTCP_PREAMBLE_PACKET_ARG_SIZE],
 						      uint64_t data_packet_length) {
-	const uint8_t zero_arg[FTCP_PREAMBLE_PACKET_ARG_SIZE] = { 0 };
+	uint8_t zero_arg[FTCP_PREAMBLE_PACKET_ARG_SIZE] = { 0 };
 	uint8_t encoded_data_packet_length[FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE] = { 0 };
 	ftcp_encode_data_packet_length(&encoded_data_packet_length, data_packet_length);
 	memcpy(&((*packet)[FTCP_PREAMBLE_PACKET_TYPE_OFFSET]), &type, FTCP_PREAMBLE_PACKET_TYPE_SIZE);
@@ -189,7 +193,7 @@ static inline void ftcp_preamble_packet_init_internal(ftcp_preamble_packet_t *pa
 static inline void ftcp_preamble_packet_operation_init(ftcp_preamble_packet_t *packet,
 						       struct ftcp_type type,
 						       struct ftcp_operation operation,
-						       uint8_t const (*arg)[FTCP_PREAMBLE_PACKET_ARG_SIZE],
+						       uint8_t(*const arg)[FTCP_PREAMBLE_PACKET_ARG_SIZE],
 						       uint64_t data_packet_length) {
 	ftcp_preamble_packet_init_internal(packet, type, operation.value, sizeof(operation), arg, data_packet_length);
 }
@@ -197,7 +201,7 @@ static inline void ftcp_preamble_packet_operation_init(ftcp_preamble_packet_t *p
 static inline void ftcp_preamble_packet_result_init(ftcp_preamble_packet_t *packet,
 						    struct ftcp_type type,
 						    struct ftcp_result result,
-						    uint8_t const (*arg)[FTCP_PREAMBLE_PACKET_ARG_SIZE],
+						    uint8_t(*const arg)[FTCP_PREAMBLE_PACKET_ARG_SIZE],
 						    uint64_t data_packet_length) {
 	ftcp_preamble_packet_init_internal(packet, type, result.value, sizeof(result), arg, data_packet_length);
 }
@@ -225,7 +229,7 @@ static inline uint8_t *ftcp_preamble_packet_arg(ftcp_preamble_packet_t packet) {
 }
 
 static inline uint64_t ftcp_preamble_packet_data_packet_length(ftcp_preamble_packet_t const packet) {
-	return ftcp_decode_data_packet_length((void *) &packet[FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_OFFSET]);
+	return ftcp_decode_data_packet_length(&packet[FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_OFFSET]);
 }
 
 #endif // FTCP_H_INCLUDED

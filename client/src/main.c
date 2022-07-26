@@ -140,11 +140,9 @@ fail:
 static int require_download(cmn_socket2_t socket, char *filename) {
 	ftcp_preamble_packet_t request;
 	ftcp_preamble_packet_t response;
-	const uint8_t(*filename_buff_ptr)[FTCP_PREAMBLE_PACKET_ARG_SIZE];
-	char filename_buff[FTCP_PREAMBLE_PACKET_ARG_SIZE] = { 0 };
-	filename_buff_ptr = (void *) &filename_buff;
-	strcpy(filename_buff, filename);
-	ftcp_preamble_packet_init(&request, FTCP_TYPE_COMMAND, FTCP_OPERATION_GET, filename_buff_ptr, 0);
+	uint8_t filename_buff[FTCP_PREAMBLE_PACKET_ARG_SIZE] = { 0 };
+	strncpy((char*)filename_buff, filename, sizeof(uint8_t) * FTCP_PREAMBLE_PACKET_ARG_SIZE);
+	ftcp_preamble_packet_init(&request, FTCP_TYPE_COMMAND, FTCP_OPERATION_GET, &filename_buff, 0);
 	cmn_socket2_send(socket, request, FTCP_PREAMBLE_PACKET_SIZE);
 	cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE);
 	if (ftcp_preamble_packet_result(response) == FTCP_RESULT_FILE_EXIST_VALUE) {
@@ -174,17 +172,15 @@ fail:
 static int require_upload(cmn_socket2_t socket, char *filename) {
 	ftcp_preamble_packet_t request;
 	ftcp_preamble_packet_t response;
-	const uint8_t(*filename_buff_ptr)[FTCP_PREAMBLE_PACKET_ARG_SIZE];
-	char filename_buff[FTCP_PREAMBLE_PACKET_ARG_SIZE] = { 0 };
+	uint8_t filename_buff[FTCP_PREAMBLE_PACKET_ARG_SIZE] = { 0 };
 	FILE *file;
 	uint64_t flen;
-	filename_buff_ptr = (void *) &filename_buff;
-	strcpy(filename_buff, filename);
+	strncpy((char*)filename_buff, filename, sizeof(uint8_t) * FTCP_PREAMBLE_PACKET_ARG_SIZE);
 	file = fopen(filename, "r");
 	fseek(file, 0L, SEEK_END);
 	flen = ftell(file);
 	fseek(file, 0L, SEEK_SET);
-	ftcp_preamble_packet_init(&request, FTCP_TYPE_COMMAND, FTCP_OPERATION_PUT, filename_buff_ptr, flen);
+	ftcp_preamble_packet_init(&request, FTCP_TYPE_COMMAND, FTCP_OPERATION_PUT, &filename_buff, flen);
 	cmn_socket2_send(socket, request, FTCP_PREAMBLE_PACKET_SIZE);
 	cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE);
 	if (ftcp_preamble_packet_result(response) == FTCP_RESULT_FILE_EXIST_VALUE) {
