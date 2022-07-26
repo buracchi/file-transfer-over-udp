@@ -12,8 +12,8 @@
 #include "gbn_statemachine.h"
 
 struct cmn_tproto_service_gbn {
-    struct cmn_tproto_service super;
-    cmn_map_t state_machine_map;
+	struct cmn_tproto_service super;
+	cmn_map_t state_machine_map;
 };
 
 static inline cmn_map_t get_state_machine_map();
@@ -52,62 +52,62 @@ static struct cmn_tproto_service_gbn service = {
 };
 
 #ifdef WIN32 // May the gcc guy who forgot to create a flag for this stupid warning be cursed
-extern struct cmn_tproto_service* cmn_tproto_service_gbn = &(service.super);
+extern struct cmn_tproto_service *cmn_tproto_service_gbn = &(service.super);
 #elif __unix__
 struct cmn_tproto_service *cmn_tproto_service_gbn = &(service.super);
 #endif
 
 static inline cmn_map_t get_state_machine_map() {
-    if (!service.state_machine_map) {
-	service.state_machine_map = (cmn_map_t) cmn_linked_list_map_init();
-    }
-    return service.state_machine_map;
+	if (!service.state_machine_map) {
+		service.state_machine_map = (cmn_map_t) cmn_linked_list_map_init();
+	}
+	return service.state_machine_map;
 }
 
 static int _accept(cmn_tproto_service_t service, cmn_socket2_t socket, struct sockaddr *addr, socklen_t *addr_len) {
-    gbn_statemachine_t statemachine;
-    cmn_map_at(get_state_machine_map(), socket, (void **) &statemachine);
-    // update state machine info
-    cmn_statemachine_send_event((cmn_statemachine_t) statemachine, GBN_EV_ACCEPT);
-    return -1;
+	gbn_statemachine_t statemachine;
+	cmn_map_at(get_state_machine_map(), socket, (void **) &statemachine);
+	// update state machine info
+	cmn_statemachine_send_event((cmn_statemachine_t) statemachine, GBN_EV_ACCEPT);
+	return -1;
 }
 
 static int _connect(cmn_tproto_service_t service, cmn_socket2_t socket, struct sockaddr *addr, socklen_t addr_len) {
-    gbn_statemachine_t statemachine;
-    cmn_map_at(get_state_machine_map(), socket, (void **) &statemachine);
-    gbn_statemachine_set_peer_addr(statemachine, addr, addr_len);
-    cmn_statemachine_send_event((cmn_statemachine_t) statemachine, GBN_EV_CONNECT);
-    return -1;
+	gbn_statemachine_t statemachine;
+	cmn_map_at(get_state_machine_map(), socket, (void **) &statemachine);
+	gbn_statemachine_set_peer_addr(statemachine, addr, addr_len);
+	cmn_statemachine_send_event((cmn_statemachine_t) statemachine, GBN_EV_CONNECT);
+	return -1;
 }
 
 static int _listen(cmn_tproto_service_t service, cmn_socket2_t socket, int backlog) {
-    return -1;
+	return -1;
 }
 
 static ssize_t _peek(cmn_tproto_service_t service, cmn_socket2_t socket, uint8_t *buff, uint64_t n) {
-    return -1;
+	return -1;
 }
 
 static ssize_t _recv(cmn_tproto_service_t service, cmn_socket2_t socket, uint8_t *buff, uint64_t n) {
-    gbn_statemachine_t statemachine;
-    cmn_map_at(get_state_machine_map(), socket, (void **) &statemachine);
-    // update state machine info
-    cmn_statemachine_send_event((cmn_statemachine_t) statemachine, GBN_EV_RECV);
-    return -1;
+	gbn_statemachine_t statemachine;
+	cmn_map_at(get_state_machine_map(), socket, (void **) &statemachine);
+	// update state machine info
+	cmn_statemachine_send_event((cmn_statemachine_t) statemachine, GBN_EV_RECV);
+	return -1;
 }
 
 static ssize_t _send(cmn_tproto_service_t service, cmn_socket2_t socket, const uint8_t *buff, uint64_t n) {
-    gbn_statemachine_t statemachine;
-    cmn_map_at(get_state_machine_map(), socket, (void **) &statemachine);
-    // update state machine info
-    cmn_statemachine_send_event((cmn_statemachine_t) statemachine, GBN_EV_SEND);
-    return -1;
+	gbn_statemachine_t statemachine;
+	cmn_map_at(get_state_machine_map(), socket, (void **) &statemachine);
+	// update state machine info
+	cmn_statemachine_send_event((cmn_statemachine_t) statemachine, GBN_EV_SEND);
+	return -1;
 }
 
 static int _close(cmn_tproto_service_t service, cmn_socket2_t socket) {
-    gbn_statemachine_t statemachine;
-    cmn_map_at(get_state_machine_map(), socket, (void **) &statemachine);
-    // update state machine info
-    cmn_statemachine_send_event((cmn_statemachine_t) statemachine, GBN_EV_CLOSE);
-    return -1;
+	gbn_statemachine_t statemachine;
+	cmn_map_at(get_state_machine_map(), socket, (void **) &statemachine);
+	// update state machine info
+	cmn_statemachine_send_event((cmn_statemachine_t) statemachine, GBN_EV_CLOSE);
+	return -1;
 }

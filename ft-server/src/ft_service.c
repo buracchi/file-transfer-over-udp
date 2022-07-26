@@ -19,25 +19,25 @@
 #define container_of(ptr, type, member) ((type *)((char *)(ptr) - offsetof(type, member)))
 
 struct ft_service {
-	char* base_dir;
+	char *base_dir;
 	cmn_rwfslock_t rwfslock;
 	struct cmn_request_handler request_handler;
 };
 
 static int destroy_request_handler(cmn_request_handler_t handler) { return 0; }
 static void handle_request(cmn_request_handler_t handler, cmn_socket2_t socket);
-static char* get_file_list(ft_service_t ft_service);
+static char *get_file_list(ft_service_t ft_service);
 static void send_file_list(ft_service_t ft_service, cmn_socket2_t socket, ftcp_preamble_packet_t request);
 static void handle_get_request(ft_service_t ft_service, cmn_socket2_t socket, ftcp_preamble_packet_t request);
 static void handle_put_request(ft_service_t ft_service, cmn_socket2_t socket, ftcp_preamble_packet_t request);
 static void handle_invalid_request(ft_service_t ft_service, cmn_socket2_t socket, ftcp_preamble_packet_t request);
 
 static struct cmn_request_handler_vtbl request_handler_ops_vtbl = {
-		.destroy = destroy_request_handler,
-		.handle_request = handle_request
+	.destroy = destroy_request_handler,
+	.handle_request = handle_request
 };
 
-extern ft_service_t ft_service_init(const char* base_dir) {
+extern ft_service_t ft_service_init(const char *base_dir) {
 	ft_service_t ft_service;
 	try(ft_service = malloc(sizeof * ft_service), NULL, fail);
 	try(ft_service->base_dir = malloc(strlen(base_dir) + 1), NULL, fail2);
@@ -92,7 +92,7 @@ fail:
 
 static void send_file_list(ft_service_t ft_service, cmn_socket2_t socket, ftcp_preamble_packet_t request) {
 	ftcp_preamble_packet_t reply;
-	char* file_list = get_file_list(ft_service);
+	char *file_list = get_file_list(ft_service);
 	ftcp_preamble_packet_init(&reply, FTCP_TYPE_RESPONSE, FTCP_RESULT_SUCCESS, NULL, strlen(file_list));
 	try(cmn_socket2_send(socket, reply, FTCP_PREAMBLE_PACKET_SIZE), -1, fail);
 	try(cmn_socket2_ssend(socket, file_list), -1, fail);
@@ -103,12 +103,12 @@ fail:
 
 static void handle_get_request(ft_service_t ft_service, cmn_socket2_t socket, ftcp_preamble_packet_t request) {
 	ftcp_preamble_packet_t reply;
-	char* frpath;
-	char* fpath;
-	FILE* file;
+	char frpath[FTCP_PREAMBLE_PACKET_ARG_SIZE];
+	char *fpath;
+	FILE *file;
 	uint64_t flen;
-	frpath = (char*) ftcp_preamble_packet_arg(request);
-	if (strstr(frpath, "/")) {
+	memcpy(frpath, ftcp_preamble_packet_arg(request), sizeof(uint8_t) * FTCP_PREAMBLE_PACKET_ARG_SIZE);
+	if (strstr(frpath, "/")) { // TODO: This is a vulnerability, replace the check with a litteral comparison with the file listed with the LIST command
 		ftcp_preamble_packet_init(&reply, FTCP_TYPE_RESPONSE, FTCP_RESULT_INVALID_ARGUMENT, NULL, 0);
 		cmn_socket2_send(socket, reply, FTCP_PREAMBLE_PACKET_SIZE);
 		return;
@@ -120,7 +120,7 @@ static void handle_get_request(ft_service_t ft_service, cmn_socket2_t socket, ft
 		fseek(file, 0L, SEEK_END);
 		flen = ftell(file);
 		fseek(file, 0L, SEEK_SET);
-		ftcp_preamble_packet_init(&reply, FTCP_TYPE_RESPONSE, FTCP_RESULT_FILE_EXIST, frpath, flen);
+		ftcp_preamble_packet_init(&reply, FTCP_TYPE_RESPONSE, FTCP_RESULT_FILE_EXIST, (void *) ftcp_preamble_packet_arg(request), flen);
 		cmn_socket2_send(socket, reply, FTCP_PREAMBLE_PACKET_SIZE);
 		cmn_socket2_fsend(socket, file);
 		fclose(file);
@@ -137,8 +137,8 @@ fail:
 
 static void handle_put_request(ft_service_t ft_service, cmn_socket2_t socket, ftcp_preamble_packet_t request) {
 	ftcp_preamble_packet_t reply;
-	FILE* file;
-	char* fpath;
+	FILE *file;
+	char *fpath;
 	struct ftcp_result result;
 	asprintf(&fpath, "%s/%s", ft_service->base_dir, ftcp_preamble_packet_arg(request));
 	result.value = access(fpath, F_OK) ? FTCP_RESULT_FILE_NOT_EXIST_VALUE : FTCP_RESULT_FILE_EXIST_VALUE;
@@ -162,11 +162,11 @@ static void handle_invalid_request(ft_service_t ft_service, cmn_socket2_t socket
 	cmn_socket2_send(socket, reply, FTCP_PREAMBLE_PACKET_SIZE);
 }
 
-static char* get_file_list(ft_service_t ft_service) {
-	static const char* list_command;
-	try(asprintf((char**) &list_command, "ls %s -p | grep -v /", ft_service->base_dir), -1, fail);
-	FILE* pipe;
-	char* filelist;
+static char *get_file_list(ft_service_t ft_service) {
+	char *list_command;
+	try(asprintf(&list_command, "ls %s -p | grep -v /", ft_service->base_dir), -1, fail);
+	FILE *pipe;
+	char *filelist;
 	pipe = popen(list_command, "r");
 	fscanf(pipe, "%m[\x01-\xFF-]", &filelist);
 	pclose(pipe);

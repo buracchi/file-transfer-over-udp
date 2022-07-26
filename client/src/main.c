@@ -17,19 +17,19 @@ enum client_operation {
 	INVALID, EXIT, HELP
 };
 
-static int get_input(char** buffer);
-static enum client_operation get_client_operation(char* buffer);
-static struct ftcp_operation get_ftcp_operation(char* buffer);
-static int ftc_start(const char* url);
+static int get_input(char **buffer);
+static enum client_operation get_client_operation(char *buffer);
+static struct ftcp_operation get_ftcp_operation(char *buffer);
+static int ftc_start(const char *url);
 static int help();
 static int require_list(cmn_socket2_t socket);
-static int require_download(cmn_socket2_t socket, char* filename);
-static int require_upload(cmn_socket2_t socket, char* filename);
+static int require_download(cmn_socket2_t socket, char *filename);
+static int require_upload(cmn_socket2_t socket, char *filename);
 
 #define get_arg(buffer) ((buffer) + 4)
 
-extern int main(int argc, const char* argv[]) {
-	char* url;
+extern int main(int argc, const char *argv[]) {
+	char *url;
 	cmn_argparser_t argparser;
 	argparser = cmn_argparser_init();
 	cmn_argparser_set_description(argparser, "File transfer client.");
@@ -42,9 +42,9 @@ fail:
 	return EXIT_FAILURE;
 }
 
-static int ftc_start(const char* url) {
+static int ftc_start(const char *url) {
 	cmn_socket2_t socket;
-	char* buff;
+	char *buff;
 	printf("File Transfer Client\n\nType 'help' to get help.\n\n");
 	while (true) {
 		printf("FTC> ");
@@ -91,7 +91,7 @@ static int help() {
 			\r\t- exit\t\t\tclose client\n");
 }
 
-static int get_input(char** buffer) {
+static int get_input(char **buffer) {
 	try(scanf("%m[^\n]", buffer), -1, fail);
 	try(getchar() != '\n' || !buffer, true, fail);
 	return 0;
@@ -99,7 +99,7 @@ fail:
 	return 1;
 }
 
-static enum client_operation get_client_operation(char* buffer) {
+static enum client_operation get_client_operation(char *buffer) {
 	if (streq(buffer, "exit")) {
 		return EXIT;
 	}
@@ -109,7 +109,7 @@ static enum client_operation get_client_operation(char* buffer) {
 	return INVALID;
 }
 
-static struct ftcp_operation get_ftcp_operation(char* buffer) {
+static struct ftcp_operation get_ftcp_operation(char *buffer) {
 	if (!strncasecmp(buffer, "list", 4)) {
 		return FTCP_OPERATION_LIST;
 	}
@@ -125,7 +125,7 @@ static struct ftcp_operation get_ftcp_operation(char* buffer) {
 static int require_list(cmn_socket2_t socket) {
 	ftcp_preamble_packet_t request;
 	ftcp_preamble_packet_t response;
-	char* filelist;
+	char *filelist;
 	ftcp_preamble_packet_init(&request, FTCP_TYPE_COMMAND, FTCP_OPERATION_LIST, NULL, 0);
 	cmn_socket2_send(socket, request, FTCP_PREAMBLE_PACKET_SIZE);
 	cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE);
@@ -137,26 +137,28 @@ fail:
 	return 1;
 }
 
-static int require_download(cmn_socket2_t socket, char* filename) {
+static int require_download(cmn_socket2_t socket, char *filename) {
 	ftcp_preamble_packet_t request;
 	ftcp_preamble_packet_t response;
-	char filename_buff[256] = { 0 };
+	const uint8_t(*filename_buff_ptr)[FTCP_PREAMBLE_PACKET_ARG_SIZE];
+	char filename_buff[FTCP_PREAMBLE_PACKET_ARG_SIZE] = { 0 };
+	filename_buff_ptr = (void *) &filename_buff;
 	strcpy(filename_buff, filename);
-	ftcp_preamble_packet_init(&request, FTCP_TYPE_COMMAND, FTCP_OPERATION_GET, (uint8_t*)filename_buff, 0);
+	ftcp_preamble_packet_init(&request, FTCP_TYPE_COMMAND, FTCP_OPERATION_GET, filename_buff_ptr, 0);
 	cmn_socket2_send(socket, request, FTCP_PREAMBLE_PACKET_SIZE);
 	cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE);
 	if (ftcp_preamble_packet_result(response) == FTCP_RESULT_FILE_EXIST_VALUE) {
 		if (!access(filename, F_OK)) {
 			printf("%s already exists. Do you want to replace it? [y/n]\n", filename);
-			char choice[2] = { (char)getchar(), 0 };
+			char choice[2] = { (char) getchar(), 0 };
 			try(getchar() != '\n' || !choice[0], true, fail);
 			if (!streq(choice, "y")) {
 				goto end;
 			}
 		}
-		FILE* file;
+		FILE *file;
 		file = fopen(filename, "w");
-		cmn_socket2_frecv(socket, file, (long)ftcp_preamble_packet_data_packet_length(response));
+		cmn_socket2_frecv(socket, file, (long) ftcp_preamble_packet_data_packet_length(response));
 		try(printf("File downloaded\n") < 0, true, fail);
 		fclose(file);
 	}
@@ -169,23 +171,25 @@ fail:
 	return 1;
 }
 
-static int require_upload(cmn_socket2_t socket, char* filename) {
+static int require_upload(cmn_socket2_t socket, char *filename) {
 	ftcp_preamble_packet_t request;
 	ftcp_preamble_packet_t response;
-	char filename_buff[256] = { 0 };
-	strcpy(filename_buff, filename);
-	FILE* file;
+	const uint8_t(*filename_buff_ptr)[FTCP_PREAMBLE_PACKET_ARG_SIZE];
+	char filename_buff[FTCP_PREAMBLE_PACKET_ARG_SIZE] = { 0 };
+	FILE *file;
 	uint64_t flen;
+	filename_buff_ptr = (void *) &filename_buff;
+	strcpy(filename_buff, filename);
 	file = fopen(filename, "r");
 	fseek(file, 0L, SEEK_END);
 	flen = ftell(file);
 	fseek(file, 0L, SEEK_SET);
-	ftcp_preamble_packet_init(&request, FTCP_TYPE_COMMAND, FTCP_OPERATION_PUT, (uint8_t*)filename_buff, flen);
+	ftcp_preamble_packet_init(&request, FTCP_TYPE_COMMAND, FTCP_OPERATION_PUT, filename_buff_ptr, flen);
 	cmn_socket2_send(socket, request, FTCP_PREAMBLE_PACKET_SIZE);
 	cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE);
 	if (ftcp_preamble_packet_result(response) == FTCP_RESULT_FILE_EXIST_VALUE) {
 		printf("%s already exists. Do you want to replace it? [y/n]\n", filename);
-		char choice[2] = { (char)getchar(), 0 };
+		char choice[2] = { (char) getchar(), 0 };
 		try(getchar() != '\n' || !choice[0], true, fail);
 		if (!streq(choice, "y")) {
 			goto end;

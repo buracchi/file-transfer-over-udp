@@ -8,12 +8,12 @@
 #include "ft_service.h"
 //#include "tproto/tproto_service_gbn.h"
 
-extern int main(int argc, const char* argv[]) {
+extern int main(int argc, const char *argv[]) {
 	ft_service_t ft_service;
 	cmn_communication_manager_t communication_manager;
 	cmn_request_handler_t request_handler;
-	char* url;
-	char* directory;
+	char *url;
+	char *directory;
 	cmn_argparser_t argparser;
 	try(argparser = cmn_argparser_init(), NULL, fail);
 	try(cmn_argparser_set_description(argparser, "File transfer server."), 1, fail);

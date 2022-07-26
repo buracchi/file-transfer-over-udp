@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
 extern "C" {
-	#include "socket2.h"
-	#include "nproto/nproto_service_ipv4.h"
-	#include "tproto/tproto_service_gbn.h"
+#include "socket2.h"
+#include "nproto/nproto_service_ipv4.h"
+#include "tproto/tproto_service_gbn.h"
 }
 
 #include <thread>

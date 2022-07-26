@@ -4,10 +4,11 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include <limits.h>
 
-/*******************************************************************************
-*                     File Transfer Communication Protocol                     *
-*******************************************************************************/
+/******************************************************************************
+*                    File Transfer Communication Protocol                     *
+******************************************************************************/
 /**
  * Communication between hosts in the application occurs through the exchange
  * of FTCP packets.
@@ -30,7 +31,7 @@
  *	Type:			Message type
  *	Operation/Result:	Message operation/Request result
  *	Arg:			Additional argument
- *	Data length:		Data Packet length (up to 16 EiB)
+ *	Data length:		Encoded Data Packet length (up to 16 EiB)
  *
  *	- Data Packets:
  *
@@ -50,27 +51,16 @@
  *
  */
 
-#define FTCP_PREAMBLE_PACKET_SIZE			266
-#define FTCP_PREAMBLE_PACKET_TYPE_SIZE			1
-#define FTCP_PREAMBLE_PACKET_OPERATION_SIZE		1
-#define FTCP_PREAMBLE_PACKET_RESULT_SIZE		1
-#define FTCP_PREAMBLE_PACKET_ARG_SIZE			256
-#define FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGHT_SIZE	8
 
-typedef uint8_t ftcp_preamble_packet_t[FTCP_PREAMBLE_PACKET_SIZE];
-typedef uint8_t* ftcp_data_packet_t;
+ /*****************************************************************************
+ *                                 FTCP Type                                  *
+ *****************************************************************************/
 
 struct ftcp_type {
 	uint8_t value;
 };
 
-struct ftcp_operation {
-	uint8_t value;
-};
-
-struct ftcp_result {
-	uint8_t value;
-};
+typedef typeof(((struct ftcp_type *) 0)->value) ftcp_type_value_t;
 
 #define FTCP_TYPE_INVALID_VALUE		0
 #define FTCP_TYPE_COMMAND_VALUE		1
@@ -79,6 +69,16 @@ struct ftcp_result {
 #define FTCP_TYPE_INVALID	(struct ftcp_type) { FTCP_TYPE_INVALID_VALUE }
 #define FTCP_TYPE_COMMAND	(struct ftcp_type) { FTCP_TYPE_COMMAND_VALUE }
 #define FTCP_TYPE_RESPONSE	(struct ftcp_type) { FTCP_TYPE_RESPONSE_VALUE }
+
+/*****************************************************************************
+*                               FTCP Operation                               *
+*****************************************************************************/
+
+struct ftcp_operation {
+	uint8_t value;
+};
+
+typedef typeof(((struct ftcp_operation *) 0)->value) ftcp_operation_value_t;
 
 #define FTCP_OPERATION_INVALID_VALUE	0
 #define FTCP_OPERATION_LIST_VALUE	1
@@ -89,6 +89,16 @@ struct ftcp_result {
 #define FTCP_OPERATION_LIST	(struct ftcp_operation) { FTCP_OPERATION_LIST_VALUE }
 #define FTCP_OPERATION_GET	(struct ftcp_operation) { FTCP_OPERATION_GET_VALUE }
 #define FTCP_OPERATION_PUT	(struct ftcp_operation) { FTCP_OPERATION_PUT_VALUE }
+
+/*****************************************************************************
+*                                 FTCP Result                                *
+*****************************************************************************/
+
+struct ftcp_result {
+	uint8_t value;
+};
+
+typedef typeof(((struct ftcp_result *) 0)->value) ftcp_result_value_t;
 
 #define FTCP_RESULT_INVALID_VALUE		0
 #define FTCP_RESULT_SUCCESS_VALUE		1
@@ -104,68 +114,118 @@ struct ftcp_result {
 #define FTCP_RESULT_FILE_NOT_EXIST	(struct ftcp_result) { FTCP_RESULT_FILE_NOT_EXIST_VALUE }
 #define FTCP_RESULT_INVALID_ARGUMENT	(struct ftcp_result) { FTCP_RESULT_INVALID_ARGUMENT_VALUE }
 
-static inline void ftcp_preamble_packet_init_internal(ftcp_preamble_packet_t* packet,
-						      struct ftcp_type type,
-						      uint8_t operation_or_result,
-						      const void* arg,
-						      uint64_t data_packet_length) {
-	memcpy(&((*packet)[0]), &type, FTCP_PREAMBLE_PACKET_TYPE_SIZE);
-	memcpy(&((*packet)[1]), &operation_or_result, 1);
-	if (arg) {
-		memcpy(&((*packet)[2]), arg, FTCP_PREAMBLE_PACKET_ARG_SIZE);
+/*****************************************************************************
+*                            FTCP Preamble Packet                            *
+*****************************************************************************/
+
+#define FTCP_SIZE_MAX_BETWEEN(s, t) (s + ((t - s) & ((((s - t) >> (sizeof(size_t) * CHAR_BIT - 1)) & UCHAR_MAX) * SIZE_MAX)))
+
+#define FTCP_PREAMBLE_PACKET_TYPE_SIZE			sizeof(struct ftcp_type)
+#define FTCP_PREAMBLE_PACKET_OPERATION_SIZE		sizeof(struct ftcp_operation)
+#define FTCP_PREAMBLE_PACKET_RESULT_SIZE		sizeof(struct ftcp_result)
+#define FTCP_PREAMBLE_PACKET_SECOND_FIELD_SIZE		FTCP_SIZE_MAX_BETWEEN(FTCP_PREAMBLE_PACKET_OPERATION_SIZE, FTCP_PREAMBLE_PACKET_RESULT_SIZE)
+#define FTCP_PREAMBLE_PACKET_ARG_SIZE			256
+#define FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE	8
+#define FTCP_PREAMBLE_PACKET_SIZE			(size_t)(FTCP_PREAMBLE_PACKET_TYPE_SIZE		\
+							+ FTCP_PREAMBLE_PACKET_SECOND_FIELD_SIZE	\
+							+ FTCP_PREAMBLE_PACKET_ARG_SIZE			\
+							+ FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE)
+
+#define FTCP_PREAMBLE_PACKET_TYPE_OFFSET                0
+#define FTCP_PREAMBLE_PACKET_SECOND_FIELD_OFFSET	FTCP_PREAMBLE_PACKET_TYPE_OFFSET + FTCP_PREAMBLE_PACKET_TYPE_SIZE
+#define FTCP_PREAMBLE_PACKET_OPERATION_OFFSET           FTCP_PREAMBLE_PACKET_SECOND_FIELD_OFFSET
+#define FTCP_PREAMBLE_PACKET_RESULT_OFFSET              FTCP_PREAMBLE_PACKET_SECOND_FIELD_OFFSET
+#define FTCP_PREAMBLE_PACKET_ARG_OFFSET                 FTCP_PREAMBLE_PACKET_SECOND_FIELD_OFFSET + FTCP_PREAMBLE_PACKET_SECOND_FIELD_SIZE
+#define FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_OFFSET  FTCP_PREAMBLE_PACKET_ARG_OFFSET
+
+typedef uint8_t ftcp_preamble_packet_t[FTCP_PREAMBLE_PACKET_SIZE];
+
+/*****************************************************************************
+*                              FTCP Data Packet                              *
+*****************************************************************************/
+
+typedef uint8_t *ftcp_data_packet_t;
+
+/*****************************************************************************
+*                               FTCP Utilities                               *
+*****************************************************************************/
+
+static inline uint8_t *ftcp_encode_data_packet_length(uint8_t(*dest)[FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE], uint64_t data_packet_length) {
+	const size_t dest_size = FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE;
+	for (size_t i = 0; i < dest_size; i++) {
+		memset(&((*dest)[i]), (data_packet_length >> (dest_size * (dest_size - 1 - i))) & 0xFF, 1);
 	}
-	else {
-		memset(&((*packet)[2]), 0, FTCP_PREAMBLE_PACKET_ARG_SIZE);
-	}
-	for (int i = 0; i < 8; i++) {
-		memset(&((*packet)[258 + i]), (data_packet_length >> (8 * (7 - i))) & 0xFF, 1);
-	}
+	return (uint8_t *) dest;
 }
 
-static inline void ftcp_preamble_packet_operation_init(ftcp_preamble_packet_t* packet,
+static inline uint64_t ftcp_decode_data_packet_length(uint8_t const (*src)[FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE]) {
+	const size_t src_size = FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE;
+	uint64_t result = 0;
+	for (size_t i = 0; i < src_size; i++) {
+		result += (((uint64_t) (*src)[i] & 0xFF) << (src_size * (src_size - 1 - i)));
+	}
+	return result;
+}
+
+/*****************************************************************************
+*                               FTCP Functions                               *
+*****************************************************************************/
+
+static inline void ftcp_preamble_packet_init_internal(ftcp_preamble_packet_t *packet,
+						      struct ftcp_type type,
+						      uint8_t second_field_value,
+						      size_t second_field_value_size,
+						      uint8_t const (*arg)[FTCP_PREAMBLE_PACKET_ARG_SIZE],
+						      uint64_t data_packet_length) {
+	const uint8_t zero_arg[FTCP_PREAMBLE_PACKET_ARG_SIZE] = { 0 };
+	uint8_t encoded_data_packet_length[FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE] = { 0 };
+	ftcp_encode_data_packet_length(&encoded_data_packet_length, data_packet_length);
+	memcpy(&((*packet)[FTCP_PREAMBLE_PACKET_TYPE_OFFSET]), &type, FTCP_PREAMBLE_PACKET_TYPE_SIZE);
+	memcpy(&((*packet)[FTCP_PREAMBLE_PACKET_SECOND_FIELD_OFFSET]), &second_field_value, second_field_value_size);
+	memcpy(&((*packet)[FTCP_PREAMBLE_PACKET_ARG_OFFSET]), arg ? arg : &zero_arg, FTCP_PREAMBLE_PACKET_ARG_SIZE);
+	memcpy(&((*packet)[FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_OFFSET]), &encoded_data_packet_length, FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE);
+}
+
+static inline void ftcp_preamble_packet_operation_init(ftcp_preamble_packet_t *packet,
 						       struct ftcp_type type,
 						       struct ftcp_operation operation,
-						       const void* arg,
+						       uint8_t const (*arg)[FTCP_PREAMBLE_PACKET_ARG_SIZE],
 						       uint64_t data_packet_length) {
-	ftcp_preamble_packet_init_internal(packet, type, operation.value, arg, data_packet_length);
+	ftcp_preamble_packet_init_internal(packet, type, operation.value, sizeof(operation), arg, data_packet_length);
 }
 
-static inline void ftcp_preamble_packet_result_init(ftcp_preamble_packet_t* packet,
+static inline void ftcp_preamble_packet_result_init(ftcp_preamble_packet_t *packet,
 						    struct ftcp_type type,
 						    struct ftcp_result result,
-						    const void* arg,
+						    uint8_t const (*arg)[FTCP_PREAMBLE_PACKET_ARG_SIZE],
 						    uint64_t data_packet_length) {
-	ftcp_preamble_packet_init_internal(packet, type, result.value, arg, data_packet_length);
+	ftcp_preamble_packet_init_internal(packet, type, result.value, sizeof(result), arg, data_packet_length);
 }
 
 #define ftcp_preamble_packet_init(packet, type, operation_or_result, arg, data_packet_length)	\
-_Generic(operation_or_result,									\
+_Generic((operation_or_result),									\
 	struct ftcp_operation : ftcp_preamble_packet_operation_init,				\
 	   struct ftcp_result : ftcp_preamble_packet_result_init				\
 )((packet), (type), (operation_or_result), (arg), (data_packet_length))
 
-static inline uint8_t ftcp_preamble_packet_type(ftcp_preamble_packet_t const packet) {
-	return packet[0];
+static inline ftcp_type_value_t ftcp_preamble_packet_type(ftcp_preamble_packet_t const packet) {
+	return packet[FTCP_PREAMBLE_PACKET_TYPE_OFFSET];
 }
 
-static inline uint8_t ftcp_preamble_packet_operation(ftcp_preamble_packet_t const packet) {
-	return packet[1];
+static inline ftcp_operation_value_t ftcp_preamble_packet_operation(ftcp_preamble_packet_t const packet) {
+	return packet[FTCP_PREAMBLE_PACKET_OPERATION_OFFSET];
 }
 
-static inline uint8_t ftcp_preamble_packet_result(ftcp_preamble_packet_t const packet) {
-	return packet[1];
+static inline ftcp_result_value_t ftcp_preamble_packet_result(ftcp_preamble_packet_t const packet) {
+	return packet[FTCP_PREAMBLE_PACKET_RESULT_OFFSET];
 }
 
-static inline uint8_t* ftcp_preamble_packet_arg(ftcp_preamble_packet_t packet) {
-	return &(packet[2]);
+static inline uint8_t *ftcp_preamble_packet_arg(ftcp_preamble_packet_t packet) {
+	return &(packet[FTCP_PREAMBLE_PACKET_ARG_OFFSET]);
 }
 
 static inline uint64_t ftcp_preamble_packet_data_packet_length(ftcp_preamble_packet_t const packet) {
-	uint64_t result = 0;
-	for (int i = 0; i < 8; i++) {
-		result += ((uint64_t) packet[258 + i] << (8 * (7 - i))) & 0xFF;
-	}
-	return result;
+	return ftcp_decode_data_packet_length((void *) &packet[FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_OFFSET]);
 }
 
 #endif // FTCP_H_INCLUDED
