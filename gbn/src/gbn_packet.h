@@ -49,7 +49,7 @@ struct gbn_packet {
 };
 
 static inline void make_pkt(struct gbn_packet *pkt, uint8_t type, uint32_t seqnum, const uint8_t *data,
-                            uint16_t data_length) {
+			    uint16_t data_length) {
     memset(pkt, 0, sizeof *pkt);
     pkt->seqnum = seqnum;
     pkt->rcv_wndw = WINDOW_SIZE;

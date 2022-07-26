@@ -14,12 +14,12 @@
 
 #define TRANSACTIONS_NUMBER (sizeof gbn_transitions / sizeof * gbn_transitions)
 #define udp_send(statemachine, pkt) sendto(\
-                                        cmn_socket2_get_fd(statemachine->socket), \
-                                        pkt, \
-                                        sizeof * pkt, \
-                                        0, \
-                                        statemachine->peer_addr, \
-                                        statemachine->peer_addrlen)
+					cmn_socket2_get_fd(statemachine->socket), \
+					pkt, \
+					sizeof * pkt, \
+					0, \
+					statemachine->peer_addr, \
+					statemachine->peer_addrlen)
 
 static void on_socket_writeable(evutil_socket_t fd, short events, void *arg);
 
@@ -76,39 +76,39 @@ struct cmn_statemachine_state state_last_ack = {NULL, NULL};
 // add state for too much attempt
 
 struct cmn_statemachine_transition gbn_transitions[] = {
-        {&state_closed,      GBN_EV_CONNECT, NULL,                      &send_syn,             &state_syn_sent},
-        {&state_syn_sent,    GBN_EV_TIMEOUT, NULL,                      &send_syn,             &state_syn_sent},
-        {&state_syn_sent,    GBN_EV_SOCKET_READABLE, &received_syn_ack, &send_data_ack,        &state_established},
-        {&state_closed,      GBN_EV_ACCEPT,  NULL,                       NULL,                 &state_listen},
-        {&state_listen,      GBN_EV_SOCKET_READABLE, &received_syn,     &send_syn_ack,         &state_closed},
-        {&state_syn_rcvd,    GBN_EV_TIMEOUT, NULL,                      &send_syn_ack,         &state_syn_rcvd},
-        {&state_syn_rcvd,    GBN_EV_SOCKET_READABLE, &received_data_ack, NULL,                 &state_established},
-        {&state_established, GBN_EV_RECV,    NULL,                       NULL,                 &state_established},
-        {&state_established, GBN_EV_SEND,    NULL,                       NULL,                 &state_established},
-        {&state_established, GBN_EV_TIMEOUT, NULL,                       NULL,                 &state_established},
-        {&state_established, GBN_EV_SOCKET_READABLE, &received_fin,     &send_fin_ack_and_fin, &state_last_ack},
-        {&state_last_ack,    GBN_EV_TIMEOUT, NULL,                      &send_fin_ack_and_fin, &state_last_ack},
-        {&state_last_ack,    GBN_EV_SOCKET_READABLE, &received_fin_ack,  NULL,                 &state_closed},
-        {&state_established, GBN_EV_CLOSE,   NULL,                      &send_fin,             &state_fin_wait_1},
-        {&state_fin_wait_1,  GBN_EV_TIMEOUT, NULL,                      &send_fin,             &state_fin_wait_1},
-        {&state_fin_wait_1,  GBN_EV_SOCKET_READABLE, &received_fin_ack,  NULL,                 &state_fin_wait_2},
-        {&state_fin_wait_2,  GBN_EV_SOCKET_READABLE, &received_fin,     &send_fin_ack,         &state_time_wait},
-        {&state_time_wait,   GBN_EV_TIMEOUT, NULL,                      &send_fin_ack,         &state_time_wait},
-        {&state_time_wait,   GBN_EV_SOCKET_READABLE, &received_fin_ack,  NULL,                 &state_closed},
+	{&state_closed,      GBN_EV_CONNECT, NULL,                      &send_syn,             &state_syn_sent},
+	{&state_syn_sent,    GBN_EV_TIMEOUT, NULL,                      &send_syn,             &state_syn_sent},
+	{&state_syn_sent,    GBN_EV_SOCKET_READABLE, &received_syn_ack, &send_data_ack,        &state_established},
+	{&state_closed,      GBN_EV_ACCEPT,  NULL,                       NULL,                 &state_listen},
+	{&state_listen,      GBN_EV_SOCKET_READABLE, &received_syn,     &send_syn_ack,         &state_closed},
+	{&state_syn_rcvd,    GBN_EV_TIMEOUT, NULL,                      &send_syn_ack,         &state_syn_rcvd},
+	{&state_syn_rcvd,    GBN_EV_SOCKET_READABLE, &received_data_ack, NULL,                 &state_established},
+	{&state_established, GBN_EV_RECV,    NULL,                       NULL,                 &state_established},
+	{&state_established, GBN_EV_SEND,    NULL,                       NULL,                 &state_established},
+	{&state_established, GBN_EV_TIMEOUT, NULL,                       NULL,                 &state_established},
+	{&state_established, GBN_EV_SOCKET_READABLE, &received_fin,     &send_fin_ack_and_fin, &state_last_ack},
+	{&state_last_ack,    GBN_EV_TIMEOUT, NULL,                      &send_fin_ack_and_fin, &state_last_ack},
+	{&state_last_ack,    GBN_EV_SOCKET_READABLE, &received_fin_ack,  NULL,                 &state_closed},
+	{&state_established, GBN_EV_CLOSE,   NULL,                      &send_fin,             &state_fin_wait_1},
+	{&state_fin_wait_1,  GBN_EV_TIMEOUT, NULL,                      &send_fin,             &state_fin_wait_1},
+	{&state_fin_wait_1,  GBN_EV_SOCKET_READABLE, &received_fin_ack,  NULL,                 &state_fin_wait_2},
+	{&state_fin_wait_2,  GBN_EV_SOCKET_READABLE, &received_fin,     &send_fin_ack,         &state_time_wait},
+	{&state_time_wait,   GBN_EV_TIMEOUT, NULL,                      &send_fin_ack,         &state_time_wait},
+	{&state_time_wait,   GBN_EV_SOCKET_READABLE, &received_fin_ack,  NULL,                 &state_closed},
 };
 
 extern gbn_statemachine_t gbn_statemachine_init(cmn_socket2_t socket) {
     gbn_statemachine_t statemachine;
     try(statemachine = (gbn_statemachine_t) cmn_statemachine_init(&state_closed, gbn_transitions, TRANSACTIONS_NUMBER),
-        NULL, FAIL);
+	NULL, FAIL);
     try(statemachine = realloc(statemachine, sizeof *statemachine), NULL, FAIL2);
     statemachine->socket = socket;
     try(statemachine->event_base = event_base_new(), NULL, FAIL2);
     try(statemachine->writeable_event = event_new(statemachine->event_base, cmn_socket2_get_fd(socket),
-                                                  EV_WRITE | EV_PERSIST, on_socket_writeable, statemachine), NULL,
-        FAIL3);
+						  EV_WRITE | EV_PERSIST, on_socket_writeable, statemachine), NULL,
+	FAIL3);
     try(statemachine->readable_event = event_new(statemachine->event_base, cmn_socket2_get_fd(socket),
-                                                 EV_READ | EV_PERSIST, on_socket_readable, statemachine), NULL, FAIL3);
+						 EV_READ | EV_PERSIST, on_socket_readable, statemachine), NULL, FAIL3);
     try(statemachine->timeout_event = evtimer_new(statemachine->event_base, on_timeout, statemachine), NULL, FAIL3);
     try(event_add(statemachine->writeable_event, NULL), -1, FAIL3);
     try(event_add(statemachine->readable_event, NULL), -1, FAIL3);
@@ -178,25 +178,25 @@ void send_syn_ack(cmn_statemachine_context_t context) {
     socklen_t addrlen;
     recvfrom(statemachine->fd, &rcvpkt, sizeof rcvpkt, 0, src_addr, &addrlen);
     if (rcvpkt.type == SYN) {
-        struct gbn_packet sndpkt;
-        uint32_t server_isn;
-        uint32_t client_isn;
-        // TODO: save the accepted_socket and the accepted_statemachine somewere
-        gbn_statemachine_t accepted_statemachine;
-        cmn_socket2_t accepted_socket;
-        accepted_statemachine = gbn_statemachine_init(accepted_socket);
-        accepted_statemachine->peer_addr = src_addr;
-        accepted_statemachine->peer_addrlen = addrlen;
-        // bind accepted_statemachine ?
-        // choose a free port?
-        // add event to fd of accepted_socket?
-        server_isn = (uint32_t) random();
-        client_isn = rcvpkt.seqnum;
-        make_pkt(&sndpkt, SYN_ACK, (client_isn + 1) ^ server_isn, &(uint8_t) {0}, 0);
-        sendto(accepted_statemachine->fd, &sndpkt, sizeof sndpkt, 0, accepted_statemachine->peer_addr,
-               accepted_statemachine->peer_addrlen);
-        // calculate expectedseqnum
-        accepted_statemachine->state = SYN_RCVD;
+	struct gbn_packet sndpkt;
+	uint32_t server_isn;
+	uint32_t client_isn;
+	// TODO: save the accepted_socket and the accepted_statemachine somewere
+	gbn_statemachine_t accepted_statemachine;
+	cmn_socket2_t accepted_socket;
+	accepted_statemachine = gbn_statemachine_init(accepted_socket);
+	accepted_statemachine->peer_addr = src_addr;
+	accepted_statemachine->peer_addrlen = addrlen;
+	// bind accepted_statemachine ?
+	// choose a free port?
+	// add event to fd of accepted_socket?
+	server_isn = (uint32_t) random();
+	client_isn = rcvpkt.seqnum;
+	make_pkt(&sndpkt, SYN_ACK, (client_isn + 1) ^ server_isn, &(uint8_t) {0}, 0);
+	sendto(accepted_statemachine->fd, &sndpkt, sizeof sndpkt, 0, accepted_statemachine->peer_addr,
+	       accepted_statemachine->peer_addrlen);
+	// calculate expectedseqnum
+	accepted_statemachine->state = SYN_RCVD;
     }
 }
 
@@ -214,10 +214,10 @@ extern void syn_rcvd_on_recv(gbn_statemachine_t statemachine) {
     uint32_t server_isn;
     recvfrom(statemachine->fd, &rcvpkt, sizeof rcvpkt, 0, NULL, NULL);
     if (rcvpkt.type == SYN_ACK && rcvpkt.seqnum == statemachine->receiver_info.expectedseqnum) {
-        struct gbn_packet sndpkt;
-        make_pkt(&sndpkt, DATA_ACK, server_isn + 1, &(uint8_t) {0}, 0);
-        sendto(statemachine->fd, &sndpkt, sizeof sndpkt, 0, statemachine->peer_addr, statemachine->peer_addrlen);
-        statemachine->state = ESTABILISHED;
+	struct gbn_packet sndpkt;
+	make_pkt(&sndpkt, DATA_ACK, server_isn + 1, &(uint8_t) {0}, 0);
+	sendto(statemachine->fd, &sndpkt, sizeof sndpkt, 0, statemachine->peer_addr, statemachine->peer_addrlen);
+	statemachine->state = ESTABILISHED;
     }
 }
 
@@ -244,8 +244,8 @@ extern void estabilished_on_socket_readable(gbn_statemachine_t statemachine) {
     struct gbn_packet rcvpkt;
     recv(statemachine->fd, &rcvpkt, sizeof rcvpkt, 0);
     if (statemachine->state == FIN) {
-        // send finack
-        statemachine->state = LAST_ACK;
+	// send finack
+	statemachine->state = LAST_ACK;
     }
 }
 
@@ -253,43 +253,43 @@ extern void estabilished_on_recv_op(gbn_statemachine_t statemachine) {
     struct gbn_packet rcvpkt;
     try(recv(statemachine->fd, &rcvpkt, sizeof rcvpkt, 0), -1, fail);
     switch (rcvpkt.type) {
-        case DATA: {
-            struct gbn_packet sndpkt;
-            if (rcvpkt.type == DATA && rcvpkt.seqnum == statemachine->receiver_info.expectedseqnum) {
-                for (int i = 0; i < PAYLOAD_LENGTH; i++) {
-                    *(statemachine->receiver_info.rslt_ptr) = rcvpkt.data[i];
-                    statemachine->receiver_info.rslt_ptr++;
-                    if (statemachine->receiver_info.rslt_ptr == statemachine->receiver_info.rslt_end_ptr) {
-                        // exit somehow
-                        break;
-                    }
-                }
-                make_pkt(&sndpkt, DATA_ACK, statemachine->receiver_info.expectedseqnum, &(uint8_t) {0}, 0);
-                try(send(statemachine->fd, &sndpkt, sizeof sndpkt, 0), -1, fail);
-                statemachine->receiver_info.expectedseqnum++;
-            }
-            else {
-                make_pkt(&sndpkt, DATA_ACK, statemachine->receiver_info.expectedseqnum - 1, &(uint8_t) {0}, 0);
-                try(send(statemachine->fd, &sndpkt, sizeof sndpkt, 0), -1, fail);
-            }
-            if (statemachine->receiver_info.rslt_ptr == statemachine->receiver_info.rslt_end_ptr) {
-                goto fail;
-            }
-        }
-            break;
-        case DATA_ACK: {
-            if (rcvpkt.seqnum + 1 == statemachine->sender_info.nextseqnum) {
-                try(evtimer_del(statemachine->timeout_event), -1, fail);
-                statemachine->sender_info.base++;
-            }
-            else {
-                try(evtimer_add(statemachine->timeout_event, &((struct timeval) {.tv_sec=0, .tv_usec=TIMEOUT})), -1,
-                    fail);
-            }
-        }
-            break;
-        default:
-            break;
+	case DATA: {
+	    struct gbn_packet sndpkt;
+	    if (rcvpkt.type == DATA && rcvpkt.seqnum == statemachine->receiver_info.expectedseqnum) {
+		for (int i = 0; i < PAYLOAD_LENGTH; i++) {
+		    *(statemachine->receiver_info.rslt_ptr) = rcvpkt.data[i];
+		    statemachine->receiver_info.rslt_ptr++;
+		    if (statemachine->receiver_info.rslt_ptr == statemachine->receiver_info.rslt_end_ptr) {
+			// exit somehow
+			break;
+		    }
+		}
+		make_pkt(&sndpkt, DATA_ACK, statemachine->receiver_info.expectedseqnum, &(uint8_t) {0}, 0);
+		try(send(statemachine->fd, &sndpkt, sizeof sndpkt, 0), -1, fail);
+		statemachine->receiver_info.expectedseqnum++;
+	    }
+	    else {
+		make_pkt(&sndpkt, DATA_ACK, statemachine->receiver_info.expectedseqnum - 1, &(uint8_t) {0}, 0);
+		try(send(statemachine->fd, &sndpkt, sizeof sndpkt, 0), -1, fail);
+	    }
+	    if (statemachine->receiver_info.rslt_ptr == statemachine->receiver_info.rslt_end_ptr) {
+		goto fail;
+	    }
+	}
+	    break;
+	case DATA_ACK: {
+	    if (rcvpkt.seqnum + 1 == statemachine->sender_info.nextseqnum) {
+		try(evtimer_del(statemachine->timeout_event), -1, fail);
+		statemachine->sender_info.base++;
+	    }
+	    else {
+		try(evtimer_add(statemachine->timeout_event, &((struct timeval) {.tv_sec=0, .tv_usec=TIMEOUT})), -1,
+		    fail);
+	    }
+	}
+	    break;
+	default:
+	    break;
     }
 fail:
     return;
@@ -297,23 +297,23 @@ fail:
 
 extern void estabilished_on_send_op(gbn_statemachine_t statemachine) {
     if (statemachine->sender_info.nextseqnum < statemachine->sender_info.base + WINDOW_SIZE) {
-        uint16_t data_length =
-                (statemachine->sender_info.data_end_ptr - statemachine->sender_info.data_ptr) % PAYLOAD_LENGTH;
-        make_pkt(&(statemachine->sender_info.sndpkt[statemachine->sender_info.nextseqnum]), DATA,
-                 statemachine->sender_info.nextseqnum, statemachine->sender_info.data_ptr, data_length);
-        try(send(statemachine->fd, &(statemachine->sender_info.sndpkt[statemachine->sender_info.nextseqnum]),
-                 sizeof *(statemachine->sender_info.sndpkt), 0), -1, fail);
-        if (statemachine->sender_info.base == statemachine->sender_info.nextseqnum) {
-            try(evtimer_add(statemachine->timeout_event, &((struct timeval) {.tv_sec=0, .tv_usec=TIMEOUT})), -1, fail);
-        }
-        statemachine->sender_info.nextseqnum++;
-        statemachine->sender_info.data_ptr += data_length;
-        if (statemachine->sender_info.data_ptr == statemachine->sender_info.data_end_ptr) {
-            // exit somehow
-        }
+	uint16_t data_length =
+		(statemachine->sender_info.data_end_ptr - statemachine->sender_info.data_ptr) % PAYLOAD_LENGTH;
+	make_pkt(&(statemachine->sender_info.sndpkt[statemachine->sender_info.nextseqnum]), DATA,
+		 statemachine->sender_info.nextseqnum, statemachine->sender_info.data_ptr, data_length);
+	try(send(statemachine->fd, &(statemachine->sender_info.sndpkt[statemachine->sender_info.nextseqnum]),
+		 sizeof *(statemachine->sender_info.sndpkt), 0), -1, fail);
+	if (statemachine->sender_info.base == statemachine->sender_info.nextseqnum) {
+	    try(evtimer_add(statemachine->timeout_event, &((struct timeval) {.tv_sec=0, .tv_usec=TIMEOUT})), -1, fail);
+	}
+	statemachine->sender_info.nextseqnum++;
+	statemachine->sender_info.data_ptr += data_length;
+	if (statemachine->sender_info.data_ptr == statemachine->sender_info.data_end_ptr) {
+	    // exit somehow
+	}
     }
     if (statemachine->sender_info.data_ptr == statemachine->sender_info.data_end_ptr) {
-        goto fail;
+	goto fail;
     }
     return;
 fail:
@@ -323,8 +323,8 @@ fail:
 extern void estabilished_on_timeout(gbn_statemachine_t statemachine) {
     try(evtimer_add(statemachine->timeout_event, &((struct timeval) {.tv_sec=0, .tv_usec=TIMEOUT})), -1, fail);
     for (int i = statemachine->sender_info.base; i < statemachine->sender_info.nextseqnum; i++) {
-        try(send(statemachine->fd, &(statemachine->sender_info.sndpkt[i]), sizeof *(statemachine->sender_info.sndpkt),
-                 0), -1, fail);
+	try(send(statemachine->fd, &(statemachine->sender_info.sndpkt[i]), sizeof *(statemachine->sender_info.sndpkt),
+		 0), -1, fail);
     }
     return;
 fail:

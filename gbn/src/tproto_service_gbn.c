@@ -33,22 +33,22 @@ static ssize_t _send(cmn_tproto_service_t service, cmn_socket2_t socket, const u
 static int _close(cmn_tproto_service_t service, cmn_socket2_t socket);
 
 static struct cmn_tproto_service_vtbl __cmn_tproto_service_ops_vtbl = {
-        .accept = _accept,
-        .connect = _connect,
-        .listen = _listen,
-        .peek = _peek,
-        .recv = _recv,
-        .send = _send,
-        .close = _close
+	.accept = _accept,
+	.connect = _connect,
+	.listen = _listen,
+	.peek = _peek,
+	.recv = _recv,
+	.send = _send,
+	.close = _close
 };
 
 static struct cmn_tproto_service_gbn service = {
-        .super = {
-                .__ops_vptr = &__cmn_tproto_service_ops_vtbl,
-                .type = SOCK_DGRAM,
-                .protocol = 0
-        },
-        .state_machine_map = NULL
+	.super = {
+		.__ops_vptr = &__cmn_tproto_service_ops_vtbl,
+		.type = SOCK_DGRAM,
+		.protocol = 0
+	},
+	.state_machine_map = NULL
 };
 
 #ifdef WIN32 // May the gcc guy who forgot to create a flag for this stupid warning be cursed
@@ -59,7 +59,7 @@ struct cmn_tproto_service *cmn_tproto_service_gbn = &(service.super);
 
 static inline cmn_map_t get_state_machine_map() {
     if (!service.state_machine_map) {
-        service.state_machine_map = (cmn_map_t) cmn_linked_list_map_init();
+	service.state_machine_map = (cmn_map_t) cmn_linked_list_map_init();
     }
     return service.state_machine_map;
 }

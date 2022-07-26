@@ -1,11 +1,11 @@
 #pragma once
 
-typedef struct ft_service *ft_service_t;
+#include <buracchi/common/networking/request_handler.h>
 
-extern ft_service_t ft_service_init(const char *base_dir);
+typedef struct ft_service* ft_service_t;
+
+extern ft_service_t ft_service_init(const char* base_dir);
+
+extern cmn_request_handler_t ft_service_get_request_handler(ft_service_t ft_service);
 
 extern int ft_service_destroy(ft_service_t ft_service);
-
-extern const char *ft_service_get_base_dir(ft_service_t ft_service);
-
-extern char *ft_service_get_filelist(ft_service_t ft_service);
