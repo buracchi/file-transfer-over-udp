@@ -203,10 +203,10 @@ static inline void ftcp_preamble_packet_result_init(ftcp_preamble_packet_t *pack
 }
 
 #define ftcp_preamble_packet_init(packet, type, operation_or_result, arg, data_packet_length)	\
-_Generic((operation_or_result),									\
-	struct ftcp_operation : ftcp_preamble_packet_operation_init,				\
-	   struct ftcp_result : ftcp_preamble_packet_result_init				\
-)((packet), (type), (operation_or_result), (arg), (data_packet_length))
+		_Generic((operation_or_result),							\
+			struct ftcp_operation : ftcp_preamble_packet_operation_init,		\
+			   struct ftcp_result : ftcp_preamble_packet_result_init		\
+		)((packet), (type), (operation_or_result), (arg), (data_packet_length))
 
 static inline ftcp_type_value_t ftcp_preamble_packet_type(ftcp_preamble_packet_t const packet) {
 	return packet[FTCP_PREAMBLE_PACKET_TYPE_OFFSET];

@@ -5,7 +5,7 @@ target_link_libraries(ft-server PRIVATE ft-service)
 target_link_libraries(ft-server PRIVATE buracchi::common::argparser)
 target_link_libraries(ft-server PRIVATE buracchi::common::networking)
 target_link_libraries(ft-server PRIVATE buracchi::common::utilities)
-#target_link_libraries(ft-server PRIVATE tproto-gbn)
+#target_link_libraries(server PRIVATE tproto-gbn)
 target_link_libraries(ft-server INTERFACE coverage_config)
 
 add_library(ft-service STATIC "src/ft_service.c")
