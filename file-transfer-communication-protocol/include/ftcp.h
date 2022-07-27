@@ -14,8 +14,11 @@
 *                    File Transfer Communication Protocol                     *
 ******************************************************************************/
 /**
- * Communication between hosts in the application occurs through the exchange
- * of FTCP packets.
+ * The File Transfer Communication Protocol is an application layer level
+ * communication protocol which allows files transfer on a client-server model
+ * architecture network.
+ * 
+ * Communication between hosts con occurs through the exchange of FTCP packets.
  *
  * The FTCP packets are subdivided in:
  *
@@ -32,10 +35,25 @@
  *	| Type | Operation/Result | Arg | Data Packet Length |
  *	+------+------------------+-----+--------------------+
  *
- *	Type:			Message type
- *	Operation/Result:	Message operation/Request result
- *	Arg:			Additional argument
- *	Data length:		Encoded Data Packet length (up to 16 EiB)
+ *	Type:			Represents the nature of the message exchange,
+ *				it SHOULD be set to a value representing the
+ *				following states: COMMAND, RESPONSE.
+ *
+ *	Operation/Result:	Represents the required operation for COMMAND
+ *				type packets or the result of an operation for
+ *				RESPONSE type packets.
+ *				In a COMMAND type packet it SHOULD be set to a
+ *				value representing the following states:
+ *				LIST, GET, PUT.
+ *				In a RESPONSE type packet it SHOULD be set to a
+ *				value representing the following states:
+ *				SUCCESS, ERROR, FILE_EXISTS, FILE_NOT_EXISTS,
+ *				INVALID_ARGUMENT.
+ * 
+ *	Arg:			Additional data
+ * 
+ *	Data Packet length:	Encoded size of the following Data Packet
+ *				(up to 16 EiB)
  *
  *	- Data Packets:
  *
@@ -51,10 +69,55 @@
  *	|                     Data                     |
  *	+----------------------------------------------+
  *
- *	Data:			Data
+ * The File Transfer Communication Protocol allows the following operations:
+ * 
+ *	- LIST:
  *
+ *	A client SHALL be able to require the list of available files from a
+ *	server by sending a List packet.
+ *	A List packet is a preamble packet containing: the COMMAND value in
+ *	the Type field and the LIST value in the Operation field.
+ *	
+ *	A server receiving a List packet is REQUIRED to reply sending a
+ *	preamble packet containing: the RESPONSE value in the Type field,
+ *	the SUCCESS value in the Result field and the size of the next packet
+ *	in the Data Packet length field; followed by a data pakcet containing
+ *	a representation of the available file identifiers back to the client.
+ * 
+ *	- GET:
+ *
+ *	A client SHALL be able to require an available file from a server
+ *	by sending a Get packet.
+ *	A Get packet is a preamble packet containing: the COMMAND value in
+ *	the Type field, the GET value in the Operation field and a
+ *	representation of the required file identifier in the Arg field.
+ *	
+ *	A server receiving a Get packet is REQUIRED to reply sending a preamble
+ *	packet wich SHOULD contain: the RESPONSE value in the Type field, the
+ *	FILE_EXISTS value in the Result field if the file required is
+ *	available or FILE_NOT_EXISTS otherwise and the size of the next packet
+ *	in the Data Packet length field; followed by a data pakcet containing
+ *	the content of the required file back to the client.
+ * 
+ *	- PUT:
+ * 
+ *	A client SHALL be able to require the insertion of a file (which will
+ *	then be made available) into a server by sending a Put packet.
+ *	A Put packet is a preamble packet containing: the COMMAND value in
+ *	the Type field, the PUT value in the Operation field, a	representation
+ *	of the required file identifier in the Arg field and the size of the
+ *	next packet in the Data Packet length field; followed by a data pakcet
+ *	containing the content of the file.
+ *	
+ *	A server receiving a Put packet is REQUIRED to reply sending a preamble
+ *	packet wich SHOULD contain: the RESPONSE value in the Type field and
+ *	the FILE_EXISTS value in the Result field if the file is available or
+ *	FILE_NOT_EXISTS otherwise. After receiving the file contents the server
+ *	MUST make it available and send back to the client a preamble packet
+ *	containing: the RESPONSE value in the Type field and the SUCCESS value
+ *	in the Result field.
+ * 
  */
-
 
  /*****************************************************************************
  *                                 FTCP Type                                  *
@@ -104,25 +167,23 @@ struct ftcp_result {
 
 typedef typeof(((struct ftcp_result *) 0)->value) ftcp_result_value_t;
 
-#define FTCP_RESULT_INVALID_VALUE		0
-#define FTCP_RESULT_SUCCESS_VALUE		1
-#define FTCP_RESULT_ERROR_VALUE			2
-#define FTCP_RESULT_FILE_EXIST_VALUE		3
-#define FTCP_RESULT_FILE_NOT_EXIST_VALUE	4
-#define FTCP_RESULT_INVALID_ARGUMENT_VALUE	5
+#define FTCP_RESULT_SUCCESS_VALUE		0
+#define FTCP_RESULT_ERROR_VALUE			1
+#define FTCP_RESULT_FILE_EXISTS_VALUE		2
+#define FTCP_RESULT_FILE_NOT_EXISTS_VALUE	3
+#define FTCP_RESULT_INVALID_ARGUMENT_VALUE	4
 
-#define FTCP_RESULT_INVALID		(struct ftcp_result) { FTCP_RESULT_INVALID_VALUE }
 #define FTCP_RESULT_SUCCESS		(struct ftcp_result) { FTCP_RESULT_SUCCESS_VALUE }
 #define FTCP_RESULT_ERROR		(struct ftcp_result) { FTCP_RESULT_ERROR_VALUE }
-#define FTCP_RESULT_FILE_EXIST		(struct ftcp_result) { FTCP_RESULT_FILE_EXIST_VALUE }
-#define FTCP_RESULT_FILE_NOT_EXIST	(struct ftcp_result) { FTCP_RESULT_FILE_NOT_EXIST_VALUE }
+#define FTCP_RESULT_FILE_EXISTS		(struct ftcp_result) { FTCP_RESULT_FILE_EXISTS_VALUE }
+#define FTCP_RESULT_FILE_NOT_EXISTS	(struct ftcp_result) { FTCP_RESULT_FILE_NOT_EXISTS_VALUE }
 #define FTCP_RESULT_INVALID_ARGUMENT	(struct ftcp_result) { FTCP_RESULT_INVALID_ARGUMENT_VALUE }
 
 /*****************************************************************************
 *                            FTCP Preamble Packet                            *
 *****************************************************************************/
 
-#define FTCP_SIZE_MAX_BETWEEN(s, t) (s + ((t - s) & ((((s - t) >> (sizeof(size_t) * CHAR_BIT - 1)) & UCHAR_MAX) * SIZE_MAX)))
+#define FTCP_SIZE_MAX_BETWEEN(S, T) (S + ((T - S) & ((((S - T) >> (sizeof(size_t) * CHAR_BIT - 1)) & UCHAR_MAX) * SIZE_MAX)))
 
 #define FTCP_PREAMBLE_PACKET_TYPE_SIZE			sizeof(struct ftcp_type)
 #define FTCP_PREAMBLE_PACKET_OPERATION_SIZE		sizeof(struct ftcp_operation)
@@ -140,15 +201,9 @@ typedef typeof(((struct ftcp_result *) 0)->value) ftcp_result_value_t;
 #define FTCP_PREAMBLE_PACKET_OPERATION_OFFSET           FTCP_PREAMBLE_PACKET_SECOND_FIELD_OFFSET
 #define FTCP_PREAMBLE_PACKET_RESULT_OFFSET              FTCP_PREAMBLE_PACKET_SECOND_FIELD_OFFSET
 #define FTCP_PREAMBLE_PACKET_ARG_OFFSET                 FTCP_PREAMBLE_PACKET_SECOND_FIELD_OFFSET + FTCP_PREAMBLE_PACKET_SECOND_FIELD_SIZE
-#define FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_OFFSET  FTCP_PREAMBLE_PACKET_ARG_OFFSET
+#define FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_OFFSET  FTCP_PREAMBLE_PACKET_ARG_OFFSET + FTCP_PREAMBLE_PACKET_ARG_SIZE
 
 typedef uint8_t ftcp_preamble_packet_t[FTCP_PREAMBLE_PACKET_SIZE];
-
-/*****************************************************************************
-*                              FTCP Data Packet                              *
-*****************************************************************************/
-
-typedef uint8_t *ftcp_data_packet_t;
 
 /*****************************************************************************
 *                               FTCP Utilities                               *

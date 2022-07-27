@@ -16,6 +16,6 @@ target_link_libraries(tproto-gbn PRIVATE buracchi::common::networking)
 target_link_libraries(tproto-gbn PRIVATE buracchi::common::utilities)
 target_link_libraries(tproto-gbn PRIVATE statemachine)
 
-if (BUILD_TESTING)
+if (BUILD_TESTS)
 	add_subdirectory("test")
 endif()

@@ -143,27 +143,26 @@ static int require_download(cmn_socket2_t socket, char *filename) {
 	uint8_t filename_buff[FTCP_PREAMBLE_PACKET_ARG_SIZE] = { 0 };
 	strncpy((char*)filename_buff, filename, sizeof(uint8_t) * FTCP_PREAMBLE_PACKET_ARG_SIZE);
 	ftcp_preamble_packet_init(&request, FTCP_TYPE_COMMAND, FTCP_OPERATION_GET, &filename_buff, 0);
-	cmn_socket2_send(socket, request, FTCP_PREAMBLE_PACKET_SIZE);
-	cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE);
-	if (ftcp_preamble_packet_result(response) == FTCP_RESULT_FILE_EXIST_VALUE) {
+	try(cmn_socket2_send(socket, request, FTCP_PREAMBLE_PACKET_SIZE), -1, fail);
+	try(cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE), -1, fail);
+	if (ftcp_preamble_packet_result(response) == FTCP_RESULT_FILE_EXISTS_VALUE) {
 		if (!access(filename, F_OK)) {
 			printf("%s already exists. Do you want to replace it? [y/n]\n", filename);
-			char choice[2] = { (char) getchar(), 0 };
-			try(getchar() != '\n' || !choice[0], true, fail);
-			if (!streq(choice, "y")) {
-				goto end;
+			char choice = (char) getchar();
+			fflush(stdin);
+			if (choice != 'y') {
+				return 0;
 			}
 		}
 		FILE *file;
-		file = fopen(filename, "w");
-		cmn_socket2_frecv(socket, file, (long) ftcp_preamble_packet_data_packet_length(response));
+		try(file = fopen(filename, "w"), NULL, fail);
+		try(cmn_socket2_frecv(socket, file, (long) ftcp_preamble_packet_data_packet_length(response)), -1, fail);
 		try(printf("File downloaded\n") < 0, true, fail);
-		fclose(file);
+		try(fclose(file), -1, fail);
 	}
 	else {
-		printf("Cannot find '%s': No such file\n", filename);
+		try(printf("Cannot find '%s': No such file\n", filename) < 0, true, fail);
 	}
-end:
 	return 0;
 fail:
 	return 1;
@@ -183,7 +182,7 @@ static int require_upload(cmn_socket2_t socket, char *filename) {
 	ftcp_preamble_packet_init(&request, FTCP_TYPE_COMMAND, FTCP_OPERATION_PUT, &filename_buff, flen);
 	cmn_socket2_send(socket, request, FTCP_PREAMBLE_PACKET_SIZE);
 	cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE);
-	if (ftcp_preamble_packet_result(response) == FTCP_RESULT_FILE_EXIST_VALUE) {
+	if (ftcp_preamble_packet_result(response) == FTCP_RESULT_FILE_EXISTS_VALUE) {
 		printf("%s already exists. Do you want to replace it? [y/n]\n", filename);
 		char choice[2] = { (char) getchar(), 0 };
 		try(getchar() != '\n' || !choice[0], true, fail);
