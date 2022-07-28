@@ -31,21 +31,17 @@ extern bool is_preamble_packet_result_correctly_encapsulated() {
 }
 
 extern bool is_preamble_packet_arg_correctly_encapsulated() {
+	uint8_t buffer[FTCP_PREAMBLE_PACKET_ARG_SIZE];
 	ftcp_preamble_packet_t packet;
-	uint8_t *actual;
-	uint8_t expected[FTCP_PREAMBLE_PACKET_ARG_SIZE];
+	ftcp_arg_t actual;
+	ftcp_arg_t expected = (ftcp_arg_t) &buffer;
 	srand(0);
 	for (size_t i = 0; i < FTCP_PREAMBLE_PACKET_ARG_SIZE; i++) {
-		expected[i] = rand() % 0x100;
+		buffer[i] = rand() % 0x100;
 	}
-	ftcp_preamble_packet_init(&packet, FTCP_TYPE_RESPONSE, FTCP_RESULT_FILE_EXISTS, &expected, 0);
+	ftcp_preamble_packet_init(&packet, FTCP_TYPE_RESPONSE, FTCP_RESULT_FILE_EXISTS, expected, 0);
 	actual = ftcp_preamble_packet_arg(packet);
-	for (size_t i = 0; i < FTCP_PREAMBLE_PACKET_ARG_SIZE; i++) {
-		if (actual[i] != expected[i]) {
-			return false;
-		}
-	}
-	return true;
+	return memcmp(actual, expected, sizeof(struct ftcp_arg)) == 0;
 }
 
 extern bool is_preamble_packet_data_packet_lenght_correctly_encapsulated() {

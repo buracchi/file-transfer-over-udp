@@ -117,10 +117,11 @@ fail:
 
 static void handle_get_request(ft_service_t ft_service, cmn_socket2_t socket, ftcp_preamble_packet_t request) {
 	ftcp_preamble_packet_t reply;
+	ftcp_arg_t request_arg = ftcp_preamble_packet_arg(request);
 	char required_filename[FTCP_PREAMBLE_PACKET_ARG_SIZE + 1] = { 0 };
 	char *file_path;
 	cmn_logger_log_debug("Replying to get request");
-	memcpy(required_filename, ftcp_preamble_packet_arg(request), sizeof(uint8_t) * FTCP_PREAMBLE_PACKET_ARG_SIZE);
+	memcpy(required_filename, request_arg, sizeof * request_arg);
 	if (required_filename[0] == '\0' || strstr(required_filename, "\n")) {
 		ftcp_preamble_packet_init(&reply, FTCP_TYPE_RESPONSE, FTCP_RESULT_INVALID_ARGUMENT, NULL, 0);
 		cmn_socket2_send(socket, reply, FTCP_PREAMBLE_PACKET_SIZE);
@@ -129,11 +130,11 @@ static void handle_get_request(ft_service_t ft_service, cmn_socket2_t socket, ft
 	if (is_file_in_file_list(ft_service, required_filename)) {
 		FILE *file;
 		uint64_t file_length;
-		try(asprintf(&file_path, "%s/%s", ft_service->base_dir, required_filename), NULL, fail);
+		try(asprintf(&file_path, "%s/%s", ft_service->base_dir, required_filename), -1, fail);
 		try(cmn_rwfslock_rdlock(ft_service->rwfslock, file_path), 1, fail);
 		try(file = fopen(file_path, "r"), NULL, fail2);
-		try(file_length = get_file_length(file), -1, fail2);
-		ftcp_preamble_packet_init(&reply, FTCP_TYPE_RESPONSE, FTCP_RESULT_FILE_EXISTS, (void *)ftcp_preamble_packet_arg(request), file_length);
+		try(file_length = get_file_length(file), UINT64_C(-1), fail2);
+		ftcp_preamble_packet_init(&reply, FTCP_TYPE_RESPONSE, FTCP_RESULT_FILE_EXISTS, request_arg, file_length);
 		try(cmn_socket2_send(socket, reply, FTCP_PREAMBLE_PACKET_SIZE), -1, fail2);
 		try(cmn_socket2_fsend(socket, file), -1, fail2);
 		try(fclose(file), EOF, fail2);
@@ -156,24 +157,33 @@ fail:
 
 static void handle_put_request(ft_service_t ft_service, cmn_socket2_t socket, ftcp_preamble_packet_t request) {
 	ftcp_preamble_packet_t reply;
-	FILE *file;
-	char *fpath;
+	ftcp_arg_t request_arg = ftcp_preamble_packet_arg(request);
 	struct ftcp_result result;
+	char filename[FTCP_PREAMBLE_PACKET_ARG_SIZE + 1] = { 0 };
+	char *file_path;
+	FILE *file;
 	cmn_logger_log_debug("Replying to put request");
-	try(asprintf(&fpath, "%s/%s", ft_service->base_dir, ftcp_preamble_packet_arg(request)), NULL, fail);
-	result.value = access(fpath, F_OK) ? FTCP_RESULT_FILE_NOT_EXISTS_VALUE : FTCP_RESULT_FILE_EXISTS_VALUE;
-	try(cmn_rwfslock_wrlock(ft_service->rwfslock, fpath), 1, fail);
-	try(file = fopen(fpath, "w"), NULL, fail2);
+	memcpy(filename, request_arg, sizeof * request_arg);
+	if (filename[0] == '\0') {
+		ftcp_preamble_packet_init(&reply, FTCP_TYPE_RESPONSE, FTCP_RESULT_INVALID_ARGUMENT, NULL, 0);
+		cmn_socket2_send(socket, reply, FTCP_PREAMBLE_PACKET_SIZE);
+		return;
+	}
+	try(asprintf(&file_path, "%s/%s", ft_service->base_dir, filename), -1, fail);
+	result.value = access(file_path, F_OK) ? FTCP_RESULT_FILE_NOT_EXISTS_VALUE : FTCP_RESULT_FILE_EXISTS_VALUE;
+	try(cmn_rwfslock_wrlock(ft_service->rwfslock, file_path), 1, fail);
+	try(file = fopen(file_path, "w"), NULL, fail2);
 	ftcp_preamble_packet_init(&reply, FTCP_TYPE_RESPONSE, result, NULL, 0);
 	try(cmn_socket2_send(socket, reply, FTCP_PREAMBLE_PACKET_SIZE), -1, fail2);
 	try(cmn_socket2_frecv(socket, file, (long) ftcp_preamble_packet_data_packet_length(request)), -1, fail2);
 	ftcp_preamble_packet_init(&reply, FTCP_TYPE_RESPONSE, FTCP_RESULT_SUCCESS, NULL, 0);
 	try(cmn_socket2_send(socket, reply, FTCP_PREAMBLE_PACKET_SIZE), -1, fail2);
 	try(fclose(file), -1, fail);
-	try(cmn_rwfslock_unlock(ft_service->rwfslock, fpath), 1, fail2);
-	free(fpath);
+	try(cmn_rwfslock_unlock(ft_service->rwfslock, file_path), 1, fail2);
+	free(file_path);
+	return;
 fail2:
-	if (cmn_rwfslock_unlock(ft_service->rwfslock, fpath)) {
+	if (cmn_rwfslock_unlock(ft_service->rwfslock, file_path)) {
 		cmn_logger_log_fatal("Can't unlock mutex on file!");
 		exit(EXIT_FAILURE); // TODO: handle exit with a signal
 	}
@@ -199,6 +209,7 @@ static char *get_file_list(ft_service_t ft_service) {
 	return filelist;
 fail:
 	cmn_logger_log_error("Something went wrong!");
+	return NULL;
 }
 
 static inline bool is_file_in_file_list(ft_service_t ft_service, char const *filename) {

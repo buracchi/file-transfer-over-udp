@@ -18,13 +18,13 @@ enum client_operation {
 };
 
 static int get_input(char **buffer);
-static enum client_operation get_client_operation(char *buffer);
-static struct ftcp_operation get_ftcp_operation(char *buffer);
-static int ftc_start(const char *url);
+static enum client_operation get_client_operation(char const *buffer);
+static struct ftcp_operation get_ftcp_operation(char const *buffer);
+static int ftc_start(char const *url);
 static int help();
 static int require_list(cmn_socket2_t socket);
-static int require_download(cmn_socket2_t socket, char *filename);
-static int require_upload(cmn_socket2_t socket, char *filename);
+static int require_download(cmn_socket2_t socket, char const *filename);
+static int require_upload(cmn_socket2_t socket, char const *filename);
 
 #define get_arg(buffer) ((buffer) + 4)
 
@@ -42,7 +42,7 @@ fail:
 	return EXIT_FAILURE;
 }
 
-static int ftc_start(const char *url) {
+static int ftc_start(char const *url) {
 	cmn_socket2_t socket;
 	char *buff;
 	printf("File Transfer Client\n\nType 'help' to get help.\n\n");
@@ -99,7 +99,7 @@ fail:
 	return 1;
 }
 
-static enum client_operation get_client_operation(char *buffer) {
+static enum client_operation get_client_operation(char const *buffer) {
 	if (streq(buffer, "exit")) {
 		return EXIT;
 	}
@@ -109,7 +109,7 @@ static enum client_operation get_client_operation(char *buffer) {
 	return INVALID;
 }
 
-static struct ftcp_operation get_ftcp_operation(char *buffer) {
+static struct ftcp_operation get_ftcp_operation(char const *buffer) {
 	if (!strncasecmp(buffer, "list", 4)) {
 		return FTCP_OPERATION_LIST;
 	}
@@ -125,23 +125,23 @@ static struct ftcp_operation get_ftcp_operation(char *buffer) {
 static int require_list(cmn_socket2_t socket) {
 	ftcp_preamble_packet_t request;
 	ftcp_preamble_packet_t response;
-	char *filelist;
+	char *file_list;
 	ftcp_preamble_packet_init(&request, FTCP_TYPE_COMMAND, FTCP_OPERATION_LIST, NULL, 0);
-	cmn_socket2_send(socket, request, FTCP_PREAMBLE_PACKET_SIZE);
-	cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE);
-	cmn_socket2_srecv(socket, &filelist);
-	try(printf("%s\n", filelist) < 0, true, fail);
-	free(filelist);
+	try(cmn_socket2_send(socket, request, FTCP_PREAMBLE_PACKET_SIZE), -1, fail);
+	try(cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE), -1, fail);
+	try(cmn_socket2_srecv(socket, &file_list), -1, fail);
+	try(printf("%s\n", file_list) < 0, true, fail);
+	free(file_list);
 	return 0;
 fail:
 	return 1;
 }
 
-static int require_download(cmn_socket2_t socket, char *filename) {
+static int require_download(cmn_socket2_t socket, char const *filename) {
 	ftcp_preamble_packet_t request;
 	ftcp_preamble_packet_t response;
-	uint8_t filename_buff[FTCP_PREAMBLE_PACKET_ARG_SIZE] = { 0 };
-	strncpy((char*)filename_buff, filename, sizeof(uint8_t) * FTCP_PREAMBLE_PACKET_ARG_SIZE);
+	struct ftcp_arg filename_buff = { 0 };
+	strncpy((char*)&filename_buff, filename, sizeof(filename_buff));
 	ftcp_preamble_packet_init(&request, FTCP_TYPE_COMMAND, FTCP_OPERATION_GET, &filename_buff, 0);
 	try(cmn_socket2_send(socket, request, FTCP_PREAMBLE_PACKET_SIZE), -1, fail);
 	try(cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE), -1, fail);
@@ -168,20 +168,20 @@ fail:
 	return 1;
 }
 
-static int require_upload(cmn_socket2_t socket, char *filename) {
+static int require_upload(cmn_socket2_t socket, char const *filename) {
 	ftcp_preamble_packet_t request;
 	ftcp_preamble_packet_t response;
-	uint8_t filename_buff[FTCP_PREAMBLE_PACKET_ARG_SIZE] = { 0 };
+	struct ftcp_arg filename_buff = { 0 };
 	FILE *file;
 	uint64_t flen;
-	strncpy((char*)filename_buff, filename, sizeof(uint8_t) * FTCP_PREAMBLE_PACKET_ARG_SIZE);
-	file = fopen(filename, "r");
+	strncpy((char*)&filename_buff, filename, sizeof(filename_buff));
+	try(file = fopen(filename, "r"), NULL, fail);
 	fseek(file, 0L, SEEK_END);
 	flen = ftell(file);
 	fseek(file, 0L, SEEK_SET);
 	ftcp_preamble_packet_init(&request, FTCP_TYPE_COMMAND, FTCP_OPERATION_PUT, &filename_buff, flen);
-	cmn_socket2_send(socket, request, FTCP_PREAMBLE_PACKET_SIZE);
-	cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE);
+	try(cmn_socket2_send(socket, request, FTCP_PREAMBLE_PACKET_SIZE), -1, fail);
+	try(cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE), -1, fail);
 	if (ftcp_preamble_packet_result(response) == FTCP_RESULT_FILE_EXISTS_VALUE) {
 		printf("%s already exists. Do you want to replace it? [y/n]\n", filename);
 		char choice[2] = { (char) getchar(), 0 };
@@ -190,8 +190,8 @@ static int require_upload(cmn_socket2_t socket, char *filename) {
 			goto end;
 		}
 	}
-	cmn_socket2_fsend(socket, file);
-	cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE);
+	try(cmn_socket2_fsend(socket, file), -1, fail);
+	try(cmn_socket2_recv(socket, response, FTCP_PREAMBLE_PACKET_SIZE), -1, fail);
 	try(printf("File uploaded\n") < 0, true, fail);
 end:
 	fclose(file);
