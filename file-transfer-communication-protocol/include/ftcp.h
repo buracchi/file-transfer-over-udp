@@ -11,14 +11,14 @@
 #endif
 
 /******************************************************************************
-*                    File Transfer Communication Protocol                     *
-******************************************************************************/
-/**
+ *                    File Transfer Communication Protocol                    *
+ ******************************************************************************
+ *
  * The File Transfer Communication Protocol is an application layer level
  * communication protocol which allows files transfer on a client-server model
  * architecture network.
  *
- * Communication between hosts con occurs through the exchange of FTCP packets.
+ * Communication between hosts can occurs through the exchange of FTCP packets.
  *
  * The FTCP packets are subdivided in:
  *
@@ -81,7 +81,7 @@
  *	A server receiving a List packet is REQUIRED to reply sending a
  *	preamble packet containing: the RESPONSE value in the Type field,
  *	the SUCCESS value in the Result field and the size of the next packet
- *	in the Data Packet length field; followed by a data pakcet containing
+ *	in the Data Packet length field; followed by a data packet containing
  *	a representation of the available file identifiers back to the client.
  *
  *	- GET:
@@ -93,10 +93,10 @@
  *	representation of the required file identifier in the Arg field.
  *
  *	A server receiving a Get packet is REQUIRED to reply sending a preamble
- *	packet wich SHOULD contain: the RESPONSE value in the Type field, the
+ *	packet which SHOULD contain: the RESPONSE value in the Type field, the
  *	FILE_EXISTS value in the Result field if the file required is
  *	available or FILE_NOT_EXISTS otherwise and the size of the next packet
- *	in the Data Packet length field; followed by a data pakcet containing
+ *	in the Data Packet length field; followed by a data packet containing
  *	the content of the required file back to the client.
  *
  *	- PUT:
@@ -106,11 +106,11 @@
  *	A Put packet is a preamble packet containing: the COMMAND value in
  *	the Type field, the PUT value in the Operation field, a	representation
  *	of the required file identifier in the Arg field and the size of the
- *	next packet in the Data Packet length field; followed by a data pakcet
+ *	next packet in the Data Packet length field; followed by a data packet
  *	containing the content of the file.
  *
  *	A server receiving a Put packet is REQUIRED to reply sending a preamble
- *	packet wich SHOULD contain: the RESPONSE value in the Type field and
+ *	packet which SHOULD contain: the RESPONSE value in the Type field and
  *	the FILE_EXISTS value in the Result field if the file is available or
  *	FILE_NOT_EXISTS otherwise. After receiving the file contents the server
  *	MUST make it available and send back to the client a preamble packet
@@ -119,9 +119,9 @@
  *
  */
 
- /*****************************************************************************
- *                                 FTCP Type                                  *
- *****************************************************************************/
+ /******************************************************************************
+  *                                 FTCP Type                                  *
+  *****************************************************************************/
 
 struct ftcp_type {
 	uint8_t value;
@@ -137,9 +137,9 @@ typedef typeof(((struct ftcp_type *) 0)->value) ftcp_type_value_t;
 #define FTCP_TYPE_COMMAND	(struct ftcp_type) { FTCP_TYPE_COMMAND_VALUE }
 #define FTCP_TYPE_RESPONSE	(struct ftcp_type) { FTCP_TYPE_RESPONSE_VALUE }
 
-/*****************************************************************************
-*                               FTCP Operation                               *
-*****************************************************************************/
+/******************************************************************************
+ *                               FTCP Operation                               *
+ *****************************************************************************/
 
 struct ftcp_operation {
 	uint8_t value;
@@ -157,9 +157,9 @@ typedef typeof(((struct ftcp_operation *) 0)->value) ftcp_operation_value_t;
 #define FTCP_OPERATION_GET	(struct ftcp_operation) { FTCP_OPERATION_GET_VALUE }
 #define FTCP_OPERATION_PUT	(struct ftcp_operation) { FTCP_OPERATION_PUT_VALUE }
 
-/*****************************************************************************
-*                                 FTCP Result                                *
-*****************************************************************************/
+/******************************************************************************
+ *                                 FTCP Result                                *
+ *****************************************************************************/
 
 struct ftcp_result {
 	uint8_t value;
@@ -179,9 +179,9 @@ typedef typeof(((struct ftcp_result *) 0)->value) ftcp_result_value_t;
 #define FTCP_RESULT_FILE_NOT_EXISTS	(struct ftcp_result) { FTCP_RESULT_FILE_NOT_EXISTS_VALUE }
 #define FTCP_RESULT_INVALID_ARGUMENT	(struct ftcp_result) { FTCP_RESULT_INVALID_ARGUMENT_VALUE }
 
-/*****************************************************************************
-*                                  FTCP Arg                                  *
-*****************************************************************************/
+/******************************************************************************
+ *                                  FTCP Arg                                  *
+ *****************************************************************************/
 
 struct ftcp_arg {
 	uint8_t value[256];
@@ -189,16 +189,17 @@ struct ftcp_arg {
 
 typedef struct ftcp_arg *ftcp_arg_t;
 
-/*****************************************************************************
-*                            FTCP Preamble Packet                            *
-*****************************************************************************/
+/******************************************************************************
+ *                            FTCP Preamble Packet                            *
+ *****************************************************************************/
 
 #define FTCP_SIZE_MAX_BETWEEN(S, T) (S + ((T - S) & ((((S - T) >> (sizeof(size_t) * CHAR_BIT - 1)) & UCHAR_MAX) * SIZE_MAX)))
 
 #define FTCP_PREAMBLE_PACKET_TYPE_SIZE			sizeof(struct ftcp_type)
 #define FTCP_PREAMBLE_PACKET_OPERATION_SIZE		sizeof(struct ftcp_operation)
 #define FTCP_PREAMBLE_PACKET_RESULT_SIZE		sizeof(struct ftcp_result)
-#define FTCP_PREAMBLE_PACKET_SECOND_FIELD_SIZE		FTCP_SIZE_MAX_BETWEEN(FTCP_PREAMBLE_PACKET_OPERATION_SIZE, FTCP_PREAMBLE_PACKET_RESULT_SIZE)
+#define FTCP_PREAMBLE_PACKET_SECOND_FIELD_SIZE		FTCP_SIZE_MAX_BETWEEN(FTCP_PREAMBLE_PACKET_OPERATION_SIZE, \
+										FTCP_PREAMBLE_PACKET_RESULT_SIZE)
 #define FTCP_PREAMBLE_PACKET_ARG_SIZE			sizeof(struct ftcp_arg)
 #define FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE	8
 #define FTCP_PREAMBLE_PACKET_SIZE			(size_t)(FTCP_PREAMBLE_PACKET_TYPE_SIZE		\
@@ -215,11 +216,12 @@ typedef struct ftcp_arg *ftcp_arg_t;
 
 typedef uint8_t ftcp_preamble_packet_t[FTCP_PREAMBLE_PACKET_SIZE];
 
-/*****************************************************************************
-*                               FTCP Utilities                               *
-*****************************************************************************/
+/******************************************************************************
+ *                               FTCP Utilities                               *
+ *****************************************************************************/
 
-static inline uint8_t *ftcp_encode_data_packet_length(uint8_t(*dest)[FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE], uint64_t data_packet_length) {
+static inline uint8_t *ftcp_encode_data_packet_length(uint8_t(*dest)[FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE],
+						      uint64_t data_packet_length) {
 	const size_t dest_size = FTCP_PREAMBLE_PACKET_DATA_PACKET_LENGTH_SIZE;
 	for (size_t i = 0; i < dest_size; i++) {
 		memset(&((*dest)[i]), (data_packet_length >> (dest_size * (dest_size - 1 - i))) & UINT8_MAX, 1);
@@ -236,9 +238,9 @@ static inline uint64_t ftcp_decode_data_packet_length(uint8_t const src[const FT
 	return result;
 }
 
-/*****************************************************************************
-*                               FTCP Functions                               *
-*****************************************************************************/
+/******************************************************************************
+ *                               FTCP Functions                               *
+ *****************************************************************************/
 
 static inline void ftcp_preamble_packet_init_internal(ftcp_preamble_packet_t *packet,
 						      struct ftcp_type type,
