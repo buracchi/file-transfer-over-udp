@@ -31,7 +31,7 @@ typedef struct fts_state {
 /**
 * @brief
 */
-enum fts_option {
+typedef enum fts_option {
 	/**
 	* @brief
 	*/
@@ -40,7 +40,7 @@ enum fts_option {
 	* @brief
 	*/
 	REPLACE = 1
-};
+} fts_option_t;
 
 /**
 * @brief The various errors that can be returned from the File Transfer Service
@@ -76,26 +76,26 @@ typedef enum fts_error {
 	* @brief
 	*/
 	FTS_ERROR_LOCK_ERROR = -6,
-} fts_error;
+} fts_error_t;
 
 /*
 * @brief Returns a string representing the error code's name.
 */
-const char *fts_error_to_str(fts_error err);
+const char *fts_error_to_str(fts_error_t err);
 
 /*
-* @brief Initialize a File Transfer Serive object.
+* @brief Initialize a File Transfer Service object.
 */
 extern fts_t fts_init(void);
 
 /*
-* @brief Require the available file list froma a server.
+* @brief Require the available file list from a server.
 *
 * @param[out] file_list A pointer to the variable that will contain a malloc'd
 *			 textual representation of the list of available files.
 *			 The value is left unchanged If an error occurs.
 */
-extern fts_error fts_get_file_list(fts_t fts, cmn_socket2_t socket, char **const file_list);
+extern fts_error_t fts_get_file_list(fts_t fts, cmn_socket2_t socket, char **const file_list);
 
 /*
 * @brief Download an available file from a server.
@@ -104,7 +104,7 @@ extern fts_error fts_get_file_list(fts_t fts, cmn_socket2_t socket, char **const
 *			 a value-initialized (`= {0}` or similar) fts_state_t
 *			 is used.
 */
-extern fts_error fts_download_file(fts_t fts, cmn_socket2_t socket, char const *filename, enum fts_option option, fts_state_t *state);
+extern fts_error_t fts_download_file(fts_t fts, cmn_socket2_t socket, char const *filename, enum fts_option option, fts_state_t *state);
 
 /*
 * @brief Upload a file and make it available into a server.
@@ -113,12 +113,12 @@ extern fts_error fts_download_file(fts_t fts, cmn_socket2_t socket, char const *
 *			 a value-initialized (`= {0}` or similar) fts_state_t
 *			 is used.
 */
-extern fts_error fts_upload_file(fts_t fts, cmn_socket2_t socket, char const *filename, enum fts_option option, fts_state_t *state);
+extern fts_error_t fts_upload_file(fts_t fts, cmn_socket2_t socket, char const *filename, enum fts_option option, fts_state_t *state);
 
 /*
 * @brief Handle a client request.
 */
-extern fts_error fts_handle_request(fts_t fts, cmn_socket2_t socket, char const *directory);
+extern fts_error_t fts_handle_request(fts_t fts, cmn_socket2_t socket, char const *directory);
 
 /*
 * @brief Free malloc'd memory reserved for the File Transfer Service object.

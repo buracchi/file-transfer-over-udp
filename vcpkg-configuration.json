@@ -8,7 +8,7 @@
     {
       "kind": "git",
       "repository": "https://github.com/buracchi/vcpkg-registry",
-      "baseline": "91267351653201bd1bbc351902f13f1f6b243b6a",
+      "baseline": "a60fa73532703e3c40e6ee3611c1b861e4e1eedd",
       "packages": [ "libcommon" ]
     }
   ]

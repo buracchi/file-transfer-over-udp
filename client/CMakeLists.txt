@@ -1,9 +1,6 @@
 find_package(buracchi-common CONFIG REQUIRED)
 
-add_executable(
-		ft-client
-		"src/main.c"
-)
+add_executable(ft-client "src/main.c")
 target_link_libraries(ft-client PRIVATE file-transfer-service)
 target_link_libraries(ft-client PRIVATE buracchi::common::argparser)
 target_link_libraries(ft-client PRIVATE buracchi::common::networking)

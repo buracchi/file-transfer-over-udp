@@ -44,7 +44,7 @@ extern bool is_preamble_packet_arg_correctly_encapsulated() {
 	return memcmp(actual, expected, sizeof(struct ftcp_arg)) == 0;
 }
 
-extern bool is_preamble_packet_data_packet_lenght_correctly_encapsulated() {
+extern bool is_preamble_packet_data_packet_length_correctly_encapsulated() {
 	ftcp_preamble_packet_t packet;
 	uint64_t actual;
 	uint64_t expected = 123456789;
