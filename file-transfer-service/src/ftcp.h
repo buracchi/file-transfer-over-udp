@@ -1,6 +1,8 @@
 #ifndef FTCP_H_INCLUDED
 #define FTCP_H_INCLUDED
 
+#pragma once
+
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
@@ -117,7 +119,7 @@
  *	containing: the RESPONSE value in the Type field and the SUCCESS value
  *	in the Result field.
  *
- */
+*/
 
  /******************************************************************************
   *                                 FTCP Type                                  *

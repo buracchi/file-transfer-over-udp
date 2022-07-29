@@ -4,7 +4,7 @@ add_executable(
 		ft-client
 		"src/main.c"
 )
-target_link_libraries(ft-client PRIVATE ftcp)
+target_link_libraries(ft-client PRIVATE file-transfer-service)
 target_link_libraries(ft-client PRIVATE buracchi::common::argparser)
 target_link_libraries(ft-client PRIVATE buracchi::common::networking)
 target_link_libraries(ft-client PRIVATE buracchi::common::utilities)

@@ -46,7 +46,7 @@ endif ()
 # Subproject
 
 add_subdirectory("lib")
+#add_subdirectory("gbn")
+add_subdirectory("file-transfer-service")
 add_subdirectory("server")
 add_subdirectory("client")
-add_subdirectory("file-transfer-communication-protocol")
-#add_subdirectory("gbn")
