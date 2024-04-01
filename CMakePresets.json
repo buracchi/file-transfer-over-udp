@@ -2,7 +2,7 @@
   "version": 3,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 21,
+    "minor": 22,
     "patch": 0
   },
   "configurePresets": [
@@ -49,7 +49,10 @@
       "name": "default",
       "hidden": true,
       "description": "Default configuration presets",
-      "inherits": [ "ninja", "vcpkg" ],
+      "inherits": [
+        "ninja",
+        "vcpkg"
+      ],
       "binaryDir": "${sourceDir}/out/build/${presetName}",
       "installDir": "${sourceDir}/out/install/${presetName}"
     },
@@ -64,7 +67,9 @@
       },
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "hostOS": [ "Linux" ]
+          "hostOS": [
+            "Linux"
+          ]
         },
         "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
           "sourceDir": "$env{HOME}/.vs/${sourceDirName}",
@@ -78,19 +83,23 @@
     {
       "name": "x64-linux-debug",
       "displayName": "x64 Debug",
-      "inherits": [ "linux-default", "x64-debug" ],
+      "inherits": [
+        "linux-default",
+        "x64-debug"
+      ],
       "cacheVariables": {
-        "CMAKE_C_FLAGS_DEBUG": "-std=c17 -Wall -Wextra -pedantic -g3 -D_DEBUG",
-        "CMAKE_CXX_FLAGS_DEBUG": "-std=c++20 -Wall -Wextra -pedantic"
+        "CMAKE_C_FLAGS_DEBUG": "-std=c2x -Wall -Wextra -pedantic -O0 -g3 -ggdb3 -D_DEBUG  -fsanitize=address -fsanitize=leak -fsanitize=undefined -fno-omit-frame-pointer"
       }
     },
     {
       "name": "x64-linux-release",
       "displayName": "x64 Release",
-      "inherits": [ "linux-default", "x64-release" ],
+      "inherits": [
+        "linux-default",
+        "x64-release"
+      ],
       "cacheVariables": {
-        "CMAKE_C_FLAGS_RELEASE": "-std=c17 -Wall -Wextra -pedantic -O3",
-        "CMAKE_CXX_FLAGS_RELEASE": "-std=c++20"
+        "CMAKE_C_FLAGS_RELEASE": "-std=c2x -Wall -Wextra -pedantic -O3"
       }
     }
   ],
@@ -108,7 +117,9 @@
     {
       "name": "default",
       "hidden": true,
-      "output": { "outputOnFailure": true },
+      "output": {
+        "outputOnFailure": true
+      },
       "execution": {
         "noTestsAction": "ignore",
         "stopOnFailure": false

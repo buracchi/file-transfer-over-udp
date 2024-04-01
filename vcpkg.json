@@ -1,14 +1,21 @@
 {
   "name": "file-transfer-over-udp",
+  "description": "Client/server file transfer application using a connectionless network service.",
   "version": "1.0",
   "dependencies": [
+    "argparser",
     "libcommon",
     "libevent"
+  ],
+  "overrides": [
+    { "name": "libevent", "version": "2.1.12#7" }
   ],
   "features": {
     "tests": {
       "description": "Build Tests",
-      "dependencies": [ "gtest" ]
+      "dependencies": [
+        "cutest"
+      ]
     }
   }
 }

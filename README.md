@@ -9,27 +9,20 @@ Term paper of Internet and Web Engineering course.
 
 ## Overview
 
-The application provides the following functions:
+The application provides the following services:
 - Unauthenticated client-server connection
 - Reliable file transfer
-- A communication protocol between the client and the server providing the 
-  exchange of two types of messages:
-  - command messages: sent from the client to the server to request 
-    the execution of the various operations
-  - response messages: sent from the server to the client in response to a 
-    command with the outcome of the operation
+- A communication protocol between the client and the server providing the exchange of two types of messages:
+  - command messages: sent from the client to the server to request the execution of the various operations
+  - response messages: sent from the server to the client in response to a command with the outcome of the operation
 - the execution in the user space without requiring root privileges
 
 ### Server
 
-The server (multithreaded) listening on a default port will provide the 
-following functions:
-- Send the response message to the `list` command with the filelist
-  (the list of file names available for sharing)
-- Send the response message to the `get` command with the required 
-  file, if any, or an error message
-- Sending the response message to the `put` command with the outcome of the
-  operation
+The server (multithreaded) listening on a default port, provide the following services:
+- Send the response message to the `list` command with the filelist (the list of file names available for sharing)
+- Send the response message to the `get` command with the required file, if any, or an error message
+- Sending the response message to the `put` command with the outcome of the operation
 - Configure the listening port
 
 ### Client

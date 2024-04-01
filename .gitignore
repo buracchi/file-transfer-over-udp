@@ -363,3 +363,5 @@ FodyWeavers.xsd
 /out
 /build
 /.idea
+
+docs/build

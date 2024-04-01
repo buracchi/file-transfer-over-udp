@@ -1,0 +1,101 @@
+                         TFTP Windowsize Option
+
+Abstract
+
+   This document describes a TFTP option to negotiate a window size of consecutive blocks to send.
+
+3.  Windowsize Option Specification
+
+   The TFTP Read Request or Write Request packet is modified to include the windowsize option as follows.
+   Note that all fields except "opc" MUST be ASCII strings followed by a zero byte.
+
+      2B     string   1B   string   1B     string     1B   string   1B
+   +-------+---~~---+----+---~~---+----+-----~~-----+----+---~~---+----+
+   |  opc  |filename|  0 |  mode  |  0 | windowsize |  0 | #blocks|  0 |
+   +-------+---~~---+----+---~~---+----+-----~~-----+----+---~~---+----+
+
+   opc
+      The opcode field contains either a 1 for Read Requests or a 2 for Write Requests.
+
+   filename
+      The name of the file to be read or written.
+
+   mode
+      The mode of the file transfer: "netascii" or "octet".
+
+   windowsize
+      The windowsize option, "windowsize" (case insensitive).
+
+   #blocks
+      The base-10 ASCII string representation of the number of blocks in a window.
+      The valid values range MUST be between 1 and 65535 blocks, inclusive.
+      The windowsize refers to the number of consecutive blocks transmitted before stopping and waiting for the reception of the acknowledgment of the last block transmitted.
+
+   For example:
+
+   +------+--------+----+-------+----+------------+----+----+----+
+   |0x0001| foobar |0x00| octet |0x00| windowsize |0x00| 16 |0x00|
+   +------+--------+----+-------+----+------------+----+----+----+
+
+   is a Read Request for the file named "foobar" in octet transfer mode with a windowsize of 16 blocks (option blocksize is not negotiated in this example, the default of 512 Bytes per block applies).
+
+   If the server is willing to accept the windowsize option, it sends an Option Acknowledgment (OACK) to the client.
+   The specified value MUST be less than or equal to the value specified by the client.
+   The client MUST then either use the size specified in the OACK or send an ERROR packet, with error code 8, to terminate the transfer.
+
+   The reception of a data window with a number of blocks less than the negotiated windowsize is the final window.
+
+4.  Traffic Flow and Error Handling
+
+   The next diagram depicts a section of the traffic flow between the Data Sender (DSND) and the Data Receiver (DRCV) parties on a generic windowsize TFTP file transfer.
+
+   The DSND MUST cyclically send to the DRCV the agreed windowsize consecutive data blocks before normally stopping and waiting for the
+   ACK of the transferred window.
+   The DRCV MUST send to the DSND the ACK of the last data block of the window in order to confirm a successful data block window reception.
+
+   In the case of an expected ACK not timely reaching the DSND (timeout), the last received ACK SHALL set the beginning of the next windowsize data block window to be sent.
+
+   In the case of a data block sequence error, the DRCV SHOULD notify the DSND by sending an ACK corresponding to the last data block
+   correctly received.
+   The notified DSND SHOULD send a new data block window whose beginning MUST be set based on the ACK received out of sequence.
+
+   Traffic with windowsize = 1 MUST be equivalent to traffic specified by [RFC1350].
+
+         [ DRCV ]      <---traffic--->      [ DSND ]
+           ACK#      ->               <-   Data Block#   window block#
+                              ...
+                              <-           |DB n+01|          1
+                              <-           |DB n+02|          2
+                              <-           |DB n+03|          3
+                              <-           |DB n+04|          4
+         |ACK n+04|           ->
+                              <-           |DB n+05|          1
+                       Error |<-           |DB n+06|          2
+                              <-           |DB n+07|          3
+         |ACK n+05|           ->
+                              <-           |DB n+06|          1
+                              <-           |DB n+07|          2
+                              <-           |DB n+08|          3
+                              <-           |DB n+09|          4
+         |ACK n+09|           ->
+                              <-           |DB n+10|          1
+                       Error |<-           |DB n+11|          2
+                              <-           |DB n+12|          3
+         |ACK n+10|           ->| Error
+                              <-           |DB n+13|          4
+                                          - timeout -
+                              <-           |DB n+10|          1
+                              <-           |DB n+11|          2
+                              <-           |DB n+12|          3
+                              <-           |DB n+13|          4
+         |ACK n+13|           ->
+                              ...
+
+                 Section of a Windowsize = 4 TFTP Transfer
+                    Including Errors and Error Recovery
+
+6.  Congestion and Error Control
+
+   The rate at which TFTP UDP datagrams are sent SHOULD follow the CC guidelines in Section 3.1 of [RFC5405].
+
+   Implementations SHOULD always set a maximum number of retries for datagram retransmissions, imposing an appropriate threshold on error recovery attempts, after which a transfer SHOULD always be aborted to prevent pathological retransmission conditions.
