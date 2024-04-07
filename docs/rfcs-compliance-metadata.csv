@@ -89,7 +89,7 @@ RFC 1350 - TFTP (Trivial File Transfer Protocol);;
 6. Normal Termination;;
 ;Transfer ends with a DATA packet containing 0 to 511 bytes.;test_false
 ;Final DATA packet is acknowledged like other DATA packets.;test_false
-;The host sending the final ACK wait for a long timeout before terminating in oreder to retransmit the final ACK if lost.;test_false
+;The host sending the final ACK wait for a long timeout before terminating in order to retransmit the final ACK if lost.;test_false
 ;Sender of the final DATA packet should retransmit until acknowledged or timeout.;test_false
 ;Successful completion is indicated by reception of the final ACK.;test_false
 ;Timeout or DATA sender unwillingness to retransmit may indicate an incomplete transfer.;test_false

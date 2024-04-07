@@ -1,4 +1,4 @@
-#include "service_handler.h"
+#include "tftp_service.h"
 
 #include <stdlib.h>
 
@@ -12,7 +12,7 @@
 static void do_read(evutil_socket_t peer_stream, short events, void *arg);
 static void do_write(evutil_socket_t peer_stream, short events, void *arg);
 
-extern service_handler_t *service_handler_init(dispatcher_t *dispatcher, struct service_parameters parameters, struct connection_details connection_details) {
+extern service_handler_t *service_handler_init(dispatcher_t *dispatcher, struct tftp_service_parameters parameters, struct connection_details connection_details) {
 	service_handler_t *service_handler;
 	struct event *read_event;
 	struct event *write_event;

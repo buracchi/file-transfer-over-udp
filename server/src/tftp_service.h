@@ -18,7 +18,7 @@ struct service_handler_state {
 	struct event *write_event;
 };
 
-typedef struct service_handler {
+typedef struct tftp_service {
 	char *directory;         // file root directory
 	uint32_t window_size;    // size of the dispatch window
 	long timeout_duration;   // duration of the timeout in milliseconds
@@ -26,7 +26,7 @@ typedef struct service_handler {
 	struct service_handler_state state;
 } service_handler_t;
 
-struct service_parameters {
+struct tftp_service_parameters {
 	char *directory;         // file root directory
 	uint32_t window_size;    // size of the dispatch window
 	long timeout_duration;   // duration of the timeout in milliseconds
@@ -39,7 +39,7 @@ struct connection_details {
 	size_t request_size;
 };
 
-extern service_handler_t *service_handler_init(dispatcher_t *dispatcher, struct service_parameters parameters, struct connection_details connection_details);
+extern service_handler_t *service_handler_init(dispatcher_t *dispatcher, struct tftp_service_parameters parameters, struct connection_details connection_details);
 
 extern void service_handler_destroy(service_handler_t *service_handler);
 

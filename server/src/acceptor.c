@@ -59,7 +59,8 @@ int acceptor_destroy(struct acceptor acceptor[static 1]) {
 	return 0;
 }
 
-bool acceptor_accept(struct acceptor acceptor[static 1], evutil_socket_t socket[static 1], struct acceptor_packet packet[static 1]) {
+evutil_socket_t acceptor_accept(struct acceptor acceptor[static 1], struct acceptor_packet packet[static 1]) {
+    evutil_socket_t client_socket = EVUTIL_INVALID_SOCKET;
     char client_address_str[INET6_ADDRSTRLEN] = {};
     uint16_t client_address_port;
     char rbuff_hex[sizeof packet->data] = {};
@@ -76,12 +77,11 @@ bool acceptor_accept(struct acceptor acceptor[static 1], evutil_socket_t socket[
     }
     cmn_logger_log_debug("Acceptor: Got packet from host %s on port %hu of %zu bytes, packet content is \"%s\"",
                          client_address_str, client_address_port, packet->payload_size, rbuff_hex);
-    *socket = create_client_transport_endpoint(packet);
-    if (*socket == EVUTIL_INVALID_SOCKET) {
+    client_socket = create_client_transport_endpoint(packet);
+    if (client_socket == EVUTIL_INVALID_SOCKET) {
         cmn_logger_log_error("Acceptor: Unable to create an endpoint to the client, denying connection.");
-        return false;
-        }
-    return true;
+    }
+    return client_socket;
 }
 
 // Resolves the specified service and returns a list of addrinfo

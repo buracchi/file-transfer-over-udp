@@ -42,4 +42,4 @@ int acceptor_destroy(struct acceptor acceptor[static 1]);
  * @param socket
  * @param packet
  */
-bool acceptor_accept(struct acceptor acceptor[static 1], evutil_socket_t socket[static 1], struct acceptor_packet packet[static 1]);
+evutil_socket_t acceptor_accept(struct acceptor acceptor[static 1], struct acceptor_packet packet[static 1]);

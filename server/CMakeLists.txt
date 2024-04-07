@@ -15,7 +15,7 @@ add_library(server_obj OBJECT
         "src/cmdline.c"
         "src/acceptor.c"
         "src/dispatcher.c"
-        "src/service_handler.c"
+        "src/tftp_service.c"
         )
 target_include_directories(server_obj PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>")
 target_link_libraries(server_obj PRIVATE buracchi::argparser::argparser)
