@@ -1,6 +1,6 @@
 #pragma once
 
-#include <event2/util.h>
+#include <netinet/in.h>
 
 /**
  * Converts the provided socket address to a string representation.
@@ -22,6 +22,8 @@ const char *inet_ntop_address(const struct sockaddr address[static 1], char addr
  * @return 0 on success, -1 on failure
  */
 int inet_addr_in_to_in6(struct sockaddr_in const src[restrict static 1], struct sockaddr_in6 dest[restrict static 1]);
+
+int inet_add_in6_to_in(struct sockaddr_in6 const src[restrict static 1], struct sockaddr_in dest[restrict static 1]);
 
 /**
  * Prints detailed information about the provided socket descriptor.

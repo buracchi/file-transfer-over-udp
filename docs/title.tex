@@ -1,0 +1,40 @@
+\usepackage{anyfontsize}
+
+\makeatletter
+\def\authorid#1{\gdef\@authorid{#1}}
+\def\@authorid{\@latex@warning@no@line{No \noexpand\authorid given}}
+\makeatother
+
+\makeatletter
+\def\authorname#1{\gdef\@authorname{#1}}
+\def\@authorname{\@latex@warning@no@line{No \noexpand\authorname given}}
+\makeatother
+
+\makeatletter
+\def\authorsurname#1{\gdef\@authorsurname{#1}}
+\def\@authorsurname{\@latex@warning@no@line{No \noexpand\authorsurname given}}
+\makeatother
+
+\makeatletter
+\def\@maketitle{%
+    \null
+    \begin{center}%
+        \let \footnote \thanks
+        {\fontsize{16}{18}\selectfont
+            \vskip 1.5em%
+            Ingegneria di Internet e del Web \\
+            \vskip 1em%
+            Progetto B1 A.A. 2019/2020 \\}
+        \vskip 5em%
+            {\fontsize{20}{22}\selectfont \@title \par}%
+            {\vskip 5em%
+                \lineskip .5em%
+                \fontsize{20}{22}\selectfont
+                \@authorid \\
+                \vskip 1em%
+                \@authorname \ \@authorsurname \par}%
+        \vskip 1em%
+    \end{center}%
+    \par
+    \vskip 3em}
+\makeatother

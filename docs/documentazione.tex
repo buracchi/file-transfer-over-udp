@@ -1,0 +1,49 @@
+\documentclass[12pt]{article}
+\usepackage[a4paper, left=1.9cm, right=1.9cm, top=2.5cm, bottom=2.5cm]{geometry}
+\usepackage{hyperref}
+\usepackage{colortbl}
+\usepackage[export]{adjustbox}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\graphicspath{ {./media/} }
+%\def\darktheme{0}  % Comment this line to toggle dark theme
+\input{style.tex}
+\input{title.tex}
+\input{header.tex}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, automata}
+
+% La relazione deve contenere:
+% - la descrizione dettagliata dell'architettura del sistema e delle scelte
+%   progettuali effettuate;
+% - la descrizione dell'implementazione;
+% - la descrizione delle eventuali limitazioni riscontrate;
+% - l'indicazione della piattaforma software usata per lo sviluppo ed il
+%   testing del sistema;
+% - alcuni esempi di funzionamento;
+% - valutazione delle prestazioni del protocollo al variare della dimensione
+%   della finestra di spedizione N, della probabilità di perdita dei messaggi p,
+%   e della durata del timeout T (incluso il caso di T adattativo)
+% - un manuale per l'installazione, la configurazione e l'esecuzione del
+%   sistema.
+\title{\uppercase{Trasferimento file su UDP}}
+\authorid{0253822}
+\authorname{Fabio}
+\authorsurname{Buracchi}
+\begin{document}
+\includegraphics[width=2.1cm, valign=t]{image1}
+\hfill
+\includegraphics[width=3.55cm, valign=t]{image2}
+{\let\newpage\relax\maketitle}
+\tableofcontents
+\include{chapters/traccia.tex}
+\include{chapters/architettura.tex}
+\include{chapters/implementazione.tex}
+\include{chapters/limitazioni.tex}
+\include{chapters/ambiente_sviluppo.tex}
+\include{chapters/esempi_funzionamento.tex}
+\include{chapters/prestazioni.tex}
+\include{chapters/manuale.tex}
+\end{document}

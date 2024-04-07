@@ -1,0 +1,26 @@
+The Go-Back N (GBN-ARQ) protocol described in Kurose & Ross “Computer Networking: A Top-Down Approach” is here reported:
+
+In a Go-Back-N (GBN) protocol, the sender is allowed to transmit multiple packets (when available) without waiting for an acknowledgment, but is constrained to have no more than some maximum allowable number, "N", of unacknowledged packets in the pipeline.
+We define "base" to be the sequence number of the oldest unacknowledged packet and "nextseqnum" to be the smallest unused sequence number (that is, the sequence number of the next packet to be sent), then four intervals in the range of sequence numbers can be identified.
+Sequence numbers in the interval [0, base-1] correspond to packets that have already been transmitted and acknowledged.
+The interval [base, nextseqnum-1] corresponds to packets that have been sent but not yet acknowledged.
+Sequence numbers in the interval [nextseqnum, base+N-1] can be used for packets that can be sent immediately, should data arrive from the upper layer.
+Finally, sequence numbers greater than or equal to base+N cannot be used until an unacknowledged packet currently in the pipeline (specifically, the packet with sequence number base ) has been acknowledged.
+The range of permissible sequence numbers for transmitted but not yet acknowledged packets can be viewed as a window of size N over the range of sequence numbers.
+As the protocol operates, this window slides forward over the sequence number space.
+A packet’s sequence number is carried in a fixed-length field in the packet header.
+If k is the number of bits in the packet sequence number field, the range of sequence numbers is thus [0, 2k - 1].
+With a finite range of sequence numbers, all arithmetic involving sequence numbers must then be done using modulo 2^k arithmetic. (That is, the sequence number space can be thought of as a ring of size 2^k , where sequence number 2^{k - 1} is immediately followed by sequence number 0.)
+The GBN sender must respond to three types of events:
+- Invocation from above. When the reliable send function is called from above, the sender first checks to see if the window is full, that is, whether there are N outstanding, unacknowledged packets.
+If the window is not full, a packet is created and sent, and variables are appropriately updated.
+If the window is full, the sender simply returns the data back to the upper layer, an implicit indication that the window is full. The upper layer would presumably then have to try again later.
+In a real implementation, the sender would more likely have either buffered (but not immediately sent) this data, or would have a synchronization mechanism (for example, a semaphore or a flag) that would allow the upper layer to call the reliable send function only when the window is not full.
+- Receipt of an ACK. In our GBN protocol, an acknowledgment for a packet with sequence number n will be taken to be a cumulative acknowledgment, indicating that all packets with a sequence number up to and including n have been correctly received at the receiver. We’ll come back to this issue shortly when we examine the receiver side of GBN.
+- A timeout event. If a timeout occurs, the sender resends all packets that have been previously sent but that have not yet been acknowledged.
+If an ACK is received but there are still additional transmitted but not yet acknowledged packets, the timer is restarted. If there are no outstanding, unacknowledged
+packets, the timer is stopped.
+If a packet with sequence number n is received correctly and is in order (that is, the data last delivered to the upper layer came from a packet with sequence number n - 1),
+the receiver sends an ACK for packet n and delivers the data portion of the packet to the upper layer.
+In all other cases, the receiver discards the packet and resends an ACK for the most recently received in-order packet.
+The receiver maintain the sequence number of the next in-order packet in a variable "expectedseqnum".

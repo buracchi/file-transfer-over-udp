@@ -34,6 +34,8 @@ endif ()
 # Subproject
 
 #add_subdirectory("ftcp")
+add_subdirectory("logger")
+add_subdirectory("tftp")
 add_subdirectory("network_utils")
 add_subdirectory("server")
 add_subdirectory("client")

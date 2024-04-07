@@ -5,7 +5,7 @@
   "dependencies": [
     "argparser",
     "libcommon",
-    "libevent"
+    "liburing"
   ],
   "overrides": [
     { "name": "libevent", "version": "2.1.12#7" }

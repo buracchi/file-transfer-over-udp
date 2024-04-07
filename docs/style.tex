@@ -1,0 +1,152 @@
+\usepackage[italian]{babel}
+\usepackage{tocloft}
+\usepackage[table]{xcolor}
+\usepackage{pagecolor}
+\usepackage{parskip}
+\usepackage{environ}
+\usepackage[most]{tcolorbox}
+\usepackage{titlesec}
+\usepackage[dotinlabels]{titletoc}
+
+\titleformat{\section}[hang]{\bfseries\Large}{\thesection.}{0.5em}{}
+
+\appto\appendix{%
+  \setcounter{secnumdepth}{-2}
+  \addtocontents{toc}{%
+    \unexpanded{\unexpanded{%
+        \cftpagenumbersoff{section}%
+        \setlength\cftsecindent{\cftsecnumwidth}%
+      }}%
+  }%
+}
+
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+\addto\captionsitalian{
+  \renewcommand{\contentsname}%
+  {Indice}%
+}
+
+\ifx\darktheme\undefined
+  \definecolor{bcolor}{RGB}{255,255,255}
+  \definecolor{textcolor}{RGB}{0,0,0}
+  \definecolor{linkcolor}{RGB}{0, 0, 255}
+  \definecolor{tblhdrcolor}{gray}{0.8}
+  \definecolor{tmpltbcolot}{gray}{0.9}
+\else
+  \definecolor{bcolor}{RGB}{41,41,41}
+  \definecolor{textcolor}{RGB}{255,255,255}
+  \definecolor{linkcolor}{RGB}{0, 167, 255}
+  \definecolor{tblhdrcolor}{RGB}{69, 69, 69}
+  \definecolor{tmpltbcolot}{RGB}{69, 69, 69}
+\fi
+
+\pagecolor{bcolor}
+\color{textcolor}
+
+\newtcolorbox{templateblock}{
+  colupper=textcolor,
+  colback=tmpltbcolot,
+  boxrule=0pt,
+  boxsep=0pt,
+  breakable}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=textcolor,
+  urlcolor=linkcolor}
+
+\urlstyle{same}
+
+\lstdefinestyle{customc}{
+  basicstyle=\footnotesize\ttfamily,
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  language=C,
+  commentstyle=\color{green!50!black},
+  keywordstyle=\color{blue},
+  stringstyle=\color{red!55!black!92!white},
+  directivestyle=\bfseries\color{gray},
+  numbers=left,
+  numbersep=5pt,
+  numberstyle=\tiny\color{black},
+  showstringspaces=false,
+  stepnumber=1,
+  tabsize=2,
+  title=\lstname,
+}
+
+\lstdefinestyle{customcxx}{
+  basicstyle=\footnotesize\ttfamily,
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  language=C++,
+  commentstyle=\color{green!50!black},
+  keywordstyle=\color{blue},
+  stringstyle=\color{red!55!black!92!white},
+  directivestyle=\bfseries\color{gray},
+  numbers=left,
+  numbersep=5pt,
+  numberstyle=\tiny\color{black},
+  showstringspaces=false,
+  stepnumber=1,
+  tabsize=2,
+  title=\lstname,
+}
+
+\lstdefinestyle{customsql}{
+  basicstyle=\footnotesize\ttfamily,
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  language=SQL,
+  commentstyle=\color{green!50!black},
+  keywordstyle=\color{blue},
+  stringstyle=\color{red!55!black!92!white},
+  numbers=left,
+  numbersep=5pt,
+  numberstyle=\tiny\color{black},
+  showstringspaces=false,
+  stepnumber=1,
+  tabsize=2,
+  title=\lstname,
+}
+\newcommand{\inputcfile}[1]{{
+      \lstset{mathescape=false, escapechar=, style=customc}
+      \lstinputlisting[language=C]{#1}
+      \pagebreak}}
+
+\newcommand{\inputcxxfile}[1]{{
+      \lstset{mathescape=false, escapechar=, style=customcxx}
+      \lstinputlisting[language=C++]{#1}
+      \pagebreak}}
+
+\newcommand{\inputsqlfile}[1]{{
+      \lstset{mathescape=false, escapechar=, style=customsql}
+      \lstinputlisting[language=SQL]{#1}}}
+
+\counterwithin*{figure}{subsection}
+\counterwithin*{table}{subsection}
+% * means don't change the representation, because we'll do it now
+\renewcommand{\thefigure}{%
+  \ifnum\value{subsubsection}>0
+    \thesubsubsection.%
+  \else
+    \ifnum\value{subsection}>0
+      \thesubsection.%
+    \else
+      \thesection.%
+    \fi
+  \fi
+  \arabic{figure}%
+}
+\renewcommand{\thetable}{%
+  \ifnum\value{subsubsection}>0
+    \thesubsubsection.%
+  \else
+    \ifnum\value{subsection}>0
+      \thesubsection.%
+    \else
+      \thesection.%
+    \fi
+  \fi
+  \arabic{table}%
+}
