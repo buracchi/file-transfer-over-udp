@@ -1,8 +1,13 @@
-#pragma once
+#ifndef TFTP_H
+#define TFTP_H
 
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 constexpr size_t tftp_request_packet_max_size = 512;
 constexpr uint16_t tftp_default_blksize = 512;
@@ -13,6 +18,8 @@ enum tftp_mode {
     TFTP_MODE_NETASCII,
     TFTP_MODE_INVALID
 };
+
+#ifndef __cplusplus
 
 enum tftp_opcode : uint16_t {
     TFTP_OPCODE_RRQ = 0x01,
@@ -36,22 +43,22 @@ enum tftp_error_code : uint16_t {
 };
 
 struct [[gnu::packed]] tftp_packet {
-enum tftp_opcode opcode;
-union {
-    uint8_t rrq[510];
-    uint8_t wrq[510];
-    struct [[gnu::packed]] {
-        uint16_t block_number;
-        uint8_t data[512];
-    } data;
-    struct [[gnu::packed]] {
-        uint16_t block_number;
-    } ack;
-    struct [[gnu::packed]] {
-        uint16_t error_code;
-        uint8_t error_message[512];
-    } error;
-};
+    enum tftp_opcode opcode;
+    union {
+        uint8_t rrq[510];
+        uint8_t wrq[510];
+        struct [[gnu::packed]] {
+            uint16_t block_number;
+            uint8_t data[512];
+        } data;
+        struct [[gnu::packed]] {
+            uint16_t block_number;
+        } ack;
+        struct [[gnu::packed]] {
+            uint16_t error_code;
+            uint8_t error_message[512];
+        } error;
+    };
 };
 
 struct [[gnu::packed]] tftp_rrq_packet {
@@ -126,7 +133,7 @@ struct tftp_request {
 };
 
 constexpr size_t tftp_option_string_max_size = tftp_request_packet_max_size - sizeof(enum tftp_opcode) - 4;
-constexpr size_t tftp_option_formatted_string_max_size =  tftp_option_string_max_size * 2 - 1;
+constexpr size_t tftp_option_formatted_string_max_size = tftp_option_string_max_size * 2 - 1;
 
 enum tftp_option_recognized {
     TFTP_OPTION_BLKSIZE,
@@ -143,8 +150,18 @@ struct tftp_option {
     const char *value;
 };
 
-extern enum tftp_create_rqp_error tftp_encode_request(struct tftp_packet packet[1],
-                                                      size_t psize[1], enum tftp_request_type type,
+extern enum tftp_opcode tftp_get_opcode_unsafe(const void *packet);
+
+#define tftp_get_opcode(packet) _Generic((packet), \
+        struct tftp_rrq_packet [static 1]: tftp_get_opcode_impl, \
+        struct tftp_ack_packet [static 1]: tftp_get_opcode_impl, \
+        struct tftp_data_packet [static 1]: tftp_get_opcode_impl, \
+        struct tftp_oack_packet [static 1]: tftp_get_opcode_impl, \
+        struct tftp_error_packet [static 1]: tftp_get_opcode_impl \
+    )(packet)
+    
+extern enum tftp_create_rqp_error tftp_encode_request(struct tftp_packet packet[static 1],
+                                                      size_t psize[static 1], enum tftp_request_type type,
                                                       size_t n, const char filename[static n],
                                                       enum tftp_mode mode);
 
@@ -159,11 +176,14 @@ extern struct tftp_packet tftp_encode_data(uint16_t block_number, size_t n, cons
 
 extern struct tftp_packet tftp_encode_ack(uint16_t block_number);
 
-void tftp_format_option_strings(size_t n, const char options[static n], char formatted_options[static tftp_option_formatted_string_max_size]);
+void tftp_format_option_strings(size_t n, const char options[static n],
+                                char formatted_options[static tftp_option_formatted_string_max_size]);
 
-void tftp_format_options(struct tftp_option options[4], char formatted_options[static tftp_option_formatted_string_max_size]);
+void tftp_format_options(struct tftp_option options[4],
+                         char formatted_options[static tftp_option_formatted_string_max_size]);
 
-void tftp_parse_options(struct tftp_option options[static TFTP_OPTION_TOTAL_OPTIONS], size_t n, const char str[static n]);
+void tftp_parse_options(struct tftp_option options[static TFTP_OPTION_TOTAL_OPTIONS], size_t n,
+                        const char str[static n]);
 
 extern const char *tftp_mode_to_string(enum tftp_mode mode);
 
@@ -180,3 +200,11 @@ ssize_t tftp_rrq_packet_init(struct tftp_rrq_packet packet[static 1],
                              const char filename[static n],
                              enum tftp_mode mode,
                              struct tftp_option options[static TFTP_OPTION_TOTAL_OPTIONS]);
+
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //TFTP_H

@@ -54,7 +54,10 @@
         "vcpkg"
       ],
       "binaryDir": "${sourceDir}/out/build/${presetName}",
-      "installDir": "${sourceDir}/out/install/${presetName}"
+      "installDir": "${sourceDir}/out/install/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true
+      }
     },
     {
       "name": "linux-default",
@@ -88,7 +91,21 @@
         "x64-debug"
       ],
       "cacheVariables": {
-        "CMAKE_C_FLAGS_DEBUG": "-std=c2x -Wall -Wextra -pedantic -O0 -g3 -ggdb3 -D_DEBUG  -fsanitize=address -fsanitize=leak -fsanitize=undefined -fno-omit-frame-pointer"
+        "CMAKE_C_FLAGS_DEBUG": "-std=c23 -Wall -Wextra -pedantic -O0 -g3 -ggdb3 -D_DEBUG -fanalyzer -fsanitize=undefined -fno-omit-frame-pointer -fno-inline $env{C_FLAGS_DEBUG}",
+        "CMAKE_CXX_FLAGS_DEBUG": "-std=c++23 -Wall -Wextra -pedantic -O0 -g3 -ggdb3 -D_DEBUG -fsanitize=undefined -fno-omit-frame-pointer -fno-inline $env{CXX_FLAGS_DEBUG}"
+      },
+      "environment": {
+        "C_FLAGS_DEBUG": "",
+        "CXX_FLAGS_DEBUG": ""
+      }
+    },
+    {
+      "name": "x64-linux-debug-asan",
+      "displayName": "x64 Debug",
+      "inherits": "x64-linux-debug",
+      "environment": {
+        "C_FLAGS_DEBUG": "-fsanitize=address -fsanitize=leak -fsanitize=undefined",
+        "CXX_FLAGS_DEBUG": "-fsanitize=address -fsanitize=leak -fsanitize=undefined"
       }
     },
     {
@@ -99,7 +116,8 @@
         "x64-release"
       ],
       "cacheVariables": {
-        "CMAKE_C_FLAGS_RELEASE": "-std=c2x -Wall -Wextra -pedantic -O3"
+        "CMAKE_C_FLAGS_RELEASE": "-std=c23 -Wall -Wextra -pedantic",
+        "CMAKE_CXX_FLAGS_RELEASE": "-std=c++23 -Wall -Wextra -pedantic"
       }
     }
   ],

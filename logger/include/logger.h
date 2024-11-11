@@ -1,8 +1,16 @@
-#pragma once
+# ifndef LOGGER_H
+# define LOGGER_H
+
+#ifdef __cplusplus
+#include <cstdint>
+
+extern "C" {
+#else
 
 #include <stdio.h>
 #include <stdint.h>
 #include <threads.h>
+#endif
 
 enum logger_log_level : uint8_t {
     LOGGER_LOG_LEVEL_OFF = 0,           // No events will be logged.
@@ -15,6 +23,7 @@ enum logger_log_level : uint8_t {
     LOGGER_LOG_LEVEL_ALL = UINT8_MAX    // All events should be logged.
 };
 
+#ifndef __cplusplus
 struct logger_config {
     enum logger_log_level default_level;
     FILE *file;
@@ -55,3 +64,10 @@ extern bool logger_init(struct logger logger[static 1], struct logger_config con
 extern void logger_destroy(struct logger logger[static 1]);
 
 extern void logger_log(struct logger logger[static 1], enum logger_log_level level, const char *file, int line, const char *fmt, ...);
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // LOGGER_H

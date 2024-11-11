@@ -79,6 +79,14 @@ const char *tftp_option_recognized_string[] = {
         [TFTP_OPTION_WINDOWSIZE] = "windowsize"
 };
 
+enum tftp_opcode tftp_get_opcode_unsafe(const void *packet) {
+    enum tftp_opcode opcode;
+    // We use memcpy since loading after casting to (uint16_t *) without 2 byte alignment is UB
+    memcpy(&opcode, packet, sizeof opcode);
+    opcode = ntohs(opcode);
+    return opcode;
+}
+
 void tftp_data_packet_init(struct tftp_data_packet *packet, uint16_t block_number) {
     *packet = (struct tftp_data_packet) {
         .opcode = htons(TFTP_OPCODE_DATA),
@@ -116,7 +124,7 @@ ssize_t tftp_rrq_packet_init(struct tftp_rrq_packet packet[static 1], size_t n, 
     return (ssize_t) sizeof packet->opcode + (end_ptr - packet->padding);
 }
 
-extern enum tftp_create_rqp_error tftp_encode_request(struct tftp_packet packet[1], size_t psize[1], enum tftp_request_type type, size_t n, const char filename[static n], enum tftp_mode mode) {
+extern enum tftp_create_rqp_error tftp_encode_request(struct tftp_packet packet[static 1], size_t psize[static 1], enum tftp_request_type type, size_t n, const char filename[static n], enum tftp_mode mode) {
     if (mode != TFTP_MODE_OCTET && mode != TFTP_MODE_NETASCII) {
         return TFTP_CREATE_RQP_INVALID_MODE;
     }
@@ -171,7 +179,7 @@ extern bool tftp_parse_packet(struct tftp_packet packet[static 1], size_t n, con
         // Packet is too small to contain an opcode and any meaningful field
         return false;
     }
-    enum tftp_opcode opcode = ntohs(*(uint16_t *) data);
+    enum tftp_opcode opcode = tftp_get_opcode_unsafe(data);
     const uint8_t *data_to_parse = data + sizeof packet->opcode;
     size_t data_to_parse_size = n - sizeof packet->opcode;
     switch (opcode) {

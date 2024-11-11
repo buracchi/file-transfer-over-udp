@@ -3,12 +3,8 @@
   "description": "Client/server file transfer application using a connectionless network service.",
   "version": "1.0",
   "dependencies": [
-    "argparser",
-    "libcommon",
+    "cli11",
     "liburing"
-  ],
-  "overrides": [
-    { "name": "libevent", "version": "2.1.12#7" }
   ],
   "features": {
     "tests": {

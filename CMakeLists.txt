@@ -9,7 +9,7 @@ if (BUILD_TESTS)
 endif ()
 
 project("File transfer over UDP"
-		LANGUAGES C
+		LANGUAGES C CXX
 		VERSION 1.0)
 
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
@@ -17,6 +17,9 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Test
 
@@ -33,9 +36,6 @@ endif ()
 
 # Subproject
 
-#add_subdirectory("ftcp")
+add_subdirectory("examples")
 add_subdirectory("logger")
 add_subdirectory("tftp")
-add_subdirectory("network_utils")
-add_subdirectory("server")
-add_subdirectory("client")

@@ -35,16 +35,16 @@ The client provides the user with the following functions:
 ### Reliable transmission
 
 The exchange of messages takes place using an unreliable communication service.
-In order to ensure the correct sending / receiving of messages and files both 
+In order to ensure the correct sending/receiving of messages and files both 
 clients and servers implement at the application level the Go-Back N protocol.
 
 During the tests to simulate the loss of messages over the network (a very 
 unlikely event in a local network let alone when client and server are running 
 on the same host), it is assumed that each message is discarded by the sender 
-with probability *p*.
+with probability $p$.
 
-The size *N* of the dispatch window, the probability *p* of loss of messages,
-and the duration *T* of the timeout, are three configurable constants and the 
+The size $N$ of the dispatch window, the probability $p$ of loss of messages,
+and the duration $T$ of the timeout, are three configurable constants and the 
 same for all processes. In addition to the use of a fixed timeout, it is 
 possible to choose the use of a value for the adaptive timeout calculated 
 dynamically based on the evolution of the observed network delays.
