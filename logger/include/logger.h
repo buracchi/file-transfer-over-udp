@@ -26,7 +26,11 @@ enum logger_log_level : uint8_t {
 #ifndef __cplusplus
 struct logger_config {
     enum logger_log_level default_level;
-    FILE *file;
+    bool use_syslog;
+    union {
+        FILE *file;     // If .use_syslog is false and file is nullptr, the logger will be initialized to log to stderr.
+        const char *syslog_ident;
+    };
     bool show_date_time;
     bool show_source_file;
     bool show_process_id;
@@ -43,9 +47,6 @@ static const struct logger_config logger_default_config = {
     .default_level = LOGGER_LOG_LEVEL_INFO,
     .file = nullptr,
     .show_date_time = true,
-    .show_source_file = false,
-    .show_process_id = false,
-    .show_thread_id = false,
     .show_level_name = true
 };
 
@@ -56,14 +57,15 @@ static const struct logger_config logger_default_config = {
 #define logger_log_error(logger, ...) logger_log(logger, LOGGER_LOG_LEVEL_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 #define logger_log_fatal(logger, ...) logger_log(logger, LOGGER_LOG_LEVEL_FATAL, __FILE__, __LINE__, __VA_ARGS__)
 
-/**
- * If config.file is nullptr, the logger will be initialized to log to stderr.
- */
 extern bool logger_init(struct logger logger[static 1], struct logger_config config);
 
 extern void logger_destroy(struct logger logger[static 1]);
 
-extern void logger_log(struct logger logger[static 1], enum logger_log_level level, const char *file, int line, const char *fmt, ...);
+extern void logger_log(struct logger logger[static 1],
+                       enum logger_log_level level,
+                       const char *file, int line,
+                       const char *fmt, ...);
+
 #endif
 
 #ifdef __cplusplus

@@ -4,7 +4,7 @@
 #include <netdb.h>
 #include <string.h>
 
-const char *inet_ntop_address(const struct sockaddr address[static 1], char address_str[static INET6_ADDRSTRLEN], uint16_t port[static 1]) {
+const char *sockaddr_ntop(const struct sockaddr address[static 1], char address_str[static INET6_ADDRSTRLEN], uint16_t port[static 1]) {
 	void *client_addr;
 	switch (address->sa_family) {
 	case AF_INET: {
@@ -28,7 +28,7 @@ const char *inet_ntop_address(const struct sockaddr address[static 1], char addr
 	return inet_ntop(address->sa_family, client_addr, address_str, INET6_ADDRSTRLEN);
 }
 
-int inet_addr_in_to_in6(struct sockaddr_in const src[restrict static 1], struct sockaddr_in6 dest[restrict static 1]) {
+int sockaddr_in_to_in6(const struct sockaddr_in src[static 1], struct sockaddr_in6 dest[static 1]) {
 	char host[INET_ADDRSTRLEN] = { 0 };
 	char serv[6] = { 0 }; // 0 to 65536 plus '\0'
 	struct addrinfo *addrinfo;
@@ -56,7 +56,7 @@ int inet_addr_in_to_in6(struct sockaddr_in const src[restrict static 1], struct 
 	return 0;
 }
 
-int inet_add_in6_to_in(struct sockaddr_in6 const src[restrict static 1], struct sockaddr_in dest[restrict static 1]) {
+int sockaddr_in6_to_in(const struct sockaddr_in6 src[static 1], struct sockaddr_in dest[static 1]) {
     char host[INET6_ADDRSTRLEN] = { 0 };
     char serv[6] = { 0 }; // 0 to 65536 plus '\0'
     struct addrinfo *addrinfo;
@@ -98,17 +98,22 @@ int inet_add_in6_to_in(struct sockaddr_in6 const src[restrict static 1], struct 
     return 0;
 }
 
-void print_inet_address_detail(int fd) {
-	struct sockaddr_storage sockaddr;
-	struct sockaddr_storage peeraddr;
-	socklen_t sockaddr_len = sizeof sockaddr;
-	socklen_t sockpeer_len = sizeof peeraddr;
-	char sockaddr_str[INET6_ADDRSTRLEN] = { 0 };
-	char peeraddr_str[INET6_ADDRSTRLEN] = { 0 };
-	uint16_t sockaddr_port;
-	uint16_t peeraddr_port;
-	getsockname(fd, (struct sockaddr *)&sockaddr, &sockaddr_len);
-	getpeername(fd, (struct sockaddr *)&peeraddr, &sockpeer_len);
-	inet_ntop_address((struct sockaddr *)&sockaddr, sockaddr_str, &sockaddr_port);
-	inet_ntop_address((struct sockaddr *)&peeraddr, peeraddr_str, &peeraddr_port);
+bool sockaddr_equals(const struct sockaddr_storage lhs[static 1], const struct sockaddr_storage rhs[static 1]) {
+    if (lhs->ss_family != rhs->ss_family) {
+        return false;
+    }
+    if (lhs->ss_family == AF_INET) {
+        const struct sockaddr_in *lhs_in = (const struct sockaddr_in *) lhs;
+        const struct sockaddr_in *rhs_in = (const struct sockaddr_in *) rhs;
+        return lhs_in->sin_port == rhs_in->sin_port
+               && lhs_in->sin_addr.s_addr == rhs_in->sin_addr.s_addr;
+    }
+    if (lhs->ss_family == AF_INET6) {
+        const struct sockaddr_in6 *lhs_in6 = (const struct sockaddr_in6 *) lhs;
+        const struct sockaddr_in6 *rhs_in6 = (const struct sockaddr_in6 *) rhs;
+        return lhs_in6->sin6_port == rhs_in6->sin6_port
+               && memcmp(&lhs_in6->sin6_addr, &rhs_in6->sin6_addr, sizeof(struct in6_addr)) == 0
+               && lhs_in6->sin6_scope_id == rhs_in6->sin6_scope_id;
+    }
+    return false; // unsupported address family
 }

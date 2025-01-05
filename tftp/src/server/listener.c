@@ -8,9 +8,7 @@
 #include "../utils/inet.h"
 #include "../utils/utils.h"
 
-constexpr size_t msg_control_size = 4096;
-
-static const struct addrinfo hints_ipv4 = {
+static constexpr struct addrinfo hints_ipv4 = {
     .ai_flags = AI_PASSIVE | AI_NUMERICSERV | AI_ADDRCONFIG,
     .ai_family = AF_INET,
     .ai_socktype = SOCK_DGRAM,
@@ -19,7 +17,7 @@ static const struct addrinfo hints_ipv4 = {
     .ai_next = nullptr
 };
 
-static const struct addrinfo hints_ipv6 = {
+static constexpr struct addrinfo hints_ipv6 = {
     .ai_flags = AI_PASSIVE | AI_NUMERICSERV | AI_ADDRCONFIG,
     .ai_family = AF_INET6,
     .ai_socktype = SOCK_DGRAM,
@@ -83,7 +81,7 @@ bool tftp_server_listener_init(struct tftp_server_listener listener[static 1],
             logger_log_error(logger, "Could not set listener socket options for the server. %s", strerror_rbs(errno));
             goto fail2;
         }
-        if (inet_ntop_address(addrinfo->ai_addr, bind_addr_str, &bind_addr_port) == nullptr) {
+        if (sockaddr_ntop(addrinfo->ai_addr, bind_addr_str, &bind_addr_port) == nullptr) {
             logger_log_error(logger, "Could not translate binding address to a string representation. %s", strerror_rbs(errno));
             goto fail2;
         }
@@ -117,19 +115,6 @@ fail2:
 fail:
     freeaddrinfo(addrinfo_list);
     return false;
-}
-
-void tftp_server_listener_set_recvmsg_dest(struct tftp_server_listener listener[static 1], struct tftp_peer_message dest[static 1]) {
-    listener->msghdr.msg_controllen = msg_control_size;
-    listener->msghdr.msg_flags = 0;
-    memset(listener->msghdr.msg_control, 0, msg_control_size);
-    *dest = (struct tftp_peer_message) {
-        .peer_addrlen = sizeof dest->peer_addr,
-    };
-    listener->msghdr.msg_name = &dest->peer_addr;
-    listener->msghdr.msg_namelen = dest->peer_addrlen;
-    listener->msghdr.msg_iov[0].iov_base = dest->buffer;
-    listener->msghdr.msg_iov[0].iov_len = sizeof dest->buffer;
 }
 
 void tftp_server_listener_destroy(struct tftp_server_listener listener[static 1]) {

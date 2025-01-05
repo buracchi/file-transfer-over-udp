@@ -1,9 +1,11 @@
-#include <buracchi/tftp/client_stats.h>
+#include "stats.h"
 
 #include <errno.h>
 #include <string.h>
 
-void tftp_client_stats_init(struct tftp_client_stats stats[static 1], struct logger logger[static 1]) {
+#include <buracchi/tftp/client.h>
+
+void stats_init(struct tftp_client_stats stats[static 1], struct logger logger[static 1]) {
     *stats = (struct tftp_client_stats) {
         .enabled = true,
         .logger = logger,

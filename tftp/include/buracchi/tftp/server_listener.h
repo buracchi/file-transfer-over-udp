@@ -8,6 +8,8 @@
 #include <logger.h>
 #include <tftp.h>
 
+constexpr size_t msg_control_size = 4096;
+
 struct tftp_server_listener {
     int file_descriptor;
     struct sockaddr_storage addr_storage;
@@ -41,19 +43,6 @@ bool tftp_server_listener_init(struct tftp_server_listener listener[static 1],
                                const char host[static 1],
                                const char service[static 1],
                                struct logger logger[static 1]);
-
-/**
- * \brief Sets the destination address and buffer for a TFTP peer message.
- *
- * This function initializes the message header (`msghdr`) of the TFTP server listener
- * to point to the destination address and buffer of the provided TFTP peer message.
- * It also resets the control buffer and sets the message flags to zero.
- *
- * \param listener A pointer to the TFTP server listener structure.
- * \param dest A pointer to the TFTP peer message structure.
- */
-void tftp_server_listener_set_recvmsg_dest(struct tftp_server_listener listener[static 1],
-                                           struct tftp_peer_message dest[static 1]);
 
 void tftp_server_listener_destroy(struct tftp_server_listener listener[static 1]);
 

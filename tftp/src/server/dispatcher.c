@@ -1,4 +1,4 @@
-#include <buracchi/tftp/dispatcher.h>
+#include "dispatcher.h"
 
 #include <string.h>
 
@@ -10,7 +10,7 @@ bool dispatcher_init(struct dispatcher dispatcher[static 1], uint32_t max_reques
     dispatcher->logger = logger;
     int ret = io_uring_queue_init(max_requests, &dispatcher->ring, 0);
     if (ret < 0) {
-        logger_log_error(logger, "Failed to initialize server io_uring %s.", -ret);
+        logger_log_error(logger, "Failed to initialize server io_uring: %s.", strerror(-ret));
         return false;
     }
     return true;
@@ -33,7 +33,8 @@ bool dispatcher_wait_event(struct dispatcher dispatcher[static 1], struct dispat
         if (cqe->res < 0) {
             (*event)->is_success = false;
             (*event)->error_number = -cqe->res;
-        } else {
+        }
+        else {
             (*event)->is_success = true;
             (*event)->result = cqe->res;
         }

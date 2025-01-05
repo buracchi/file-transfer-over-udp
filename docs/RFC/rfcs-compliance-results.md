@@ -90,7 +90,7 @@
 	</tr>
 	<tr>
 		<td>
-		<td>Receving a packet with incorrect source port causes a non termination error
+		<td>Receving a packet with incorrect source port causes a non-termination error
 		<td>❌
 	</tr>
 	<tr>
@@ -156,12 +156,12 @@
 	</tr>
 	<tr>
 		<td>
-		<td>If the reply is an error packet then the request has been denied.
+		<td>If the reply to a read request is an error packet, then the request has been denied.
 		<td>❌
 	</tr>
 	<tr>
 		<td>
-		<td>The positive response to a read request is the first data packet for read.
+        <td>If the reply to a read request is the first data packet for read, then the request has been accepted.
 		<td>❌
 	</tr>
 	<tr>
@@ -254,7 +254,7 @@
 	</tr>
 	<tr>
 		<td>
-		<td>TFTP_OPCODE_ERROR (errore, opcode = 5) packet type support.
+		<td>TFTP_OPCODE_ERROR (error, opcode = 5) packet type support.
 		<td>❌
 	</tr>
 	<tr>

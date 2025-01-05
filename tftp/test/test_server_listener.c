@@ -20,7 +20,7 @@ TEST(server_listener, initialize_for_localhost) {
     struct logger logger;
     ASSERT_TRUE(tftp_server_listener_init(&listener, localhost_address, port, &logger));
     ASSERT_NE(listener.file_descriptor, -1);
-    ASSERT_NE(listener.msghdr.msg_control, NULL);
+    ASSERT_NE(listener.msghdr.msg_control, nullptr);
     tftp_server_listener_destroy(&listener);
 }
 
@@ -29,7 +29,7 @@ TEST(server_listener, initialize_for_ipv4_address) {
     struct logger logger;
     ASSERT_TRUE(tftp_server_listener_init(&listener, ipv4_address, port, &logger));
     ASSERT_NE(listener.file_descriptor, -1);
-    ASSERT_NE(listener.msghdr.msg_control, NULL);
+    ASSERT_NE(listener.msghdr.msg_control, nullptr);
     tftp_server_listener_destroy(&listener);
 }
 
@@ -38,7 +38,7 @@ TEST(server_listener, initialize_for_ipv6_address) {
     struct logger logger;
     ASSERT_TRUE(tftp_server_listener_init(&listener, ipv6_address, port, &logger));
     ASSERT_NE(listener.file_descriptor, -1);
-    ASSERT_NE(listener.msghdr.msg_control, NULL);
+    ASSERT_NE(listener.msghdr.msg_control, nullptr);
     tftp_server_listener_destroy(&listener);
 }
 
@@ -48,23 +48,5 @@ TEST(server_listener, do_not_initialize_for_invalid_address) {
     ASSERT_FALSE(tftp_server_listener_init(&listener, invalid_address, port, &logger));
     tftp_server_listener_destroy(&listener);
     ASSERT_FALSE(tftp_server_listener_init(&listener, localhost_address, invalid_port, &logger));
-    tftp_server_listener_destroy(&listener);
-}
-
-TEST(server_listener, recvmsg_use_message_setted) {
-    struct tftp_server_listener listener;
-    struct tftp_peer_message message;
-    struct logger logger;
-    tftp_server_listener_init(&listener, localhost_address, port, &logger);
-    tftp_server_listener_set_recvmsg_dest(&listener, &message);
-    char payload[] = "Payload";
-    int sockfd = socket(AF_INET6, SOCK_DGRAM, 0);
-    ASSERT_NE(sockfd, -1);
-    ssize_t bytes_sent = sendto(sockfd, payload, sizeof payload, 0, listener.addrinfo.ai_addr, listener.addrinfo.ai_addrlen);
-    ASSERT_EQ(bytes_sent, sizeof payload);
-    ASSERT_EQ(close(sockfd), 0);
-    ssize_t bytes_received = recvmsg(listener.file_descriptor, &listener.msghdr, 0);
-    ASSERT_EQ(bytes_received, sizeof payload);
-    ASSERT_STREQ((char *)message.buffer, payload);
     tftp_server_listener_destroy(&listener);
 }

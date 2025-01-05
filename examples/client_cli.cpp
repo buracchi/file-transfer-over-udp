@@ -25,13 +25,13 @@
     };
 */
 
-static const std::map<std::string, enum tftp_mode> tftp_mode_map{
+static const std::map<std::string, tftp_mode> tftp_mode_map{
     {"netascii", TFTP_MODE_NETASCII},
     {"octet",    TFTP_MODE_OCTET},
 };
 
 namespace TFTP::Client {
-    class CLIParser : public TFTP::CLIParser {
+    class CLIParser final : public TFTP::CLIParser {
     public:
         explicit CLIParser(const std::shared_ptr<cli_args>& args) : TFTP::CLIParser("TFTP Client") {
             add_option("host", host, "IP address or hostname of the server")
@@ -47,7 +47,7 @@ namespace TFTP::Client {
                 ->option_text("RETRIES");
             add_option("-t,--timeout", args->options.timeout_s, "Timeout in seconds for response")
                 ->default_val("1")
-                ->check(CLI::Range(1, 60))
+                ->check(CLI::Range(1, 255))
                 ->option_text("SECONDS");
             add_flag("-a,--adaptive-timeout", args->options.adaptive_timeout, "Enable adaptive timeout based on network delays");
             add_option("-b,--block-size", args->options.block_size, "Size of the data block for file transfer")
@@ -59,6 +59,10 @@ namespace TFTP::Client {
                 ->check(CLI::Range(1, 65535))
                 ->option_text("WINDOW_SIZE");
             add_flag("--use-tsize", args->options.use_tsize, "Request file size from the server");
+            add_option("-l,--loss-probability", args->loss_probability, "Simulated packet loss probability")
+                ->default_val("0.0")
+                ->check(CLI::Range(0.0, 1.0))
+                ->option_text("PROBABILITY");
             add_option("-v,--log-level", args->verbose_level, "Log verbosity level")
                 ->transform(CLI::CheckedTransformer(log_level_map, CLI::ignore_case))
                 ->default_val("info")
@@ -118,8 +122,8 @@ namespace TFTP::Client {
     };
 }
 
-bool cli_args_parse(struct cli_args *args, int argc, const char *argv[]) {
-    auto args_ptr = std::shared_ptr<cli_args>(args, [](cli_args*) {
+bool cli_args_parse(cli_args *args, int argc, const char *argv[]) {
+    const auto args_ptr = std::shared_ptr<cli_args>(args, [](cli_args*) {
         // Custom deleter does nothing, args memory is manually managed
     });
     static TFTP::Client::CLIParser cli(args_ptr);
@@ -137,7 +141,7 @@ bool cli_args_parse(struct cli_args *args, int argc, const char *argv[]) {
     return true;
 }
 
-void cli_args_destroy(struct cli_args *args) {
+void cli_args_destroy(cli_args *args) {
     free((void *) args->host);
     free((void *) args->port);
     if (args->command == CLIENT_COMMAND_GET) {

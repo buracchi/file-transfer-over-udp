@@ -36,6 +36,6 @@ endif ()
 
 # Subproject
 
-add_subdirectory("examples")
 add_subdirectory("logger")
 add_subdirectory("tftp")
+add_subdirectory("examples")

@@ -10,6 +10,7 @@ extern "C" {
 #endif
 
 constexpr size_t tftp_request_packet_max_size = 512;
+constexpr size_t tftp_oack_packet_max_size = 512;
 constexpr uint16_t tftp_default_blksize = 512;
 constexpr uint16_t tftp_default_window_size = 1;
 

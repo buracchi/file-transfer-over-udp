@@ -35,7 +35,7 @@ namespace TFTP {
                 parsers.push_back(subcommand.get());
             }
             
-            auto column_width = 4 + std::ranges::max(
+            const auto column_width = 4 + std::ranges::max(
                 parsers
                 | std::views::transform([](CLI::App *parser) { return parser->get_options(); })
                 | std::views::join
@@ -55,11 +55,11 @@ namespace TFTP {
                 });
                 if (typed_arguments_exist) {
                     std::string footer = "Argument Types:\n";
-                    for (auto option: parser->get_options()) {
+                    for (const auto option: parser->get_options()) {
                         if (!option->get_expected_min()) {
                             continue;
                         }
-                        auto padding_length = column_width - option->get_option_text().length() - 2;
+                        const auto padding_length = column_width - option->get_option_text().length() - 2;
                         auto padding = std::string(padding_length, ' ');
                         if (option->get_single_name() == "host") {
                             footer += std::format("  {}{}IPv4 or IPv6 address in standard format\n", option->get_option_text(), padding);
@@ -67,9 +67,7 @@ namespace TFTP {
                         }
                         if (option->get_single_name() == "log-level") {
                             std::vector<std::pair<std::string, logger_log_level>> log_levels(log_level_map.begin(), log_level_map.end());
-                            std::sort(log_levels.begin(), log_levels.end(), [](const auto &a, const auto &b) {
-                                return a.second < b.second;
-                            });
+                            std::ranges::sort(log_levels, [](const auto &a, const auto &b) { return a.second < b.second; });
                             std::string log_level_map_keys = std::accumulate(std::next(log_levels.begin()), log_levels.end(), log_levels[0].first,
                                                                              [](const std::string &a, const auto &b) {
                                                                                  return a + ", " + b.first;
@@ -87,7 +85,7 @@ namespace TFTP {
                         type_name = std::regex_replace(type_name, std::regex(R"(TEXT)"), "String of text");
                         type_name = std::regex_replace(type_name, std::regex(R"(\S*:?INT)"), "Integer number");
                         type_name = std::regex_replace(type_name, std::regex(R"(\S*:?FLOAT)"), "Decimal number");
-                        type_name = std::regex_replace(type_name, std::regex(R"(\[(-?[0-9.]+) - (-?[0-9.]+)\])"), " range [$1, $2]");
+                        type_name = std::regex_replace(type_name, std::regex(R"(\[(-?[0-9.]+) - (-?[0-9.]+)\])"), "range [$1, $2]");
                         type_name = std::regex_replace(type_name, std::regex( R"(ENUM:value in \{([a-zA-Z0-9_]+)->[0-9]+, ?([a-zA-Z0-9_]+)->[0-9]+\}.*)"), "Enum value in: {$1, $2}");
                         footer += std::format("  {}{}{}\n", option->get_option_text(), padding, type_name);
                     }

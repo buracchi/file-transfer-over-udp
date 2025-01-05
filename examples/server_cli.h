@@ -22,11 +22,11 @@ struct cli_args {
     uint8_t retries;                        // number of retries to attempt before giving up
     uint8_t timeout_s;                      // duration of the timeout in seconds
     uint16_t window_size;                   // size of the dispatch window to use for the Go-Back N protocol
-    bool adaptive_timeout;                  // flag to use an adaptive timeout calculated dynamically based on network delays
     double loss_probability;                // probability of packet loss to simulate
     enum logger_log_level verbose_level;    // verbose level to output additional information
     bool enable_write_requests;             // flag to enable write requests
     bool enable_list_requests;              // flag to enable list requests
+    bool enable_adaptive_timeout;           // flag to enable adaptive timeout requests calculated dynamically based on network delays
 };
 
 bool cli_args_parse(struct cli_args* args, int argc, const char *argv[]);

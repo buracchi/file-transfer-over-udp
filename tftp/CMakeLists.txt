@@ -3,23 +3,28 @@ pkg_check_modules(liburing REQUIRED IMPORTED_TARGET GLOBAL liburing>=2.0)
 
 add_library(tftp STATIC
     src/tftp.c
-    src/client/tftp_client.c
-    src/client/tftp_client_connection.c
-    src/client/tftp_client_stats.c
-    src/server/tftp_server.c
-    src/server/tftp_server_listener.c
-    src/server/tftp_handler.c
-    src/server/tftp_server_stats.c
-    src/server/tftp_server_thread_pool.c
-    src/server/tftp_session.c
-    src/server/tftp_session_stats.c
+    src/client/client.c
+    src/client/connection.c
+    src/client/stats.c
+    src/server/adaptive_timeout.c
+    src/server/server.c
+    src/server/listener.c
+    src/server/session_handler.c
+    src/server/server_stats.c
+    src/server/worker_pool.c
+    src/server/session.c
+    src/server/session_stats.c
+    src/server/session_connection.c
     src/server/dispatcher.c
+    src/server/worker.c
+    src/server/worker_job.c
     src/utils/inet.c
 )
 target_include_directories(tftp
     PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
            "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-    PRIVATE ${liburing_INCLUDE_DIRS})
+    PRIVATE ${liburing_INCLUDE_DIRS}
+    PRIVATE m)
 target_link_libraries(tftp
     INTERFACE $<BUILD_INTERFACE:coverage_config>
     PUBLIC logger

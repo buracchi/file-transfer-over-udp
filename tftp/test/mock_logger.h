@@ -3,6 +3,8 @@
 
 #include <logger.h>
 
+// NOLINTBEGIN(*-reserved-identifier)
+
 bool __real_logger_init(struct logger logger[static 1], struct logger_config config);
 bool __wrap_logger_init([[maybe_unused]] struct logger logger[static 1], [[maybe_unused]] struct logger_config config) {
     return true;
@@ -21,5 +23,7 @@ void __wrap_logger_log([[maybe_unused]] struct logger logger[static 1],
                        [[maybe_unused]] const char *fmt, ...) {
     // NOP
 }
+
+// NOLINTEND(*-reserved-identifier)
 
 #endif // MOCK_LOGGER_H

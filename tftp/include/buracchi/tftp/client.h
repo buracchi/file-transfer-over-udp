@@ -2,11 +2,18 @@
 #define BURACCHI_TFTP_CLIENT_H
 
 #include <stdint.h>
+#include <time.h>
 
 #include <logger.h>
 #include <tftp.h>
 
-#include "client_stats.h"
+struct tftp_client_stats {
+    struct logger *logger;
+    bool enabled;
+    struct timespec start_time;
+    struct timespec end_time;
+    size_t file_bytes_received;
+};
 
 struct tftp_client {
     struct logger *logger;
@@ -22,39 +29,31 @@ struct tftp_client_options {
     bool use_adaptive_timeout;
 };
 
-struct tftp_client_server_address {
-    const char *host;
-    const char *port;
-};
-
-struct tftp_client_put_request {
-    enum tftp_mode mode;
-    const char *filename;
-};
-
-struct tftp_client_get_request {
-    enum tftp_mode mode;
-    const char *filename;
-    const char *output;
-};
-
 struct tftp_client_response {
     bool success;
     bool server_may_not_support_options;
 };
 
 struct tftp_client_response tftp_client_list(struct tftp_client client[static 1],
-                                             struct tftp_client_server_address server_address[static 1],
-                                             struct tftp_client_options *options);
+                                             const char host[static 1],
+                                             const char port[static 1],
+                                             struct tftp_client_options *options,
+                                             FILE dest[static 1]);
 
 struct tftp_client_response tftp_client_get(struct tftp_client client[static 1],
-                                            struct tftp_client_server_address server_address[static 1],
-                                            struct tftp_client_get_request request[static 1],
-                                            struct tftp_client_options *options);
+                                            const char host[static 1],
+                                            const char port[static 1],
+                                            const char filename[static 1],
+                                            enum tftp_mode mode,
+                                            struct tftp_client_options *options,
+                                            FILE dest[static 1]);
 
 struct tftp_client_response tftp_client_put(struct tftp_client client[static 1],
-                                            struct tftp_client_server_address server_address[static 1],
-                                            struct tftp_client_put_request request[static 1],
-                                            struct tftp_client_options *options);
+                                            const char host[static 1],
+                                            const char port[static 1],
+                                            const char filename[static 1],
+                                            enum tftp_mode mode,
+                                            struct tftp_client_options *options,
+                                            FILE src[static 1]);
 
 #endif // BURACCHI_TFTP_CLIENT_H

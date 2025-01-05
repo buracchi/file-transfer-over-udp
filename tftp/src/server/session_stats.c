@@ -27,7 +27,7 @@ struct tftp_session_stats tftp_session_stat_init(const struct sockaddr server_ad
         .window_size = tftp_default_window_size,
         .callback = callback,
     };
-    inet_ntop_address(server_address, stats.server_addr, &stats.server_port);
-    inet_ntop_address(peer_address, stats.peer_addr, &stats.peer_port);
+    sockaddr_ntop(server_address, stats.server_addr, &stats.server_port);
+    sockaddr_ntop(peer_address, stats.peer_addr, &stats.peer_port);
     return stats;
 }

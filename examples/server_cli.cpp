@@ -22,12 +22,12 @@ For more details, refer to RFC1350.
 */
 
 namespace TFTP::Server {
-    class CLIParser : public TFTP::CLIParser {
+    class CLIParser final : public TFTP::CLIParser {
     public:
         explicit CLIParser(const std::shared_ptr<cli_args>& args) : TFTP::CLIParser("TFTP Server") {
             const auto processor_count = std::thread::hardware_concurrency();
             const auto default_workers = (processor_count > 1) ? processor_count - 1 : 1;
-            const auto max_worker_sessions = (65535 / default_workers) + (65535 % default_workers != 0);
+            const auto max_worker_sessions = std::min(32u, (65535 / default_workers) + (65535 % default_workers != 0));
             
             get_option("--help")->group("Basic Options");
             add_option("directory", root, "Specify root directory for file storage")
@@ -36,8 +36,13 @@ namespace TFTP::Server {
                 ->check(CLI::ExistingDirectory)
                 ->option_text("ROOT");
             add_flag("--enable-write-requests", args->enable_write_requests, "Enable write requests")
+                ->default_val(false)
                 ->group("Basic Options");
             add_flag("--enable-list-requests", args->enable_list_requests, "Enable list requests")
+                ->default_val(false)
+                ->group("Basic Options");
+            add_flag("--enable-adaptive-timeout", args->enable_adaptive_timeout, "Enable adaptive timeout based on network delays option")
+                ->default_val(false)
                 ->group("Basic Options");
             add_option("-w,--workers", args->workers, "Set the number of worker threads")
                 ->group("Basic Options")
@@ -68,15 +73,13 @@ namespace TFTP::Server {
             add_option("-r,--retries", args->retries, "Number of retries attempts before giving up")
                 ->group("Network Settings")
                 ->default_val("5")
-                ->check(CLI::Range(0, 10))
+                ->check(CLI::Range(0, 255))
                 ->option_text("RETRIES");
             add_option("-t,--timeout", args->timeout_s, "Timeout in seconds for response")
                 ->group("Network Settings")
                 ->default_val("2")
-                ->check(CLI::Range(1, 60))
+                ->check(CLI::Range(1, 255))
                 ->option_text("SECONDS");
-            add_flag("-a,--adaptive-timeout", args->adaptive_timeout, "Enable adaptive timeout based on network delays")
-                ->group("Network Settings");
             
             // Debugging and Simulation Group
             add_option("-l,--loss-probability", args->loss_probability, "Simulated packet loss probability")
@@ -90,6 +93,7 @@ namespace TFTP::Server {
                 ->default_val("info")
                 ->option_text("LEVEL")
                 ->description("Verbosity logging level");
+                
             final_callback([&, args]() {
                 args->host = strdup(host.c_str());
                 args->port = strdup(port.c_str());
@@ -113,7 +117,7 @@ namespace TFTP::Server {
 }
 
 bool cli_args_parse(struct cli_args *args, int argc, const char *argv[]) {
-    auto args_ptr = std::shared_ptr<cli_args>(args, [](cli_args*) {
+    const auto args_ptr = std::shared_ptr<cli_args>(args, [](cli_args*) {
         // Custom deleter does nothing, args memory is manually managed
     });
     static TFTP::Server::CLIParser cli(args_ptr);

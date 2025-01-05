@@ -1,6 +1,6 @@
 #include <buracchi/cutest/cutest.h>
 
-#include <buracchi/tftp/dispatcher.h>
+#include "dispatcher.h"
 
 TEST(dispatcher, register_and_dispatch_single_event) {
     struct logger logger;

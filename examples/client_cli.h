@@ -48,6 +48,7 @@ struct cli_args {
     struct options options;
     uint8_t retries;                        // number of retries to attempt before giving up
     enum logger_log_level verbose_level;    // verbose level to output additional information
+    double loss_probability;                // packet loss probability (0.0 to 1.0)
 };
 
 bool cli_args_parse(struct cli_args *args, int argc, const char *argv[]);

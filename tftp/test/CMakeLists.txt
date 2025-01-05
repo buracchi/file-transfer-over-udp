@@ -17,6 +17,10 @@ target_link_libraries(tftp_test_server
     PRIVATE tftp
     PRIVATE buracchi::cutest::cutest buracchi::cutest::cutest_main)
 cutest_discover_tests(tftp_test_server)
+target_link_options(tftp_test_server PRIVATE
+    -Wl,--wrap=logger_init
+    -Wl,--wrap=logger_destroy
+    -Wl,--wrap=logger_log)
 
 add_executable(tftp_test_client "test_client.c")
 target_link_libraries(tftp_test_client
@@ -39,6 +43,7 @@ target_link_options(tftp_test_server_listener PRIVATE
 cutest_discover_tests(tftp_test_server_listener)
 
 add_executable(tftp_test_server_dispatcher "test_server_dispatcher.c")
+target_include_directories(tftp_test_server_dispatcher PRIVATE $<TARGET_PROPERTY:tftp,SOURCE_DIR>/src/server)
 target_link_libraries(tftp_test_server_dispatcher
     PRIVATE tftp
     PRIVATE buracchi::cutest::cutest buracchi::cutest::cutest_main)

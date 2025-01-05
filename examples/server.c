@@ -12,6 +12,7 @@
 #include <buracchi/tftp/server_session_stats.h>
 
 #include "server_cli.h"
+#include "server_packet_loss.h"
 
 #define strerror_max_size 64
 #define strerror_rbs(error_code) strerror_r_no_fail(error_code, (char[strerror_max_size]){})
@@ -33,7 +34,7 @@ int main(int argc, char *argv[static argc + 1]) {
     enum { OLD, NEW };
     struct sigaction action[2] = {};
     struct logger logger;
-    struct cli_args args;
+    struct cli_args args = {};
     if (!cli_args_parse(&args, argc, (const char **) argv)) {
         return EXIT_FAILURE;
     }
@@ -41,31 +42,37 @@ int main(int argc, char *argv[static argc + 1]) {
         return EXIT_FAILURE;
     }
     logger.config.default_level = args.verbose_level;
+    packet_loss_init(&logger, args.loss_probability, args.workers * args.max_worker_sessions);
     if (sigaction(SIGINT, nullptr, &action[OLD]) == -1) {
         logger_log_error(&logger, "Could not get the current SIGINT handler. %s", strerror_rbs(errno));
         return EXIT_FAILURE;
     }
     memcpy(&action[NEW], &action[OLD], sizeof *action);
     action[NEW].sa_handler = sigint_handler;
-    bool server_initialized = tftp_server_init(&server,
-                                               (struct tftp_server_arguments) {
-                                                   .ip = args.host,
-                                                   .port = args.port,
-                                                   .root = args.root,
-                                                   .retries = args.retries,
-                                                   .timeout_s = args.timeout_s,
-                                                   .workers = args.workers,
-                                                   .max_worker_sessions = args.max_worker_sessions,
-                                                   .server_stats_callback = print_server_stats,
-                                                   .handler_stats_callback = print_session_stats,
-                                                   .stats_interval_seconds = datapoints_interval_seconds,
-                                               },
-                                               &logger);
+    const bool server_initialized = tftp_server_init(
+        &server,
+        (struct tftp_server_arguments){
+            .ip = args.host,
+            .port = args.port,
+            .root = args.root,
+            .retries = args.retries,
+            .timeout_s = args.timeout_s,
+            .workers = args.workers,
+            .max_worker_sessions = args.max_worker_sessions,
+            .is_adaptive_timeout_enabled = args.enable_adaptive_timeout,
+            .is_write_request_enabled = args.enable_write_requests,
+            .is_list_request_enabled = args.enable_list_requests,
+            .server_stats_callback = print_server_stats,
+            .handler_stats_callback = print_session_stats,
+            .stats_interval_seconds = datapoints_interval_seconds,
+        },
+        &logger);
     if (!server_initialized) {
         logger_log_error(&logger, "Could not initialize server.");
         goto fail;
     }
-    if (sigaction(SIGINT, &action[NEW], nullptr) == -1) {
+    if (sigaction(SIGINT, &action[NEW], nullptr) == -1
+        || sigaction(SIGTERM, &action[NEW], nullptr) == -1) {
         logger_log_error(&logger, "Could not set the new SIGINT handler. %s", strerror_rbs(errno));
         goto fail;
     }
@@ -90,11 +97,12 @@ static void sigint_handler([[maybe_unused]] int signal) {
 }
 
 static void print_session_stats(struct tftp_session_stats stats[static 1]) {
+    const int time_spent = (int) (difftime(time(nullptr), stats->start_time) * 1000);
     logger_log_info(stats->logger, "Stats: for %s requesting %s [%s]", stats->peer_addr, stats->file_path, stats->mode);
     if (stats->error.error_occurred) {
         logger_log_warn(stats->logger, "\tError: %s", stats->error.error_message);
     }
-    logger_log_info(stats->logger, "\tTime spent: %dms", (int) (difftime(time(nullptr), stats->start_time) * 1000));
+    logger_log_info(stats->logger, "\tTime spent: %dms", time_spent);
     logger_log_info(stats->logger, "\tPackets sent: %d", stats->packets_sent);
     logger_log_info(stats->logger, "\tPackets ACKed: %d", stats->packets_acked);
     logger_log_info(stats->logger, "\tBytes sent: %zu", stats->bytes_sent);
@@ -107,12 +115,11 @@ static void print_session_stats(struct tftp_session_stats stats[static 1]) {
 }
 
 static bool print_server_stats(struct tftp_server_stats stats[static 1]) {
-    struct tftp_server_stats_counters counters;
     if (mtx_lock(&stats->mtx) == thrd_error) {
         logger_log_error(stats->logger, "Could not lock server stats mutex. %s", strerror_rbs(errno));
         return false;
     }
-    counters = stats->counters;
+    auto const counters = stats->counters;
     stats->counters = (struct tftp_server_stats_counters) {};
     if (mtx_unlock(&stats->mtx) == thrd_error) {
         logger_log_error(stats->logger, "Could not unlock server stats mutex. %s", strerror_rbs(errno));

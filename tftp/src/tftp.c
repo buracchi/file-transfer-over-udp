@@ -15,13 +15,13 @@
  */
 #include <endian.h>
 
-#ifndef TFTP_H16TOBE16
+#ifndef TFTP_HTOBE16
 #   if __BYTE_ORDER == __LITTLE_ENDIAN
-#       define TFTP_H16TOBE16(n) ((((n) >> 8) & 0xFFu) | (((n) << 8) & 0xFF00u))
+#       define TFTP_HTOBE16(n) ((((n) >> 8) & 0x00FFu) | (((n) << 8) & 0xFF00u))
 #   elif __BYTE_ORDER == __BIG_ENDIAN
-#       define define TFTP_H16TOBE16(n) (n)
+#       define define TFTP_HTOBE16(n) (n)
 #   else
-#       error "Unsupported architecture. Define a TFTP_H16TOBE16 macro for your architecture in order to use this library."
+#       error "Unsupported architecture. Define a TFTP_HTOBE16 macro for your architecture in order to use this library."
 #   endif
 #endif
 
@@ -41,8 +41,8 @@
             const enum tftp_error_code error_code;                          \
             const uint8_t error_message[sizeof(err_code##_MESSAGE)];        \
             }) {                                                            \
-        .opcode = TFTP_H16TOBE16(TFTP_OPCODE_ERROR),                        \
-        .error_code = TFTP_H16TOBE16(err_code),                             \
+        .opcode = TFTP_HTOBE16(TFTP_OPCODE_ERROR),                          \
+        .error_code = TFTP_HTOBE16(err_code),                               \
         .error_message = err_code##_MESSAGE                                 \
         },                                                                  \
     .size = sizeof(struct tftp_error_packet) + sizeof(err_code##_MESSAGE),  \
@@ -148,7 +148,7 @@ extern struct tftp_packet tftp_encode_error(enum tftp_error_code error_code, siz
             .error_message = {0}
         }
     };
-    strncpy((char *) packet.error.error_message, error_message, n);
+    snprintf((char *) packet.error.error_message, sizeof packet.error.error_message, "%s", error_message);
     return packet;
 }
 

@@ -13,6 +13,8 @@
 #include "mock_logger.h"
 
 TEST(client, on_unexpected_peer_do_not_terminate) {
+    FILE *out = fopen("/dev/null", "w");
+    ASSERT_NE(out, nullptr);
     struct sockaddr_in6 expected_addr = {
         .sin6_family = AF_INET6,
         .sin6_addr = in6addr_any,
@@ -32,18 +34,16 @@ TEST(client, on_unexpected_peer_do_not_terminate) {
     ASSERT_NE(unexpected_socket = socket(AF_INET6, SOCK_DGRAM, 0), -1);
     ASSERT_NE(setsockopt(unexpected_socket, SOL_SOCKET, SO_REUSEADDR, &(int){true}, sizeof(int)), -1);
     ASSERT_NE(bind(unexpected_socket, (struct sockaddr *)&unexpected_addr, sizeof(unexpected_addr)), -1);
-    
+
     if (fork() == 0) {
-        auto ret = tftp_client_get(&(struct tftp_client) {.logger = &(struct logger) {}},
-                                   &(struct tftp_client_server_address) {
-                                       .host = "::",
-                                       .port = "1234",
-                                   },
-                                   &(struct tftp_client_get_request) {
-                                       .filename = "garbage",
-                                       .mode = TFTP_MODE_OCTET,
-                                   },
-                                   nullptr);
+        auto const ret = tftp_client_get(
+            &(struct tftp_client) {.logger = &(struct logger) {}},
+            "::",
+            "1234",
+            "test",
+            TFTP_MODE_OCTET,
+            nullptr,
+            out);
         exit(ret.success ? EXIT_SUCCESS : EXIT_FAILURE);
     }
     
@@ -61,6 +61,8 @@ TEST(client, on_unexpected_peer_do_not_terminate) {
     tftp_data_packet_init((struct tftp_data_packet *)buffer, 2);
     sendto(expected_socket, buffer, sizeof buffer - 1, 0, (struct sockaddr *)&client_addr, addr_len); // send of less than block size bytes end the transfer
     received = recvfrom(expected_socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&client_addr, &addr_len);
+    close(unexpected_socket);
+    close(expected_socket);
     ASSERT_GT(received, 0);
     int status;
     wait(&status);
@@ -68,6 +70,8 @@ TEST(client, on_unexpected_peer_do_not_terminate) {
 }
 
 TEST(client, on_unexpected_peer_send_error_packet) {
+    FILE *out = fopen("/dev/null", "w");
+    ASSERT_NE(out, nullptr);
     struct sockaddr_in6 expected_addr = {
         .sin6_family = AF_INET6,
         .sin6_addr = in6addr_any,
@@ -89,16 +93,14 @@ TEST(client, on_unexpected_peer_send_error_packet) {
     ASSERT_NE(bind(unexpected_socket, (struct sockaddr *)&unexpected_addr, sizeof(unexpected_addr)), -1);
     
     if (fork() == 0) {
-        tftp_client_get(&(struct tftp_client) {.logger = &(struct logger) {}},
-                        &(struct tftp_client_server_address) {
-                            .host = "::",
-                            .port = "1234",
-                        },
-                        &(struct tftp_client_get_request) {
-                            .filename = "garbage",
-                            .mode = TFTP_MODE_OCTET,
-                        },
-                        nullptr);
+        tftp_client_get(
+            &(struct tftp_client) {.logger = &(struct logger) {}},
+            "::",
+            "1234",
+            "test",
+            TFTP_MODE_OCTET,
+            nullptr,
+            out);
         exit(0);
     }
     
@@ -115,8 +117,12 @@ TEST(client, on_unexpected_peer_send_error_packet) {
     sendto(unexpected_socket, buffer, sizeof buffer, 0, (struct sockaddr *)&client_addr, addr_len);
     received = recvfrom(unexpected_socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&client_addr, &addr_len);
     ASSERT_GT(received, 0);
-    struct tftp_error_packet *error_packet = (struct tftp_error_packet *)buffer;
+    auto const error_packet = (struct tftp_error_packet *)buffer;
     ASSERT_EQ(error_packet->opcode, htons(TFTP_OPCODE_ERROR));
     ASSERT_EQ(error_packet->error_code, htons(TFTP_ERROR_UNKNOWN_TRANSFER_ID));
+    tftp_data_packet_init((struct tftp_data_packet *)buffer, 2);
+    sendto(expected_socket, buffer, sizeof buffer - 1, 0, (struct sockaddr *)&client_addr, addr_len); // send of less than block size bytes end the transfer
+    close(unexpected_socket);
+    close(expected_socket);
     wait(nullptr);
 }

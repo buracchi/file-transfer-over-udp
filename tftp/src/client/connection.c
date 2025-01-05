@@ -1,4 +1,4 @@
-#include "tftp_client_connection.h"
+#include "connection.h"
 
 #include <errno.h>
 #include <string.h>
@@ -6,7 +6,7 @@
 
 #include "../utils/inet.h"
 
-static const struct addrinfo hints_ipv4 = {
+static constexpr struct addrinfo hints_ipv4 = {
     .ai_flags = AI_NUMERICSERV | AI_ADDRCONFIG,
     .ai_family = AF_INET,
     .ai_socktype = SOCK_DGRAM,
@@ -15,7 +15,7 @@ static const struct addrinfo hints_ipv4 = {
     .ai_next = nullptr
 };
 
-static const struct addrinfo hints_ipv6 = {
+static constexpr struct addrinfo hints_ipv6 = {
     .ai_flags = AI_NUMERICSERV | AI_ADDRCONFIG,
     .ai_family = AF_INET6,
     .ai_socktype = SOCK_DGRAM,
@@ -33,11 +33,11 @@ static inline bool is_ipv6_address(const char *address) {
     return ret == 0;
 }
 
-bool tftp_client_connection_init(struct tftp_client_connection connection[static 1],
-                                 const char host[static 1],
-                                 const char service[static 1],
-                                 struct logger logger[static 1]) {
-    *connection = (struct tftp_client_connection) {
+bool connection_init(struct connection connection[static 1],
+                     const char host[static 1],
+                     const char service[static 1],
+                     struct logger logger[static 1]) {
+    *connection = (struct connection) {
         .sockfd = -1,
         .sock_addr_len = sizeof connection->sock_addr_storage,
     };
@@ -75,9 +75,7 @@ fail:
     return false;
 }
 
-bool tftp_client_connection_set_recv_timeout(struct tftp_client_connection connection[static 1],
-                                             uint8_t timeout_s,
-                                             struct logger logger[static 1]) {
+bool connection_set_recv_timeout(struct connection connection[static 1], uint8_t timeout_s, struct logger logger[static 1]) {
     struct timeval timeout = {.tv_sec = timeout_s,};
     if (setsockopt(connection->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout) == -1) {
         logger_log_error(logger, "Could not set socket timeout option. %s", strerror(errno));
@@ -86,7 +84,7 @@ bool tftp_client_connection_set_recv_timeout(struct tftp_client_connection conne
     return true;
 }
 
-bool tftp_client_connection_destroy(struct tftp_client_connection connection[static 1], struct logger logger[static 1]) {
+bool connection_destroy(struct connection connection[static 1], struct logger logger[static 1]) {
     if (close(connection->sockfd)) {
         logger_log_error(logger, "Could not close socket: %s", strerror(errno));
         return false;
