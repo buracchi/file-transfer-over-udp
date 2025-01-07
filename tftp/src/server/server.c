@@ -29,7 +29,7 @@ bool tftp_server_init(struct tftp_server server[static 1], struct tftp_server_ar
         .is_write_request_enabled = args.is_write_request_enabled,
         .is_list_request_enabled = args.is_list_request_enabled,
         .worker_pool = malloc(sizeof *server->worker_pool),
-        .handler_stats_callback = args.handler_stats_callback,
+        .session_stats_callback = args.session_stats_callback,
     };
     if (server->worker_pool == nullptr) {
         logger_log_error(logger, "Failed to initialize server. Could not allocate memory for the worker pool. %s", strerror_rbs(errno));
@@ -62,7 +62,7 @@ bool tftp_server_start(struct tftp_server server[static 1]) {
         .is_adaptive_timeout_enabled = server->is_adaptive_timeout_enabled,
         .is_write_request_enabled = server->is_write_request_enabled,
         .is_list_request_enabled = server->is_list_request_enabled,
-        .handler_stats_callback = server->handler_stats_callback,
+        .session_stats_callback = server->session_stats_callback,
     };
     const bool metrics_enabled = server->stats.metrics_callback != nullptr;
     if (metrics_enabled) {

@@ -20,7 +20,6 @@ struct tftp_session_stats {
     const char *mode;
     struct tftp_session_stats_error {
         bool error_occurred;
-        bool is_non_terminating;
         uint16_t error_number;
         const char *error_message;
     } error;

@@ -23,7 +23,8 @@ struct session_connection {
     struct inet_address client_address;
     struct inet_address last_message_address;
     
-    uint8_t recv_buffer[tftp_default_blksize];
+    uint8_t *recv_buffer;
+    size_t recv_buffer_size;
     // TODO: As of Linux kernel version 6.10.4 IO_URING_OP_RECVFROM is not implemented, this is a workaround.
     //  Remove this fields and use io_uring_prep_recvfrom when available.
     struct msghdr msghdr;

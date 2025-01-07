@@ -21,7 +21,6 @@ struct cli_args {
     uint16_t max_worker_sessions;           // maximum number of sessions a worker can handle
     uint8_t retries;                        // number of retries to attempt before giving up
     uint8_t timeout_s;                      // duration of the timeout in seconds
-    uint16_t window_size;                   // size of the dispatch window to use for the Go-Back N protocol
     double loss_probability;                // probability of packet loss to simulate
     enum logger_log_level verbose_level;    // verbose level to output additional information
     bool enable_write_requests;             // flag to enable write requests

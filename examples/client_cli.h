@@ -31,11 +31,16 @@ union command_args {
         enum tftp_mode mode;            // transfer mode to use for the file transfer
         const char *filename;           // file to upload to the server
     } put;
+    struct list_args {
+        enum tftp_mode mode;            // transfer mode to use for the file transfer
+        const char *directory;          // server directory to list
+    } list;
 };
+
 struct options {
-    uint8_t timeout_s;                      // duration of the timeout to use for the Go-Back N protocol, in seconds
-    uint16_t block_size;                    // size of the data block to use for the file transfer
-    uint16_t window_size;                   // size of the dispatch window to use for the Go-Back N protocol
+    uint8_t *timeout_s;                     // duration of the timeout to use for the Go-Back N protocol, in seconds
+    uint16_t *block_size;                   // size of the data block to use for the file transfer
+    uint16_t *window_size;                  // size of the dispatch window to use for the Go-Back N protocol
     bool use_tsize;                         // flag to request the file size from the server
     bool adaptive_timeout;                  // flag to use an adaptive timeout calculated dynamically based on network delays
 };

@@ -63,7 +63,7 @@ int main(int argc, char *argv[static argc + 1]) {
             .is_write_request_enabled = args.enable_write_requests,
             .is_list_request_enabled = args.enable_list_requests,
             .server_stats_callback = print_server_stats,
-            .handler_stats_callback = print_session_stats,
+            .session_stats_callback = print_session_stats,
             .stats_interval_seconds = datapoints_interval_seconds,
         },
         &logger);

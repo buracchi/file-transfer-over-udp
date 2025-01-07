@@ -91,7 +91,7 @@
         "x64-debug"
       ],
       "cacheVariables": {
-        "CMAKE_C_FLAGS_DEBUG": "-std=c23 -Wall -Wextra -pedantic -O0 -g3 -ggdb3 -D_DEBUG -fanalyzer -fsanitize=undefined -fno-omit-frame-pointer -fno-inline $env{C_FLAGS_DEBUG}",
+        "CMAKE_C_FLAGS_DEBUG": "-std=gnu23 -Wall -Wextra -pedantic -O0 -g3 -ggdb3 -D_DEBUG -fanalyzer -fsanitize=undefined -fno-omit-frame-pointer -fno-inline $env{C_FLAGS_DEBUG}",
         "CMAKE_CXX_FLAGS_DEBUG": "-std=c++23 -Wall -Wextra -pedantic -O0 -g3 -ggdb3 -D_DEBUG -fsanitize=undefined -fno-omit-frame-pointer -fno-inline $env{CXX_FLAGS_DEBUG}"
       },
       "environment": {
@@ -116,7 +116,7 @@
         "x64-release"
       ],
       "cacheVariables": {
-        "CMAKE_C_FLAGS_RELEASE": "-std=c23 -Wall -Wextra -pedantic",
+        "CMAKE_C_FLAGS_RELEASE": "-std=gnu23 -Wall -Wextra -pedantic",
         "CMAKE_CXX_FLAGS_RELEASE": "-std=c++23 -Wall -Wextra -pedantic"
       }
     }

@@ -72,7 +72,13 @@ int main(int argc, char *argv[static argc + 1]) {
         }
         switch (args.command) {
             case CLIENT_COMMAND_LIST:
-                response = tftp_client_list(&client, args.host, args.port, options_ptr, stdout);
+                response = tftp_client_list(&client,
+                                            args.host,
+                                            args.port,
+                                            args.command_args.list.directory,
+                                            args.command_args.list.mode,
+                                            &options,
+                                            stdout);
                 break;
             case CLIENT_COMMAND_GET:
                 response = get(&logger,
@@ -95,7 +101,7 @@ int main(int argc, char *argv[static argc + 1]) {
                                nullptr);
                 break;
         }
-        if (!response.success && !response.server_may_not_support_options) {
+        if (!response.success && (args.command == CLIENT_COMMAND_LIST || !response.server_may_not_support_options)) {
             cli_args_destroy(&args);
             return EXIT_FAILURE;
         }

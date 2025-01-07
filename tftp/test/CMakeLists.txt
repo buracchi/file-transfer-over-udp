@@ -48,3 +48,7 @@ target_link_libraries(tftp_test_server_dispatcher
     PRIVATE tftp
     PRIVATE buracchi::cutest::cutest buracchi::cutest::cutest_main)
 cutest_discover_tests(tftp_test_server_dispatcher)
+target_link_options(tftp_test_server_dispatcher PRIVATE
+                    -Wl,--wrap=logger_init
+                    -Wl,--wrap=logger_destroy
+                    -Wl,--wrap=logger_log)

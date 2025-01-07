@@ -22,9 +22,9 @@ struct tftp_client {
 };
 
 struct tftp_client_options {
-    uint8_t timeout_s;
-    uint16_t block_size;
-    uint16_t window_size;
+    uint8_t *timeout_s;
+    uint16_t *block_size;
+    uint16_t *window_size;
     bool use_tsize;
     bool use_adaptive_timeout;
 };
@@ -37,7 +37,9 @@ struct tftp_client_response {
 struct tftp_client_response tftp_client_list(struct tftp_client client[static 1],
                                              const char host[static 1],
                                              const char port[static 1],
-                                             struct tftp_client_options *options,
+                                             const char directory[static 1],
+                                             enum tftp_mode mode,
+                                             struct tftp_client_options options[static 1],
                                              FILE dest[static 1]);
 
 struct tftp_client_response tftp_client_get(struct tftp_client client[static 1],

@@ -76,7 +76,8 @@ const char *tftp_option_recognized_string[] = {
         [TFTP_OPTION_BLKSIZE] = "blksize",
         [TFTP_OPTION_TIMEOUT] = "timeout",
         [TFTP_OPTION_TSIZE] = "tsize",
-        [TFTP_OPTION_WINDOWSIZE] = "windowsize"
+        [TFTP_OPTION_WINDOWSIZE] = "windowsize",
+        [TFTP_OPTION_READ_TYPE] = "type",
 };
 
 enum tftp_opcode tftp_get_opcode_unsafe(const void *packet) {
@@ -103,6 +104,33 @@ void tftp_ack_packet_init(struct tftp_ack_packet packet[static 1], uint16_t bloc
 
 ssize_t tftp_rrq_packet_init(struct tftp_rrq_packet packet[static 1], size_t n, const char filename[static n], enum tftp_mode mode, struct tftp_option options[static TFTP_OPTION_TOTAL_OPTIONS]) {
     packet->opcode = htons(TFTP_OPCODE_RRQ);
+    size_t filename_len = strnlen(filename, n);
+    size_t mode_len = strlen(tftp_mode_str[mode]);
+    if (filename_len == n || (filename_len + 1 + mode_len + 1) > sizeof packet->padding) {
+        return -1;
+    }
+    uint8_t *mode_ptr = memccpy(packet->padding, filename, '\0', n);
+    uint8_t *end_ptr = memccpy(mode_ptr, tftp_mode_str[mode], '\0', mode_len + 1);
+    for (enum tftp_option_recognized o = 0; o < TFTP_OPTION_TOTAL_OPTIONS; o++) {
+        if (options[o].is_active) {
+            size_t option_len = strlen(tftp_option_recognized_string[o]);
+            size_t value_len = strlen(options[o].value);
+            if ((option_len + 1 + value_len + 1) > (sizeof packet->padding - (end_ptr - packet->padding))) {
+                return -1;
+            }
+            end_ptr = memccpy(end_ptr, tftp_option_recognized_string[o], '\0', strlen(tftp_option_recognized_string[o]) + 1);
+            end_ptr = memccpy(end_ptr, options[o].value, '\0', strlen(options[o].value) + 1);
+        }
+    }
+    return (ssize_t) sizeof packet->opcode + (end_ptr - packet->padding);
+}
+
+ssize_t tftp_wrq_packet_init(struct tftp_wrq_packet packet[static 1],
+                             size_t n,
+                             const char filename[static n],
+                             enum tftp_mode mode,
+                             struct tftp_option options[static TFTP_OPTION_TOTAL_OPTIONS]) {
+    packet->opcode = htons(TFTP_OPCODE_WRQ);
     size_t filename_len = strnlen(filename, n);
     size_t mode_len = strlen(tftp_mode_str[mode]);
     if (filename_len == n || (filename_len + 1 + mode_len + 1) > sizeof packet->padding) {
@@ -354,8 +382,13 @@ void tftp_parse_options(struct tftp_option options[static TFTP_OPTION_TOTAL_OPTI
                         }
                         break;
                     }
-                    default: // unreachable
+                    case TFTP_OPTION_READ_TYPE:
+                        if (strcasecmp(val, "directory") != 0) {
+                            is_val_valid = false;
+                        }
                         break;
+                    default:
+                        unreachable();
                 }
                 if (!is_val_valid) {
                     break;

@@ -61,8 +61,7 @@ bool dispatcher_submit(struct dispatcher dispatcher[static 1], struct dispatcher
     return true;
 }
 
-bool dispatcher_submit_timeout(struct dispatcher dispatcher[static 1], struct dispatcher_event_timeout event[static 1], int seconds) {
-    event->timeout = (struct __kernel_timespec) {.tv_sec = seconds};
+bool dispatcher_submit_timeout(struct dispatcher dispatcher[static 1], struct dispatcher_event_timeout event[static 1]) {
     struct io_uring_sqe *sqe = io_uring_get_sqe(&dispatcher->ring);
     if (sqe == nullptr) {
         logger_log_error(dispatcher->logger, "Could not get a submission queue entry.");
@@ -75,22 +74,61 @@ bool dispatcher_submit_timeout(struct dispatcher dispatcher[static 1], struct di
         logger_log_error(dispatcher->logger, "Could not submit the timeout request. %s", strerror(-ret));
         return false;
     }
-    logger_log_debug(dispatcher->logger, "Starting the metrics callback in %ds.", seconds);
+    logger_log_trace(dispatcher->logger, "Timeout set to %lld.%.9lds.", event->timeout.tv_sec, event->timeout.tv_nsec);
     dispatcher->pending_requests++;
     return true;
 }
 
-bool dispatcher_submit_readv(struct dispatcher dispatcher[static 1], struct dispatcher_event event[static 1], int fd, const struct iovec *iovecs, unsigned nr_vecs) {
+bool dispatcher_submit_timeout_update(struct dispatcher dispatcher[static 1],
+                                      struct dispatcher_event event[static 1],
+                                      struct dispatcher_event_timeout event_to_update[static 1],
+                                      struct __kernel_timespec timeout[static 1]) {
     struct io_uring_sqe *sqe = io_uring_get_sqe(&dispatcher->ring);
     if (sqe == nullptr) {
         logger_log_error(dispatcher->logger, "Could not get a submission queue entry.");
         return false;
     }
-    io_uring_prep_readv(sqe, fd, iovecs, nr_vecs, -1);
+    io_uring_prep_timeout_update(sqe, timeout, (size_t) event_to_update, 0);
     io_uring_sqe_set_data(sqe, event);
     int ret = io_uring_submit(&dispatcher->ring);
     if (ret < 0) {
-        logger_log_error(dispatcher->logger, "Could not submit readv request. %s", strerror(-ret));
+        logger_log_error(dispatcher->logger, "Could not update the timeout request. %s", strerror(-ret));
+        return false;
+    }
+    dispatcher->pending_requests++;
+    return true;
+}
+
+bool dispatcher_submit_timeout_cancel(struct dispatcher dispatcher[static 1],
+                                      struct dispatcher_event event[static 1],
+                                      struct dispatcher_event_timeout event_to_cancel[static 1]) {
+    struct io_uring_sqe *sqe = io_uring_get_sqe(&dispatcher->ring);
+    if (sqe == nullptr) {
+        logger_log_error(dispatcher->logger, "Could not get a submission queue entry.");
+        return false;
+    }
+    io_uring_prep_timeout_remove(sqe, (size_t) event_to_cancel, 0);
+    io_uring_sqe_set_data(sqe, event);
+    int ret = io_uring_submit(&dispatcher->ring);
+    if (ret < 0) {
+        logger_log_error(dispatcher->logger, "Could not remove the timeout request. %s", strerror(-ret));
+        return false;
+    }
+    dispatcher->pending_requests++;
+    return true;
+}
+
+bool dispatcher_submit_read(struct dispatcher dispatcher[static 1], struct dispatcher_event event[static 1], int fd, void *buffer, unsigned n_bytes) {
+    struct io_uring_sqe *sqe = io_uring_get_sqe(&dispatcher->ring);
+    if (sqe == nullptr) {
+        logger_log_error(dispatcher->logger, "Could not get a submission queue entry.");
+        return false;
+    }
+    io_uring_prep_read(sqe, fd, buffer, n_bytes, -1);
+    io_uring_sqe_set_data(sqe, event);
+    int ret = io_uring_submit(&dispatcher->ring);
+    if (ret < 0) {
+        logger_log_error(dispatcher->logger, "Could not submit read request. %s", strerror(-ret));
         return false;
     }
     dispatcher->pending_requests++;
@@ -111,36 +149,6 @@ bool dispatcher_submit_recvmsg(struct dispatcher dispatcher[static 1], struct di
         return false;
     }
     dispatcher->pending_requests++;
-    return true;
-}
-
-bool dispatcher_submit_recvmsg_with_timeout(struct dispatcher dispatcher[static 1],
-                                            struct dispatcher_event recvmsg_event[static 1],
-                                            struct dispatcher_event_timeout timeout_event[static 1],
-                                            int fd,
-                                            struct msghdr msghdr[static 1],
-                                            unsigned flags) {
-    struct io_uring_sqe *sqe = io_uring_get_sqe(&dispatcher->ring);
-    if (sqe == nullptr) {
-        logger_log_error(dispatcher->logger, "Could not get a submission queue entry.");
-        return false;
-    }
-    io_uring_prep_recvmsg(sqe, fd, msghdr, flags);
-    io_uring_sqe_set_data(sqe, recvmsg_event);
-    io_uring_sqe_set_flags(sqe, IOSQE_IO_LINK);
-    sqe = io_uring_get_sqe(&dispatcher->ring);
-    if (sqe == nullptr) {
-        logger_log_error(dispatcher->logger, "Could not get a submission queue entry.");
-        return false;
-    }
-    io_uring_prep_link_timeout(sqe, &timeout_event->timeout, 0);
-    io_uring_sqe_set_data(sqe, timeout_event);
-    int ret = io_uring_submit(&dispatcher->ring);
-    if (ret < 0) {
-        logger_log_error(dispatcher->logger, "Error while submitting receive new data request: %s", strerror(-ret));
-        return false;
-    }
-    dispatcher->pending_requests += 2;
     return true;
 }
 
@@ -179,23 +187,6 @@ bool dispatcher_submit_cancel(struct dispatcher dispatcher[static 1], struct dis
     int ret = io_uring_submit(&dispatcher->ring);
     if (ret < 0) {
         logger_log_error(dispatcher->logger, "Could not remove the on data available request. %s", strerror(-ret));
-        return false;
-    }
-    dispatcher->pending_requests++;
-    return true;
-}
-
-bool dispatcher_submit_cancel_timeout(struct dispatcher dispatcher[static 1], struct dispatcher_event *event, struct dispatcher_event_timeout event_to_cancel[static 1]) {
-    struct io_uring_sqe *sqe = io_uring_get_sqe(&dispatcher->ring);
-    if (sqe == nullptr) {
-        logger_log_error(dispatcher->logger, "Could not get a submission queue entry.");
-        return false;
-    }
-    io_uring_prep_timeout_remove(sqe, (size_t) event_to_cancel, 0);
-    io_uring_sqe_set_data(sqe, event);
-    int ret = io_uring_submit(&dispatcher->ring);
-    if (ret < 0) {
-        logger_log_error(dispatcher->logger, "Could not remove the timeout request. %s", strerror(-ret));
         return false;
     }
     dispatcher->pending_requests++;

@@ -3,6 +3,7 @@
 #include <buracchi/tftp/server.h>
 
 #include <arpa/inet.h>
+#include <errno.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <threads.h>
@@ -10,6 +11,8 @@
 #include <logger.h>
 
 #include "mock_logger.h"
+
+constexpr struct timeval recv_timeout = { .tv_sec = 2, .tv_usec = 0 };
 
 int server_thread(void *arg) {
     struct tftp_server *server = (struct tftp_server *)arg;
@@ -32,7 +35,7 @@ TEST(server, on_unexpected_peer_do_not_terminate) {
         .workers = 1,
         .max_worker_sessions = 1,
         .server_stats_callback = nullptr,
-        .handler_stats_callback = nullptr,
+        .session_stats_callback = nullptr,
         .stats_interval_seconds = 60,
     };
     struct sockaddr_in6 server_addr = {
@@ -67,6 +70,7 @@ TEST(server, on_unexpected_peer_do_not_terminate) {
     int expected_socket;
     ASSERT_NE(expected_socket = socket(AF_INET6, SOCK_DGRAM, 0), -1);
     ASSERT_NE(setsockopt(expected_socket, SOL_SOCKET, SO_REUSEADDR, &(int){true}, sizeof(int)), -1);
+    ASSERT_NE(setsockopt(expected_socket, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(recv_timeout)), -1);
     ASSERT_NE(bind(expected_socket, (struct sockaddr *)&expected_addr, sizeof(expected_addr)), -1);
     
     struct sockaddr_in6 unexpected_addr = {
@@ -77,16 +81,24 @@ TEST(server, on_unexpected_peer_do_not_terminate) {
     int unexpected_socket;
     ASSERT_NE(unexpected_socket = socket(AF_INET6, SOCK_DGRAM, 0), -1);
     ASSERT_NE(setsockopt(unexpected_socket, SOL_SOCKET, SO_REUSEADDR, &(int){true}, sizeof(int)), -1);
+    ASSERT_NE(setsockopt(unexpected_socket, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(recv_timeout)), -1);
     ASSERT_NE(bind(unexpected_socket, (struct sockaddr *)&unexpected_addr, sizeof(unexpected_addr)), -1);
     
     struct sockaddr_storage session_addr = {};
     socklen_t session_addr_len = sizeof session_addr;
     uint8_t buffer[256] = {};
+    ssize_t ret;
     
     sendto(expected_socket, &rrq, rrq_size, 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
-    recvfrom(expected_socket, &buffer, sizeof buffer, 0, (struct sockaddr *) &session_addr, &session_addr_len);
-    sendto(unexpected_socket, &buffer, sizeof buffer, 0, (struct sockaddr *) &session_addr, session_addr_len);
-    recvfrom(unexpected_socket, &buffer, sizeof buffer, 0, nullptr, nullptr);
+    ret = recvfrom(expected_socket, buffer, sizeof buffer, 0, (struct sockaddr *) &session_addr, &session_addr_len);
+    if (ret < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        ASSERT_FALSE("timeout");
+    }
+    sendto(unexpected_socket, buffer, sizeof buffer, 0, (struct sockaddr *) &session_addr, session_addr_len);
+    ret = recvfrom(unexpected_socket, buffer, sizeof buffer, 0, nullptr, nullptr);
+    if (ret < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        ASSERT_FALSE("timeout");
+    }
     sendto(expected_socket, &ack, sizeof ack, 0, (struct sockaddr *) &session_addr, session_addr_len);
     
     ASSERT_FALSE(server.should_stop);
@@ -114,7 +126,7 @@ TEST(server, on_unexpected_peer_send_error_packet) {
         .workers = 1,
         .max_worker_sessions = 1,
         .server_stats_callback = nullptr,
-        .handler_stats_callback = nullptr,
+        .session_stats_callback = nullptr,
         .stats_interval_seconds = 60,
     };
     struct sockaddr_in6 server_addr = {
@@ -149,6 +161,7 @@ TEST(server, on_unexpected_peer_send_error_packet) {
     int expected_socket;
     ASSERT_NE(expected_socket = socket(AF_INET6, SOCK_DGRAM, 0), -1);
     ASSERT_NE(setsockopt(expected_socket, SOL_SOCKET, SO_REUSEADDR, &(int){true}, sizeof(int)), -1);
+    ASSERT_NE(setsockopt(expected_socket, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(recv_timeout)), -1);
     ASSERT_NE(bind(expected_socket, (struct sockaddr *)&expected_addr, sizeof(expected_addr)), -1);
 
     struct sockaddr_in6 unexpected_addr = {
@@ -159,16 +172,24 @@ TEST(server, on_unexpected_peer_send_error_packet) {
     int unexpected_socket;
     ASSERT_NE(unexpected_socket = socket(AF_INET6, SOCK_DGRAM, 0), -1);
     ASSERT_NE(setsockopt(unexpected_socket, SOL_SOCKET, SO_REUSEADDR, &(int){true}, sizeof(int)), -1);
+    ASSERT_NE(setsockopt(unexpected_socket, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(recv_timeout)), -1);
     ASSERT_NE(bind(unexpected_socket, (struct sockaddr *)&unexpected_addr, sizeof(unexpected_addr)), -1);
 
     struct sockaddr_storage session_addr = {};
     socklen_t session_addr_len = sizeof session_addr;
     uint8_t buffer[256] = {};
-
+    ssize_t ret;
+    
     sendto(expected_socket, &rrq, rrq_size, 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
-    recvfrom(expected_socket, &buffer, sizeof buffer, 0, (struct sockaddr *) &session_addr, &session_addr_len);
-    sendto(unexpected_socket, &buffer, sizeof buffer, 0, (struct sockaddr *) &session_addr, session_addr_len);
-    recvfrom(unexpected_socket, &buffer, sizeof buffer, 0, nullptr, nullptr);
+    ret = recvfrom(expected_socket, buffer, sizeof buffer, 0, (struct sockaddr *) &session_addr, &session_addr_len);
+    if (ret < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        ASSERT_FALSE("timeout");
+    }
+    sendto(unexpected_socket, buffer, sizeof buffer, 0, (struct sockaddr *) &session_addr, session_addr_len);
+    ret = recvfrom(unexpected_socket, buffer, sizeof buffer, 0, nullptr, nullptr);
+    if (ret < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        ASSERT_FALSE("timeout");
+    }
     sendto(expected_socket, &ack, sizeof ack, 0, (struct sockaddr *) &session_addr, session_addr_len);
     
     struct tftp_error_packet *error_packet = (struct tftp_error_packet *)buffer;

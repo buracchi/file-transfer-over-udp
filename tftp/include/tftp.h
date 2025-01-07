@@ -67,6 +67,11 @@ struct [[gnu::packed]] tftp_rrq_packet {
     uint8_t padding[510];
 };
 
+struct [[gnu::packed]] tftp_wrq_packet {
+enum tftp_opcode opcode;
+uint8_t padding[510];
+};
+
 struct [[gnu::packed]] tftp_ack_packet {
     enum tftp_opcode opcode;
     uint16_t block_number;
@@ -141,7 +146,14 @@ enum tftp_option_recognized {
     TFTP_OPTION_TIMEOUT,
     TFTP_OPTION_TSIZE,
     TFTP_OPTION_WINDOWSIZE,
+    TFTP_OPTION_READ_TYPE,
     TFTP_OPTION_TOTAL_OPTIONS
+};
+
+enum tftp_read_type {
+    TFTP_READ_TYPE_FILE,
+    TFTP_READ_TYPE_DIRECTORY,
+    TFTP_READ_TYPE_INVALID
 };
 
 extern const char *tftp_option_recognized_string[TFTP_OPTION_TOTAL_OPTIONS];
@@ -180,7 +192,7 @@ extern struct tftp_packet tftp_encode_ack(uint16_t block_number);
 void tftp_format_option_strings(size_t n, const char options[static n],
                                 char formatted_options[static tftp_option_formatted_string_max_size]);
 
-void tftp_format_options(struct tftp_option options[4],
+void tftp_format_options(struct tftp_option options[static TFTP_OPTION_TOTAL_OPTIONS],
                          char formatted_options[static tftp_option_formatted_string_max_size]);
 
 void tftp_parse_options(struct tftp_option options[static TFTP_OPTION_TOTAL_OPTIONS], size_t n,
@@ -197,6 +209,12 @@ void tftp_data_packet_init(struct tftp_data_packet *packet, uint16_t block_numbe
 void tftp_ack_packet_init(struct tftp_ack_packet packet[static 1], uint16_t block_number);
 
 ssize_t tftp_rrq_packet_init(struct tftp_rrq_packet packet[static 1],
+                             size_t n,
+                             const char filename[static n],
+                             enum tftp_mode mode,
+                             struct tftp_option options[static TFTP_OPTION_TOTAL_OPTIONS]);
+
+ssize_t tftp_wrq_packet_init(struct tftp_wrq_packet packet[static 1],
                              size_t n,
                              const char filename[static n],
                              enum tftp_mode mode,

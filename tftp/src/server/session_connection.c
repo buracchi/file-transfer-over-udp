@@ -1,6 +1,7 @@
 #include "session_connection.h"
 
 #include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -27,6 +28,8 @@ bool session_connection_init(struct session_connection connection[static 1],
         },
         .msghdr = {},
         .iovec = {},
+        .recv_buffer = malloc(tftp_default_blksize),
+        .recv_buffer_size = tftp_default_blksize,
     };
     {   // TODO: Remove block statement when io_uring_prep_recvfrom will be available.
         connection->msghdr.msg_iov = connection->iovec;
@@ -36,6 +39,10 @@ bool session_connection_init(struct session_connection connection[static 1],
         connection->msghdr.msg_flags = 0;
     }
     
+    if (connection->recv_buffer == nullptr) {
+        logger_log_error(logger, "Could not allocate memory for the receive buffer.");
+        return false;
+    }
     memcpy(&connection->address.storage, session_addr->ai_addr, session_addr->ai_addrlen);
     
     if (is_ipv4) {
@@ -105,5 +112,6 @@ bool session_connection_init(struct session_connection connection[static 1],
 
 bool session_connection_destroy(struct session_connection connection[static 1], struct logger logger[static 1]) {
     logger_log_debug(logger, "Closing connection socket.");
+    free(connection->recv_buffer);
     return close(connection->sockfd);
 }

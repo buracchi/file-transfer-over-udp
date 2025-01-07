@@ -20,7 +20,7 @@ struct tftp_server {
     struct tftp_server_listener listener;
     struct tftp_server_stats stats;
     
-    void (*handler_stats_callback)(struct tftp_session_stats *);
+    void (*session_stats_callback)(struct tftp_session_stats *);
     
     const char *root;
     uint8_t retries;
@@ -44,7 +44,7 @@ struct tftp_server_arguments {
     bool is_write_request_enabled;
     bool is_list_request_enabled;
     bool (*server_stats_callback)(struct tftp_server_stats *);
-    void (*handler_stats_callback)(struct tftp_session_stats *);
+    void (*session_stats_callback)(struct tftp_session_stats *);
     int stats_interval_seconds;
 };
 

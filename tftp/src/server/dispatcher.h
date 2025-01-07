@@ -35,27 +35,28 @@ bool dispatcher_wait_event(struct dispatcher dispatcher[static 1], struct dispat
 bool dispatcher_submit(struct dispatcher dispatcher[static 1], struct dispatcher_event *event);
 
 bool dispatcher_submit_timeout(struct dispatcher dispatcher[static 1],
-                               struct dispatcher_event_timeout event[static 1],
-                               int seconds);
+                               struct dispatcher_event_timeout event[static 1]);
 
-bool dispatcher_submit_readv(struct dispatcher dispatcher[static 1],
-                             struct dispatcher_event event[static 1],
-                             int fd,
-                             const struct iovec *iovecs,
-                             unsigned nr_vecs);
+bool dispatcher_submit_timeout_update(struct dispatcher dispatcher[static 1],
+                                      struct dispatcher_event event[static 1],
+                                      struct dispatcher_event_timeout event_to_update[static 1],
+                                      struct __kernel_timespec timeout[static 1]);
+
+bool dispatcher_submit_timeout_cancel(struct dispatcher dispatcher[static 1],
+                                      struct dispatcher_event event[static 1],
+                                      struct dispatcher_event_timeout event_to_cancel[static 1]);
+
+bool dispatcher_submit_read(struct dispatcher dispatcher[static 1],
+                            struct dispatcher_event event[static 1],
+                            int fd,
+                            void *buffer,
+                            unsigned n_bytes);
 
 bool dispatcher_submit_recvmsg(struct dispatcher dispatcher[static 1],
                                struct dispatcher_event event[static 1],
                                int fd,
                                struct msghdr msghdr[static 1],
                                unsigned flags);
-
-bool dispatcher_submit_recvmsg_with_timeout(struct dispatcher dispatcher[static 1],
-                                            struct dispatcher_event recvmsg_event[static 1],
-                                            struct dispatcher_event_timeout timeout_event[static 1],
-                                            int fd,
-                                            struct msghdr msghdr[static 1],
-                                            unsigned flags);
 
 bool dispatcher_submit_sendto(struct dispatcher dispatcher[static 1],
                               struct dispatcher_event event[static 1],
@@ -67,9 +68,5 @@ bool dispatcher_submit_sendto(struct dispatcher dispatcher[static 1],
 bool dispatcher_submit_cancel(struct dispatcher dispatcher[static 1],
                               struct dispatcher_event *event,
                               struct dispatcher_event event_to_cancel[static 1]);
-
-bool dispatcher_submit_cancel_timeout(struct dispatcher dispatcher[static 1],
-                                      struct dispatcher_event *event,
-                                      struct dispatcher_event_timeout event_to_cancel[static 1]);
 
 #endif // DISPATCHER_H

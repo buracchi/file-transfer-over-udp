@@ -65,17 +65,12 @@ namespace TFTP::Server {
                 ->default_val("6969")
                 ->check(CLI::Range(0, 65535))
                 ->option_text("PORT");
-            add_option("-s,--window-size", args->window_size, "Dispatch window size")
-                ->group("Network Settings")
-                ->default_val("10")
-                ->check(CLI::Range(1, 1000))
-                ->option_text("SIZE");
-            add_option("-r,--retries", args->retries, "Number of retries attempts before giving up")
+            add_option("-r,--retries", args->retries, "Number of retransmissions attempts before giving up")
                 ->group("Network Settings")
                 ->default_val("5")
                 ->check(CLI::Range(0, 255))
                 ->option_text("RETRIES");
-            add_option("-t,--timeout", args->timeout_s, "Timeout in seconds for response")
+            add_option("-t,--timeout", args->timeout_s, "Timeout in seconds before retransmission")
                 ->group("Network Settings")
                 ->default_val("2")
                 ->check(CLI::Range(1, 255))

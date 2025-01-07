@@ -30,7 +30,7 @@ bool worker_init(struct worker worker[static 1],
         worker->jobs[i].dispatcher = &worker->dispatcher;
     }
     if (sem_init(&worker->available_jobs, 0, max_jobs) == -1) {
-        logger_log_error(logger, "Could not initialize the handler semaphore. %s", strerror(errno));
+        logger_log_error(logger, "Could not initialize the jobs semaphore. %s", strerror(errno));
         goto fail;
     }
     // Dispatcher should hold up to 1 AIO linked to 1 TIMEOUT and 1 pending TIMEOUT canceled

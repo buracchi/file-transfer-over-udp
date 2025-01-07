@@ -17,7 +17,12 @@
 #include "adaptive_timeout.h"
 #include "dispatcher.h"
 #include "session_connection.h"
-#include "session_handler.h"
+#include "session_options.h"
+
+enum session_request_type {
+    SESSION_READ_REQUEST,
+    SESSION_WRITE_REQUEST,
+};
 
 struct tftp_server_info {
     struct addrinfo* server_addrinfo;
@@ -27,45 +32,65 @@ struct tftp_server_info {
     bool is_adaptive_timeout_enabled;
     bool is_write_request_enabled;
     bool is_list_request_enabled;
-    void (*handler_stats_callback)(struct tftp_session_stats *);
+    void (*session_stats_callback)(struct tftp_session_stats *);
     struct tftp_server_stats *server_stats;
 };
 
 struct tftp_session {
-    uint16_t session_id;
     volatile atomic_bool is_active;
     struct dispatcher *dispatcher;
     struct logger *logger;
     struct tftp_peer_message request_args;
-    struct tftp_handler handler;
-    bool is_handler_instantiated;
     struct tftp_server_info *server_info;
+    bool is_timer_active;
+    
+    enum session_request_type request_type;
 
+    int file_descriptor;
+    
+    const char *filename;
+    enum tftp_mode mode;
+    uint8_t retries;
+    uint8_t timeout;
+    uint16_t block_size;
+    uint16_t window_size;
+    bool is_adaptive_timeout_active;
+    
+    uint8_t current_retransmission;
+    int total_retransmissions;
+    
+    uint16_t window_begin;
+    uint16_t next_data_packet_to_send;
+    uint16_t expected_sequence_number;
+    
+    int netascii_buffer; // buffer for control character that won't fit in the current packet and must be split
+    int32_t last_packet;
+    uint16_t last_block_size;   // last data packet may have less than block_size used bytes
+    bool incomplete_read;
+    
     struct session_connection connection;
     struct tftp_session_stats stats;
     
+    struct session_options options;
+    
+    bool is_fetching_data;
     bool should_close;
-    int coroutine_state;
     
     uint8_t pending_jobs;
     struct dispatcher_event event_start;
-    struct dispatcher_event_timeout event_timeout;
     struct dispatcher_event event_cancel_timeout;
-    struct dispatcher_event event_new_data;
+    struct dispatcher_event_timeout event_timeout;
+    struct dispatcher_event event_cancel_packet_received;
+    struct dispatcher_event event_packet_received;
     struct dispatcher_event event_next_block;
-    struct dispatcher_event event_packet_sent;
     
     struct adaptive_timeout adaptive_timeout;
-    struct timespec last_send_time;
-    bool is_timer_active;
-    
-    bool is_first_send;
-    bool is_waiting_last_ack;
     
     struct tftp_error_packet *error_packet;
     size_t error_packet_size;
     struct tftp_oack_packet *oack_packet;
     size_t oack_packet_size;
+    struct tftp_data_packet *data_packets;
 };
 
 enum tftp_session_state {

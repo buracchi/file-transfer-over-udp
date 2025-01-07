@@ -26,8 +26,7 @@ target_link_libraries(server
     PRIVATE CLI11::CLI11)
 target_link_options(server PRIVATE
     -Wl,--wrap=dispatcher_submit_recvmsg
-    -Wl,--wrap=dispatcher_submit_recvmsg_with_timeout
-    -Wl,--wrap=dispatcher_submit_sendto)
+    -Wl,--wrap=sendto)
 set_target_properties(server PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/server"
     RUNTIME_OUTPUT_NAME "server")

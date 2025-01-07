@@ -8,7 +8,6 @@ struct adaptive_timeout {
     bool is_timer_active;
     struct timespec rto;
     uint16_t starting_block_number;
-    uint16_t packets_sent;
     /* private members */
     bool is_first_measurement;
     struct timespec timer;

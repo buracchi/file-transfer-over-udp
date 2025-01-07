@@ -8,23 +8,6 @@
 
 #include "cli.hpp"
 
-/*
-    return (struct arguments) {
-        .host = "::1",
-        .port = "6969",
-        .filename = "pippo",
-        .mode = TFTP_MODE_OCTET,
-        .command = CLIENT_COMMAND_GET,
-        .retries = 5,
-        .timeout_s = 60,
-        .block_size = 0,
-        .window_size = 0,
-        .use_tsize = false,
-        .adaptive_timeout = false,
-        .verbose_level = LOGGER_LOG_LEVEL_INFO,
-    };
-*/
-
 static const std::map<std::string, tftp_mode> tftp_mode_map{
     {"netascii", TFTP_MODE_NETASCII},
     {"octet",    TFTP_MODE_OCTET},
@@ -45,19 +28,17 @@ namespace TFTP::Client {
                 ->default_val("3")
                 ->check(CLI::Range(0, 255))
                 ->option_text("RETRIES");
-            add_option("-t,--timeout", args->options.timeout_s, "Timeout in seconds for response")
-                ->default_val("1")
+            
+            add_option("-t,--timeout", timeout_val, "Timeout in seconds for response")
                 ->check(CLI::Range(1, 255))
                 ->option_text("SECONDS");
-            add_flag("-a,--adaptive-timeout", args->options.adaptive_timeout, "Enable adaptive timeout based on network delays");
-            add_option("-b,--block-size", args->options.block_size, "Size of the data block for file transfer")
-                ->default_val("512")
+            add_option("-b,--block-size", block_size_val, "Size of the data block for file transfer")
                 ->check(CLI::Range(8, 65464))
                 ->option_text("BLOCK_SIZE");
-            add_option("-w,--window-size", args->options.window_size, "Dispatch window size")
-                ->default_val("10")
+            add_option("-w,--window-size", window_size_val, "Dispatch window size")
                 ->check(CLI::Range(1, 65535))
                 ->option_text("WINDOW_SIZE");
+            add_flag("-a,--adaptive-timeout", args->options.adaptive_timeout, "Enable adaptive timeout based on network delays");
             add_flag("--use-tsize", args->options.use_tsize, "Request file size from the server");
             add_option("-l,--loss-probability", args->loss_probability, "Simulated packet loss probability")
                 ->default_val("0.0")
@@ -71,13 +52,27 @@ namespace TFTP::Client {
             callback([&, args]() {
                 args->host = strdup(host.c_str());
                 args->port = strdup(port.c_str());
+                args->options.timeout_s = (timeout_val == 0) ? nullptr : new uint8_t(timeout_val);
+                args->options.block_size = (block_size_val == 0) ? nullptr : new uint16_t(block_size_val);
+                args->options.window_size = (window_size_val == 0) ? nullptr : new uint16_t(window_size_val);
             });
             
             require_subcommand();
             
-            auto *list_cmd = add_subcommand("list", "List files on the server");
+            auto *list_cmd = add_subcommand("list", "List files on a server directory");
             list_cmd->fallthrough(true);
-            list_cmd->callback([args]() { args->command = CLIENT_COMMAND_LIST; });
+            list_cmd->add_option("directory", filename, "Directory containing the files to list")
+                ->option_text("DIRECTORY")
+                ->default_val(".");
+            list_cmd->add_option("-m,--mode", args->command_args.put.mode, "Transfer mode")
+                ->transform(CLI::CheckedTransformer(tftp_mode_map, CLI::ignore_case))
+                ->option_text("MODE")
+                ->default_val("octet");
+            list_cmd->callback([&, args]() {
+                args->command = CLIENT_COMMAND_LIST;
+                args->command_args.list.directory = strdup(filename.c_str());
+                args->command_args.get.output = output.empty() ? nullptr : strdup(output.c_str());
+            });
             
             auto *get_cmd = add_subcommand("get", "Download a file from the server");
             get_cmd->fallthrough(true);
@@ -119,6 +114,9 @@ namespace TFTP::Client {
         std::string port;
         std::string filename;
         std::string output;
+        int timeout_val = 0;
+        int block_size_val = 0;
+        int window_size_val = 0;
     };
 }
 
@@ -146,10 +144,15 @@ void cli_args_destroy(cli_args *args) {
     free((void *) args->port);
     if (args->command == CLIENT_COMMAND_GET) {
         free((void *) args->command_args.get.filename);
-        if (args->command_args.get.output) {
-            free((void *) args->command_args.get.output);
-        }
-    } else if (args->command == CLIENT_COMMAND_PUT) {
+        free((void *) args->command_args.get.output);
+    }
+    else if (args->command == CLIENT_COMMAND_PUT) {
         free((void *) args->command_args.put.filename);
     }
+    else if (args->command == CLIENT_COMMAND_LIST) {
+        free((void *) args->command_args.list.directory);
+    }
+    delete args->options.timeout_s;
+    delete args->options.block_size;
+    delete args->options.window_size;
 }
