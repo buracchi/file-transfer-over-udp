@@ -14,10 +14,10 @@
 #include <buracchi/tftp/server_stats.h>
 #include <buracchi/tftp/server_session_stats.h>
 
-#include "adaptive_timeout.h"
 #include "dispatcher.h"
 #include "session_connection.h"
 #include "session_options.h"
+#include "../adaptive_timeout.h"
 
 enum session_request_type {
     SESSION_READ_REQUEST,

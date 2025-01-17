@@ -23,7 +23,7 @@ int server_thread(void *arg) {
 TEST(server, on_unexpected_peer_do_not_terminate) {
     thrd_t server_thrd;
     struct tftp_server server;
-    uint16_t server_port = 1234;
+    uint16_t server_port = 1236;
     char server_port_str[6];
     snprintf(server_port_str, sizeof server_port_str, "%hu", server_port);
     struct tftp_server_arguments args = {
@@ -40,12 +40,14 @@ TEST(server, on_unexpected_peer_do_not_terminate) {
     };
     struct sockaddr_in6 server_addr = {
         .sin6_family = AF_INET6,
-        .sin6_addr = in6addr_any,
+        .sin6_addr = in6addr_loopback,
         .sin6_port = htons(server_port),
     };
-    ASSERT_TRUE(tftp_server_init(&server, args, &(struct logger) {}));
+    struct logger logger;
+    logger_init(&logger, logger_default_config);
+    logger.config.default_level = LOGGER_LOG_LEVEL_ALL;
+    ASSERT_TRUE(tftp_server_init(&server, args, &logger));
     ASSERT_EQ(thrd_create(&server_thrd, server_thread, &server), thrd_success);
-    
     struct tftp_rrq_packet rrq;
     char filename[] = "null";
     size_t rrq_size = tftp_rrq_packet_init(
@@ -114,7 +116,7 @@ TEST(server, on_unexpected_peer_do_not_terminate) {
 TEST(server, on_unexpected_peer_send_error_packet) {
     thrd_t server_thrd;
     struct tftp_server server;
-    uint16_t server_port = 1234;
+    uint16_t server_port = 1237;
     char server_port_str[6];
     snprintf(server_port_str, sizeof server_port_str, "%hu", server_port);
     struct tftp_server_arguments args = {

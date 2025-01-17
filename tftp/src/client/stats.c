@@ -1,19 +1,15 @@
 #include "stats.h"
 
 #include <errno.h>
-#include <string.h>
 
 #include <buracchi/tftp/client.h>
 
-void stats_init(struct tftp_client_stats stats[static 1], struct logger logger[static 1]) {
+void stats_init(struct tftp_client_stats stats[static 1]) {
     *stats = (struct tftp_client_stats) {
-        .enabled = true,
-        .logger = logger,
-        .file_bytes_received = 0,
+        .file_bytes_transferred = 0,
     };
-    if (clock_gettime(CLOCK_MONOTONIC, &stats->start_time) == -1) {
-        logger_log_warn(logger, "Failed to get start time. %s", strerror(errno));
-        logger_log_warn(logger, "Stats will be disabled.");
-        stats->enabled = false;
+    if (clock_gettime(CLOCK_MONOTONIC, &stats->start_time.value) == -1) {
+        stats->start_time.error_occurred = true;
+        stats->start_time.error_number = errno;
     }
 }

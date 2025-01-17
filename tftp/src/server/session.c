@@ -117,7 +117,7 @@ enum tftp_session_state tftp_session_handle_event(struct tftp_session session[st
             }
             else if (session->request_type == SESSION_WRITE_REQUEST) {
                 const struct tftp_ack_packet ack_packet = {
-                    .opcode = ntohs(TFTP_OPCODE_ACK),
+                    .opcode = htons(TFTP_OPCODE_ACK),
                     .block_number = 0,
                 };
                 if (!sendto(session->connection.sockfd, &ack_packet, sizeof ack_packet, 0, session->connection.client_address.sockaddr, session->connection.client_address.addrlen)) {
@@ -143,7 +143,7 @@ enum tftp_session_state tftp_session_handle_event(struct tftp_session session[st
             break;
         case EVENT_TIMEOUT_REMOVED:
             session->pending_jobs--;
-            if (!event->is_success && event->error_number != 0 && event->error_number != ENOENT) {
+            if (!event->is_success && event->error_number != 0 && event->error_number != ENOENT && event->error_number != EALREADY) {
                 logger_log_error(session->logger, "Error while removing timeout: %s", strerror(event->error_number));
                 return TFTP_SESSION_STATE_ERROR;
             }
@@ -297,6 +297,7 @@ static bool start(struct tftp_session session[static 1]) {
         && session->request_type == SESSION_READ_REQUEST) {
         read_type = session_options_get_read_type(&session->options);
     }
+
     enum session_file_mode file_mode = session->request_type == SESSION_READ_REQUEST ? SESSION_FILE_MODE_READ : SESSION_FILE_MODE_WRITE;
     session->file_descriptor = session_file_init(session->filename, session->server_info->root, file_mode, read_type, &session->stats.error);
     if (session->file_descriptor == -1) {
@@ -308,7 +309,7 @@ static bool start(struct tftp_session session[static 1]) {
     else {
         tftp_format_option_strings(session->options.options_str_size, session->options.options_str, session->stats.options_in);
         logger_log_info(session->logger, "Options requested from peer %s:%d are [%s]", session->stats.peer_addr, session->stats.peer_port, session->stats.options_in);
-        if (!parse_options(&session->options, session->file_descriptor, session->server_info->is_adaptive_timeout_enabled)) {
+        if (!parse_options(&session->options, session->file_descriptor, session->server_info->is_adaptive_timeout_enabled, session->server_info->is_list_request_enabled)) {
             return true;
         }
         tftp_format_options(session->options.recognized_options, session->stats.options_acked);
@@ -453,6 +454,19 @@ static bool on_timeout(struct tftp_session session[static 1]) {
         logger_log_trace(session->logger, "Sent OACK %s to %s:%d", session->stats.options_acked, session->connection.client_address.str, session->connection.client_address.port);
         return true;
     }
+    if (session->request_type == SESSION_WRITE_REQUEST) {
+        const struct tftp_ack_packet ack_packet = {
+            .opcode = htons(TFTP_OPCODE_ACK),
+            .block_number = htons(session->expected_sequence_number - 1),
+        };
+        ssize_t ret = sendto(session->connection.sockfd, &ack_packet, sizeof ack_packet, 0, session->connection.client_address.sockaddr, session->connection.client_address.addrlen);
+        if (ret == -1) {
+            logger_log_error(session->logger, "Error while sending ACK: %s", strerror(errno));
+            return false;
+        }
+        logger_log_trace(session->logger, "Sent ACK <block=%d> to %s:%d", ntohs(ack_packet.block_number), session->connection.client_address.str, session->connection.client_address.port);
+        return true;
+    }
     logger_log_trace(session->logger, "Retransmitting DATA packets in window [%d, %d].", session->window_begin, (uint16_t) session->next_data_packet_to_send - 1);
     for (uint16_t i = session->window_begin; is_in_range(i, session->window_begin, session->next_data_packet_to_send - 1); i++) {
         auto packet_info = get_data_packet_info(session, i);
@@ -522,7 +536,11 @@ static bool on_packet_received(struct tftp_session session[static 1], struct dis
             }
             struct tftp_data_packet *data_packet = (struct tftp_data_packet *) session->connection.recv_buffer;
             uint16_t block_number = ntohs(data_packet->block_number);
-            if (block_number != session->expected_sequence_number) {
+            if (!session->options.options_acknowledged && session->options.valid_options_required && block_number == 1) {
+                logger_log_trace(session->logger, "Options acknowledged.");
+                session->options.options_acknowledged = true;
+            }
+            else if (block_number != session->expected_sequence_number) {
                 logger_log_trace(session->logger, "Received unexpected DATA <block=%d> from %s:%d, expected %d. Ignoring packet.", block_number, session->connection.client_address.str, session->connection.client_address.port, session->expected_sequence_number);
                 return true;
             }
@@ -550,6 +568,7 @@ static bool on_packet_received(struct tftp_session session[static 1], struct dis
             logger_log_trace(session->logger, "Sent ACK <block=%d> to %s:%d", block_number, session->connection.client_address.str, session->connection.client_address.port);
             session->expected_sequence_number++;
             session->stats.packets_acked++;
+            session->current_retransmission = 0;
             session->should_close = (data_size < session->block_size);
             return true;
         }
@@ -738,7 +757,8 @@ static bool fetch_data_netascii_async(struct tftp_session session[static 1]) {
         if (c == '\n' || c == '\r') {
             if (block - packet->data == session->block_size) {
                 session->netascii_buffer = c;
-            } else {
+            }
+            else {
                 *(block++) = (c == '\n') ? '\r' : '\0';
             }
         }

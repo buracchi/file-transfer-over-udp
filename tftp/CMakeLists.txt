@@ -3,10 +3,10 @@ pkg_check_modules(liburing REQUIRED IMPORTED_TARGET GLOBAL liburing>=2.0)
 
 add_library(tftp STATIC
     src/tftp.c
+    src/adaptive_timeout.c
     src/client/client.c
     src/client/connection.c
     src/client/stats.c
-    src/server/adaptive_timeout.c
     src/server/server.c
     src/server/listener.c
     src/server/server_stats.c

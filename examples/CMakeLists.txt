@@ -26,7 +26,13 @@ target_link_libraries(server
     PRIVATE CLI11::CLI11)
 target_link_options(server PRIVATE
     -Wl,--wrap=dispatcher_submit_recvmsg
+    -Wl,--wrap=recvmsg
     -Wl,--wrap=sendto)
 set_target_properties(server PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/server"
     RUNTIME_OUTPUT_NAME "server")
+
+include(GNUInstallDirs)
+install(TARGETS server RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS client RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+include(CPack)

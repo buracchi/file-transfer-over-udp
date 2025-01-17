@@ -8,7 +8,7 @@ if (BUILD_TESTS)
 	list(APPEND VCPKG_MANIFEST_FEATURES "tests")
 endif ()
 
-project("File transfer over UDP"
+project("TFTP"
 		LANGUAGES C CXX
 		VERSION 1.0)
 
@@ -38,4 +38,5 @@ endif ()
 
 add_subdirectory("logger")
 add_subdirectory("tftp")
+add_subdirectory("benchmark")
 add_subdirectory("examples")

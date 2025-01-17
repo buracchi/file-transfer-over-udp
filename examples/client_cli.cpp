@@ -44,12 +44,13 @@ namespace TFTP::Client {
                 ->default_val("0.0")
                 ->check(CLI::Range(0.0, 1.0))
                 ->option_text("PROBABILITY");
+            add_flag("--disable-fixed-seed", args->disable_fixed_seed, "Disable fixed seed for random number generation during packet loss simulation");
             add_option("-v,--log-level", args->verbose_level, "Log verbosity level")
                 ->transform(CLI::CheckedTransformer(log_level_map, CLI::ignore_case))
                 ->default_val("info")
                 ->option_text("LEVEL")
                 ->description("Verbosity logging level");
-            callback([&, args]() {
+            callback([this, args]() {
                 args->host = strdup(host.c_str());
                 args->port = strdup(port.c_str());
                 args->options.timeout_s = (timeout_val == 0) ? nullptr : new uint8_t(timeout_val);
@@ -68,7 +69,7 @@ namespace TFTP::Client {
                 ->transform(CLI::CheckedTransformer(tftp_mode_map, CLI::ignore_case))
                 ->option_text("MODE")
                 ->default_val("octet");
-            list_cmd->callback([&, args]() {
+            list_cmd->callback([this, args]() {
                 args->command = CLIENT_COMMAND_LIST;
                 args->command_args.list.directory = strdup(filename.c_str());
                 args->command_args.get.output = output.empty() ? nullptr : strdup(output.c_str());
@@ -85,7 +86,7 @@ namespace TFTP::Client {
                 ->default_val("octet");
             get_cmd->add_option("-o,--output", output, "Output file name")
                 ->option_text("OUTPUT_FILE");
-            get_cmd->callback([&, args]() {
+            get_cmd->callback([this, args]() {
                 args->command = CLIENT_COMMAND_GET;
                 args->command_args.get.filename = strdup(filename.c_str());
                 args->command_args.get.output = output.empty() ? nullptr : strdup(output.c_str());
@@ -101,7 +102,7 @@ namespace TFTP::Client {
                 ->transform(CLI::CheckedTransformer(tftp_mode_map, CLI::ignore_case))
                 ->option_text("MODE")
                 ->default_val("octet");
-            put_cmd->callback([&, args]() {
+            put_cmd->callback([this, args]() {
                 args->command = CLIENT_COMMAND_PUT;
                 args->command_args.put.filename = strdup(filename.c_str());
             });

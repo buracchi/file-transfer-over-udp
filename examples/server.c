@@ -32,6 +32,8 @@ static struct tftp_server server;
 
 int main(int argc, char *argv[static argc + 1]) {
     enum { OLD, NEW };
+    sigset_t block_mask;
+    sigset_t old_mask;
     struct sigaction action[2] = {};
     struct logger logger;
     struct cli_args args = {};
@@ -42,13 +44,20 @@ int main(int argc, char *argv[static argc + 1]) {
         return EXIT_FAILURE;
     }
     logger.config.default_level = args.verbose_level;
-    packet_loss_init(&logger, args.loss_probability, args.workers * args.max_worker_sessions);
+    packet_loss_init(&logger, args.loss_probability, args.workers * args.max_worker_sessions, args.disable_fixed_seed);
     if (sigaction(SIGINT, nullptr, &action[OLD]) == -1) {
         logger_log_error(&logger, "Could not get the current SIGINT handler. %s", strerror_rbs(errno));
         return EXIT_FAILURE;
     }
     memcpy(&action[NEW], &action[OLD], sizeof *action);
     action[NEW].sa_handler = sigint_handler;
+    sigemptyset(&block_mask);
+    sigaddset(&block_mask, SIGINT);
+    sigaddset(&block_mask, SIGTERM);
+    if (pthread_sigmask(SIG_BLOCK, &block_mask, &old_mask) != 0) {
+        logger_log_error(&logger, "Could not block SIGINT and SIGTERM. %s", strerror_rbs(errno));
+        return EXIT_FAILURE;
+    }
     const bool server_initialized = tftp_server_init(
         &server,
         (struct tftp_server_arguments){
@@ -69,6 +78,10 @@ int main(int argc, char *argv[static argc + 1]) {
         &logger);
     if (!server_initialized) {
         logger_log_error(&logger, "Could not initialize server.");
+        goto fail;
+    }
+    if (pthread_sigmask(SIG_SETMASK, &old_mask, nullptr) != 0) {
+        logger_log_error(&logger, "Could not unblock SIGINT and SIGTERM. %s", strerror_rbs(errno));
         goto fail;
     }
     if (sigaction(SIGINT, &action[NEW], nullptr) == -1

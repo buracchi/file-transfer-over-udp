@@ -1,17 +1,17 @@
 #include <buracchi/tftp/client.h>
 
 #include <errno.h>
-#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/sendfile.h>
 #include <unistd.h>
 
 #include <tftp.h>
 
 #include "connection.h"
 #include "stats.h"
+#include "../adaptive_timeout.h"
 #include "../utils/inet.h"
+#include "../utils/time.h"
 
 #define UINT8_STRLEN 4
 #define UINT16_STRLEN 6
@@ -20,7 +20,6 @@
 constexpr uint8_t default_timeout_s = 2;
 
 enum request_type {
-    REQUEST_LIST,
     REQUEST_GET,
     REQUEST_PUT,
 };
@@ -61,8 +60,6 @@ struct request {
     struct logger *logger;
     struct connection *connection;
     struct tftp_client_stats stats;
-    
-    void (*client_stats_callback)(struct tftp_client_stats stats[static 1]);
     
     uint8_t retries;
     bool use_options;
@@ -105,7 +102,9 @@ static struct tftp_client_response handle_put_request(struct request request[sta
                                                       struct connection connection[static 1],
                                                       FILE file[static 1]);
 
-static void options_init(struct request request[static 1], struct tftp_client_options *options);
+static bool options_init(struct options result[static 1],
+                         enum request_type request_type,
+                         struct tftp_client_options *options);
 
 static bool send_read_request(struct request request[static 1]);
 
@@ -147,193 +146,141 @@ static bool handle_oack_packet(struct request request[static 1], ssize_t packet_
 
 static inline size_t tftp_packet_buffer_size(uint16_t required_block_size);
 
-struct tftp_client_response tftp_client_get(struct tftp_client client[static 1],
-                                            const char host[static 1],
-                                            const char port[static 1],
-                                            const char filename[static 1],
-                                            enum tftp_mode mode,
-                                            struct tftp_client_options *options,
-                                            FILE dest[static 1]) {
+struct tftp_client_response tftp_client_read(struct logger logger[static 1],
+                                             uint8_t retries,
+                                             const char host[static 1],
+                                             const char port[static 1],
+                                             const char filename[static 1],
+                                             enum tftp_mode mode,
+                                             struct tftp_client_options *options,
+                                             FILE dest[static 1]) {
     struct connection connection;
-    if (!connection_init(&connection, host, port, client->logger)) {
+    if (!connection_init(&connection, host, port, logger)) {
         return (struct tftp_client_response) {
-            .success = false,
-            .server_may_not_support_options = false,
+            .is_success = false,
+            .error.server_may_not_support_options = false,
         };
     }
     struct request request = {
-        .logger = client->logger,
+        .logger = logger,
         .connection = &connection,
-        .client_stats_callback = client->client_stats_callback,
-        .retries = client->retries,
+        .retries = retries,
         .request_type = REQUEST_GET,
         .details.get.mode = mode,
         .details.get.mode_str = tftp_mode_to_string(mode),
         .details.get.filename = filename,
         .packet_recv_buffer = nullptr,
     };
-    options_init(&request, options);
+    request.use_options = options_init(&request.options, request.request_type, options);
     if (!connection_set_recv_timeout(&connection, request.options.timeout_s, request.logger)) {
         goto fail;
     }
-    stats_init(&request.stats, request.logger);
+    stats_init(&request.stats);
     struct tftp_client_response response = handle_get_request(&request, &connection, dest);
-    connection_destroy(&connection, client->logger);
+    connection_destroy(&connection, logger);
     return response;
 fail:
-    connection_destroy(&connection, client->logger);
+    connection_destroy(&connection, logger);
     return (struct tftp_client_response) {
-        .success = false,
-        .server_may_not_support_options = request.server_may_not_support_options,
+        .is_success = false,
+        .error.server_may_not_support_options = request.server_may_not_support_options,
     };
 }
 
-struct tftp_client_response tftp_client_put(struct tftp_client client[static 1],
-                                            const char host[static 1],
-                                            const char port[static 1],
-                                            const char filename[static 1],
-                                            enum tftp_mode mode,
-                                            struct tftp_client_options *options,
-                                            FILE dest[static 1]) {
+struct tftp_client_response tftp_client_write(struct logger logger[static 1],
+                                              uint8_t retries,
+                                              const char host[static 1],
+                                              const char port[static 1],
+                                              const char filename[static 1],
+                                              enum tftp_mode mode,
+                                              struct tftp_client_options *options,
+                                              FILE dest[static 1]) {
     struct connection connection;
-    if (!connection_init(&connection, host, port, client->logger)) {
+    if (!connection_init(&connection, host, port, logger)) {
         return (struct tftp_client_response) {
-            .success = false,
-            .server_may_not_support_options = false,
+            .is_success = false,
+            .error.server_may_not_support_options = false,
         };
     }
     struct request request = {
-        .logger = client->logger,
+        .logger = logger,
         .connection = &connection,
-        .client_stats_callback = client->client_stats_callback,
-        .retries = client->retries,
+        .retries = retries,
         .request_type = REQUEST_PUT,
         .details.put.mode = mode,
         .details.put.mode_str = tftp_mode_to_string(mode),
         .details.put.filename = filename,
     };
-    options_init(&request, options);
+    request.use_options = options_init(&request.options, request.request_type, options);
     if (!connection_set_recv_timeout(&connection, request.options.timeout_s, request.logger)) {
         goto fail;
     }
-    stats_init(&request.stats, request.logger);
+    stats_init(&request.stats);
     struct tftp_client_response response = handle_put_request(&request, &connection, dest);
-    connection_destroy(&connection, client->logger);
+    connection_destroy(&connection, logger);
     return response;
 fail:
-    connection_destroy(&connection, client->logger);
+    connection_destroy(&connection, logger);
     return (struct tftp_client_response) {
-        .success = false,
-        .server_may_not_support_options = request.server_may_not_support_options,
+        .is_success = false,
+        .error.server_may_not_support_options = request.server_may_not_support_options,
     };
 }
 
-struct tftp_client_response tftp_client_list(struct tftp_client client[static 1],
-                                             const char host[static 1],
-                                             const char port[static 1],
-                                             const char directory[static 1],
-                                             enum tftp_mode mode,
-                                             struct tftp_client_options options[static 1],
-                                             FILE dest[static 1]) {
-    struct connection connection;
-    if (!connection_init(&connection, host, port, client->logger)) {
-        return (struct tftp_client_response) {
-            .success = false,
-            .server_may_not_support_options = false,
-        };
+static bool options_init(struct options result[static 1],
+                         enum request_type request_type,
+                         struct tftp_client_options *options) {
+    if (options == nullptr) {
+        return false;
     }
-    struct request request = {
-        .logger = client->logger,
-        .connection = &connection,
-        .client_stats_callback = client->client_stats_callback,
-        .retries = client->retries,
-        .request_type = REQUEST_LIST,
-        .details.get.mode = mode,
-        .details.get.mode_str = tftp_mode_to_string(mode),
-        .details.get.filename = directory,
-        .packet_recv_buffer = nullptr,
-    };
-    options_init(&request, options);
-    if (!connection_set_recv_timeout(&connection, request.options.timeout_s, request.logger)) {
-        goto fail;
-    }
-    stats_init(&request.stats, request.logger);
-    struct tftp_client_response response = handle_get_request(&request, &connection, dest);
-    connection_destroy(&connection, client->logger);
-    return response;
-fail:
-    connection_destroy(&connection, client->logger);
-    return (struct tftp_client_response) {
-        .success = false,
-        .server_may_not_support_options = request.server_may_not_support_options,
-    };
-}
-
-static void options_init(struct request request[static 1], struct tftp_client_options *options) {
-    bool is_timeout_required = false;
-    bool is_block_size_required = false;
-    bool is_window_size_required = false;
-    bool is_tsize_required = false;
-    bool is_adaptive_timeout_required = false;
+    const bool is_timeout_required = options->timeout_s != nullptr
+                                     && *options->timeout_s != 0;
+    const bool is_block_size_required = options->block_size != nullptr
+                                        && *options->block_size >= 8
+                                        && *options->block_size <= 65464;
+    const bool is_window_size_required = options->window_size != nullptr
+                                         && *options->window_size != 0
+                                         && request_type != REQUEST_PUT;
+    const bool is_tsize_required = options->use_tsize;
+    const bool is_adaptive_timeout_required = options->use_adaptive_timeout && request_type == REQUEST_GET;
     
-    if (options != nullptr) {
-        is_timeout_required = options->timeout_s != nullptr
-                              && *options->timeout_s != 0;
-        is_block_size_required = options->block_size != nullptr
-                                 && *options->block_size >= 8
-                                 && *options->block_size <= 65464;
-        is_window_size_required = options->window_size != nullptr
-                                 && *options->window_size != 0;
-        is_tsize_required = options->use_tsize;
-        is_adaptive_timeout_required = options->use_adaptive_timeout;
-    }
+    result->timeout_s = is_timeout_required ? *options->timeout_s : default_timeout_s;
+    result->block_size = is_block_size_required ? *options->block_size : tftp_default_blksize;
+    result->window_size = is_window_size_required ? *options->window_size : tftp_default_window_size;
+    result->use_tsize = is_tsize_required;
+    result->use_adaptive_timeout = options->use_adaptive_timeout;
     
-    request->options.timeout_s = is_timeout_required ? *options->timeout_s : default_timeout_s;
-    request->options.block_size = is_block_size_required ? *options->block_size : tftp_default_blksize;
-    request->options.window_size = is_window_size_required ? *options->window_size : tftp_default_window_size;
-    request->options.use_tsize = is_tsize_required;
-    request->options.use_adaptive_timeout = is_adaptive_timeout_required;
-    
-    if (is_adaptive_timeout_required) {
-        is_timeout_required = false;
-    }
-    if (is_timeout_required) {
-        sprintf((char *) request->options.timeout_s_str, "%hhu", request->options.timeout_s);
+    if (is_timeout_required && !is_adaptive_timeout_required) {
+        sprintf((char *) result->timeout_s_str, "%hhu", result->timeout_s);
     }
     if (is_adaptive_timeout_required) {
-        is_timeout_required = true;
-        sprintf((char *) request->options.timeout_s_str, "adaptive");
+        sprintf((char *) result->timeout_s_str, "adaptive");
     }
     if (is_block_size_required) {
-        sprintf((char *) request->options.block_size_str, "%hu", request->options.block_size);
+        sprintf((char *) result->block_size_str, "%hu", result->block_size);
     }
     if (is_window_size_required) {
-        sprintf((char *) request->options.window_size_str, "%hu", request->options.window_size);
+        sprintf((char *) result->window_size_str, "%hu", result->window_size);
     }
-    sprintf((char *) request->options.tsize_str, "0");
+    // TODO: handle write request tsize option
+    sprintf((char *) result->tsize_str, "0");
     
-    if (request->request_type == REQUEST_PUT) {
-        is_window_size_required = false;
-    }
-    
-    memcpy(request->options.options,
+    memcpy(result->options,
            &(struct tftp_option[TFTP_OPTION_TOTAL_OPTIONS]) {
-               [TFTP_OPTION_BLKSIZE] = {.is_active = is_block_size_required, .value = (const char *) request->options.block_size_str},
-               [TFTP_OPTION_TIMEOUT] = {.is_active = is_timeout_required, .value = (const char *) request->options.timeout_s_str},
-               [TFTP_OPTION_TSIZE] = {.is_active = request->options.use_tsize, .value = (const char *) request->options.tsize_str},
-               [TFTP_OPTION_WINDOWSIZE] = {.is_active = is_window_size_required, .value = (const char *) request->options.window_size_str},
-               [TFTP_OPTION_READ_TYPE] = {.is_active = request->request_type == REQUEST_LIST, .value = "directory"},
+               [TFTP_OPTION_BLKSIZE] = {.is_active = is_block_size_required, .value = (const char *) result->block_size_str},
+               [TFTP_OPTION_TIMEOUT] = {.is_active = is_timeout_required || is_adaptive_timeout_required, .value = (const char *) result->timeout_s_str},
+               [TFTP_OPTION_TSIZE] = {.is_active = result->use_tsize, .value = (const char *) result->tsize_str},
+               [TFTP_OPTION_WINDOWSIZE] = {.is_active = is_window_size_required, .value = (const char *) result->window_size_str},
+               [TFTP_OPTION_READ_TYPE] = {.is_active = options != nullptr && options->is_read_type_list, .value = "directory"},
            },
-           sizeof request->options.options);
+           sizeof result->options);
     for (size_t i = 0; i < TFTP_OPTION_TOTAL_OPTIONS; i++) {
-        if (request->options.options[i].is_active) {
-            request->use_options = true;
-            break;
+        if (result->options[i].is_active) {
+            tftp_format_options(result->options, result->options_str);
+            return true;
         }
     }
-    if (request->use_options) {
-        tftp_format_options(request->options.options, request->options.options_str);
-    }
+    return false;
 }
 
 static struct tftp_client_response handle_get_request(struct request request[static 1],
@@ -364,27 +311,27 @@ static struct tftp_client_response handle_get_request(struct request request[sta
         goto fail;
     }
     free(request->packet_recv_buffer);
-    if (request->client_stats_callback != nullptr) {
-        request->client_stats_callback(&request->stats);
-    }
-    if (request->options.use_tsize && (request->stats.file_bytes_received != request->options.tsize)) {
+    if (request->options.use_tsize && (request->stats.file_bytes_transferred != request->options.tsize)) {
         logger_log_error(request->logger, "Received file size does not match the expected size.");
         goto fail;
     }
     return (struct tftp_client_response) {
-        .success = true,
-        .server_may_not_support_options = false,
+        .is_success = true,
+        .value = request->stats,
     };
 fail:
     return (struct tftp_client_response) {
-        .success = false,
-        .server_may_not_support_options = request->server_may_not_support_options,
+        .is_success = false,
+        .error.server_may_not_support_options = request->server_may_not_support_options,
     };
 }
 
 static struct tftp_client_response handle_put_request(struct request request[static 1],
                                                       struct connection connection[static 1],
                                                       FILE file[static 1]) {
+    uint8_t recv_buffer[tftp_oack_packet_max_size];
+    request->packet_recv_buffer_size = tftp_oack_packet_max_size;
+    request->packet_recv_buffer = recv_buffer;
     struct sockaddr *server_addr = (struct sockaddr *) &connection->server_addr.sockaddr;
     char server_addr_str[INET6_ADDRSTRLEN];
     uint16_t server_port;
@@ -395,31 +342,86 @@ static struct tftp_client_response handle_put_request(struct request request[sta
     else {
         logger_log_info(request->logger, "Sending file %s from %s:%hu [%s]", request->details.get.filename, server_addr_str, server_port, request->details.get.mode_str);
     }
-    if (!send_write_request(request)) {
-        goto fail;
+    auto max_attempts = 1 + request->retries;
+    uint8_t retransmissions = 0;
+    ssize_t bytes_received = 0;
+    struct server_sockaddr server_addr_find_better_name = {
+        .socklen = sizeof server_addr_find_better_name.sockaddr,
+    };
+    while (retransmissions < max_attempts) {
+        if (!send_write_request(request)) {
+            goto fail;
+        }
+        bytes_received = recvfrom(request->connection->sockfd,
+                                  request->packet_recv_buffer,
+                                  request->packet_recv_buffer_size,
+                                  0,
+                                  (struct sockaddr *) &server_addr_find_better_name.sockaddr,
+                                  &server_addr_find_better_name.socklen);
+        if (bytes_received != -1) {
+            break;
+        }
+        if (errno != EWOULDBLOCK && errno != EAGAIN) {
+            logger_log_error(request->logger, "Failed to receive data. %s", strerror(errno));
+            goto fail;
+        }
+        if (retransmissions == request->retries) {
+            logger_log_error(request->logger, "Transfer timed out after %d of %d retransmissions.", retransmissions, request->retries);
+            request->server_may_not_support_options = request->use_options;
+            goto fail;
+        }
+        logger_log_warn(request->logger, "Receive timed out. Retransmitting last packet.");
+        retransmissions++;
     }
-    request->packet_recv_buffer_size = tftp_packet_buffer_size(request->options.block_size);
-    request->packet_recv_buffer = malloc(request->packet_recv_buffer_size);
-    if (request->packet_recv_buffer == nullptr) {
-        logger_log_error(request->logger, "Failed to allocate memory for the receive buffer.");
-        goto fail;
+    request->connection->server_addr.sockaddr = server_addr_find_better_name.sockaddr;
+    request->connection->server_addr.socklen = server_addr_find_better_name.socklen;
+    enum tftp_opcode opcode = tftp_get_opcode_unsafe(request->packet_recv_buffer);
+    switch (opcode) {
+        case TFTP_OPCODE_OACK:
+            if (!request->use_options) {
+                goto unexpected_opcode;
+            }
+            if (!handle_oack_packet(request, bytes_received)) {
+                break;
+            }
+            break;
+        case TFTP_OPCODE_ACK:
+            struct tftp_ack_packet *ack_packet = (struct tftp_ack_packet *) request->packet_recv_buffer;
+            uint16_t block_number = ntohs(ack_packet->block_number);
+            if (block_number != 0) {
+                logger_log_error(request->logger, "Received unexpected ACK <block=%d>.", block_number);
+                break;
+            }
+            if (request->use_options) {
+                request->use_options = false;
+                request->options.block_size = tftp_default_blksize;
+                request->options.timeout_s = default_timeout_s;
+                request->options.use_tsize = false;
+            }
+            logger_log_trace(request->logger, "Received ACK <block=%d>", block_number);
+            break;
+        case TFTP_OPCODE_ERROR:
+            log_error_packet_received(request->logger, (struct tftp_error_packet *) request->packet_recv_buffer, bytes_received);
+            request->server_may_not_support_options = request->use_options;
+            goto fail;
+unexpected_opcode:
+        default:
+            logger_log_error(request->logger, "Unexpected opcode %d", opcode);
+            goto fail;
     }
     if (!send_file(request, file)) {
-        free(request->packet_recv_buffer);
         goto fail;
     }
-    free(request->packet_recv_buffer);
-    if (request->client_stats_callback != nullptr) {
-        request->client_stats_callback(&request->stats);
-    }
+    request->packet_recv_buffer = nullptr;
     return (struct tftp_client_response) {
-        .success = true,
-        .server_may_not_support_options = false,
+        .is_success = true,
+        .value = request->stats,
     };
 fail:
+    request->packet_recv_buffer = nullptr;
     return (struct tftp_client_response) {
-        .success = false,
-        .server_may_not_support_options = request->server_may_not_support_options,
+        .is_success = false,
+        .error.server_may_not_support_options = request->server_may_not_support_options,
     };
 }
 
@@ -494,16 +496,39 @@ static bool receive_file(struct request request[static 1], FILE file[static 1]) 
         enum tftp_opcode opcode = tftp_get_opcode_unsafe(request->packet_recv_buffer);
         switch (opcode) {
             case TFTP_OPCODE_OACK:
+                bool is_list_request = request->options.options[TFTP_OPTION_READ_TYPE].is_active;
                 if (!is_first_receive) {
                     break;  // ignore out of order OACK packets
                 }
                 if (!handle_oack_packet(request, bytes_received)) {
                     return false;
                 }
+                if (is_list_request && !request->options.options[TFTP_OPTION_READ_TYPE].is_active) {
+                    logger_log_error(request->logger, "Received OACK packet without directory listing option. Server may not support list requests.");
+                    send_error(request, TFTP_ERROR_INVALID_OPTIONS, nullptr);
+                    return false;
+                }
+                if (!send_ack(request, 0)) {
+                    return false;
+                }
                 break;
             case TFTP_OPCODE_DATA:
-                // TODO if is first receive discard options if any
-                // TODO if is first receive and read type directory was required abort operation
+                if (is_first_receive) {
+                    if (request->use_options) {
+                        logger_log_error(request->logger, "Received DATA packet before OACK packet, discarding options.");
+                        request->use_options = false;
+                        if (request->options.options[TFTP_OPTION_READ_TYPE].is_active) {
+                            send_error(request, TFTP_ERROR_INVALID_OPTIONS, nullptr);
+                            request->server_may_not_support_options = true;
+                            return false;
+                        }
+                    }
+                    request->options.window_size = tftp_default_window_size;
+                    request->options.block_size = tftp_default_blksize;
+                    request->options.timeout_s = default_timeout_s;
+                    request->options.use_adaptive_timeout = false;
+                    request->options.use_tsize = false;
+                }
                 struct tftp_data_packet *data_packet = (struct tftp_data_packet *) request->packet_recv_buffer;
                 uint16_t block_number = ntohs(data_packet->block_number);
                 if (block_number != expected_sequence_number) {
@@ -525,7 +550,7 @@ static bool receive_file(struct request request[static 1], FILE file[static 1]) 
                     }
                     return false;
                 }
-                request->stats.file_bytes_received += block_size;
+                request->stats.file_bytes_transferred += block_size;
                 logger_log_trace(request->logger, "Received DATA <block=%d, size=%zu bytes>", block_number, block_size);
                 if (!send_ack(request, block_number)) {
                     return false;
@@ -548,37 +573,48 @@ static bool receive_file(struct request request[static 1], FILE file[static 1]) 
 }
 
 static bool send_file(struct request request[static 1], FILE file[static 1]) {
-    bool is_first_receive = true;
-    bool is_waiting_oack = request->use_options;
-    struct tftp_data_packet *data_packets = nullptr;
     size_t last_packet_size = 0;
     uint16_t window_begin = 1;
     uint16_t next_sequence_number = 1;
     bool end_of_file = false;
-    while (true) {
-        if (!is_waiting_oack && data_packets == nullptr) {
-            data_packets = malloc(request->options.window_size * (sizeof *data_packets + request->options.block_size));
-            if (data_packets == nullptr) {
-                logger_log_error(request->logger, "Failed to allocate memory for the data packet. %s", strerror(errno));
-                // TODO: send error packet
-                goto fail;
-            }
-        }
-        if (!is_first_receive && is_in_range(next_sequence_number, window_begin, window_begin + request->options.window_size - 1)) {
-            const uint16_t packet_index = ((uint16_t) (next_sequence_number - 1)) % request->options.window_size;
-            const size_t offset = packet_index * (sizeof(struct tftp_data_packet) + request->options.block_size);
-            struct tftp_data_packet *packet = (void *) ((uint8_t *) data_packets + offset);
+    uint8_t retransmissions = 0;
+    bool transfer_completed = false;
+    
+    const size_t data_packet_size = sizeof(struct tftp_data_packet) + request->options.block_size;
+    uint8_t *data_packets = malloc(request->options.window_size * data_packet_size);
+    if (data_packets == nullptr) {
+        logger_log_error(request->logger, "Failed to allocate memory for the data packet. %s", strerror(errno));
+        // TODO: send error packet
+        return false;
+    }
+    
+    double rto;
+    struct timespec start_time;
+    struct adaptive_timeout adaptive_timeout;
+    if (request->options.use_adaptive_timeout) {
+        adaptive_timeout_init(&adaptive_timeout);
+        rto = timespec_to_double(adaptive_timeout.rto);
+    } else {
+        rto = request->options.timeout_s;
+    }
+    
+    while (!transfer_completed) {
+        /* --- Sending Phase: Fill the window --- */
+        while (!end_of_file && is_in_range(next_sequence_number, window_begin, window_begin + request->options.window_size - 1)) {
+            const size_t offset = (((uint16_t) (next_sequence_number - 1)) % request->options.window_size) * data_packet_size;
+            auto packet = (struct tftp_data_packet *) (data_packets + offset);
             
-            size_t block_size = fread(&packet->data, 1, request->options.block_size, file);
-            if (block_size != request->options.block_size) {
+            size_t bytes_read = fread(packet->data, 1, request->options.block_size, file);
+            if (bytes_read < request->options.block_size) {
                 if (ferror(file)) {
-                    logger_log_error(request->logger, "Failed to read from file.");
-                    // TODO: send error packet
+                    logger_log_error(request->logger, "Failed to read from file. %s", strerror(errno));
+                    // TODO: send an error packet
+                    //send_error(request, TFTP_ERROR_NOT_DEFINED, strerror(errno));
                     goto fail;
                 }
                 end_of_file = true;
             }
-            last_packet_size = sizeof *packet + block_size;
+            last_packet_size = sizeof *packet + bytes_read;
             tftp_data_packet_init(packet, next_sequence_number);
             logger_log_trace(request->logger, "Created DATA packets.");
             ssize_t bytes_sent = sendto(request->connection->sockfd,
@@ -591,117 +627,130 @@ static bool send_file(struct request request[static 1], FILE file[static 1]) {
                 logger_log_error(request->logger, "Failed to send data packet. %s", strerror(errno));
                 goto fail;
             }
-            logger_log_trace(request->logger, "Sent DATA packet <block=%d, size=%zu bytes>.", next_sequence_number, block_size);
-            // TODO: if window_begin is equals to next_seq_num:
-            //				start_timer
+            logger_log_trace(request->logger, "Sent DATA packet <block=%d, size=%zu bytes>.", next_sequence_number, bytes_read);
+            request->stats.file_bytes_transferred += bytes_read;
+            if (window_begin == next_sequence_number) {
+                clock_gettime(CLOCK_MONOTONIC, &start_time);
+                if (request->options.use_adaptive_timeout) {
+                    adaptive_timeout_start_timer(&adaptive_timeout);
+                    adaptive_timeout.starting_block_number = next_sequence_number;
+                }
+            }
             next_sequence_number++;
         }
-        struct server_sockaddr server_addr = {
-            .socklen = sizeof server_addr.sockaddr,
-        };
-        ssize_t bytes_received = receive_packet(request, &server_addr);
-        if (bytes_received == 0) {
-            logger_log_error(request->logger, "Received empty packet.");
-            goto fail;
+        
+        /* --- Receiving Phase: Wait for ACK or timeout --- */
+        bool is_timeout = false;
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        double elapsed_time = timespec_to_double(now) - timespec_to_double(start_time);
+        double remaining_time = rto - elapsed_time;
+        
+        ssize_t bytes_received = 0;
+        struct server_sockaddr server_addr;
+        server_addr.socklen = sizeof(server_addr.sockaddr);
+        
+        if (remaining_time <= 0) {
+            is_timeout = true;
         }
-        if (bytes_received < 0) {
-            enum receive_packet_error error = (enum receive_packet_error) bytes_received;
-            if (is_first_receive && error == RECEIVE_PACKET_TIMEOUT && request->use_options) {
-                request->server_may_not_support_options = true;
-            }
-            else if (error == RECEIVE_PACKET_TIMEOUT) {
-                // TODO: handle retransmissions here
-                //logger_log_debug(request->logger, "Timeout for server %s:%d. Retransmission no %d.");
-                logger_log_debug(request->logger, "Timeout for server. Retransmission.");
-                // TODO: handle adaptive timeout
-                // TODO: start_timer
-                if (is_waiting_oack) {
-                    if (!send_wrq(request)) {
-                        goto fail;
-                    }
-                }
-                else {
-                    logger_log_trace(request->logger, "Retransmitting DATA packets in window [%d, %d].", window_begin, (uint16_t) next_sequence_number - 1);
-                    for (uint16_t i = window_begin; is_in_range(i, window_begin, next_sequence_number - 1); i++) {
-                        const uint16_t packet_index = ((uint16_t) (next_sequence_number - 1)) % request->options.window_size;
-                        const size_t offset = packet_index * (sizeof(struct tftp_data_packet) + request->options.block_size);
-                        struct tftp_data_packet *packet = (void *) ((uint8_t *) data_packets + offset);
-                        size_t packet_size = (i == next_sequence_number - 1) ? last_packet_size : sizeof *packet + request->options.block_size;
-                        
-                        ssize_t ret = sendto(request->connection->sockfd,
-                                             packet,
-                                             packet_size,
-                                             0,
-                                             (struct sockaddr *) &request->connection->server_addr.sockaddr,
-                                             request->connection->server_addr.socklen);
-                        if (ret == -1) {
-                            logger_log_error(request->logger, "Failed to send data packet. %s", strerror(errno));
-                            goto fail;
-                        }
-                        if (ret < (ssize_t) packet_size) {
-                            // TODO: handle tsize option
-                            logger_log_warn(request->logger, "Could not send whole packet. The file transfer failed but the server will not be able to detect it.");
-                            goto fail;
-                        }
-                        logger_log_trace(request->logger, "Retransmitted DATA packet <block=%d, size=%zu bytes>.", i, packet_size - sizeof *packet);
-                    }
-                }
-            }
-            else {
+        else {
+            struct timeval tv = double_to_timeval(remaining_time);
+            if (setsockopt(request->connection->sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+                logger_log_error(request->logger, "Failed to set socket timeout. %s", strerror(errno));
                 goto fail;
             }
+            bytes_received = recvfrom(request->connection->sockfd,
+                                      request->packet_recv_buffer,
+                                      request->packet_recv_buffer_size,
+                                      0,
+                                      (struct sockaddr *) &server_addr.sockaddr,
+                                      &server_addr.socklen);
+            if (bytes_received < 0) {
+                if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                    is_timeout = true;
+                }
+                else {
+                    logger_log_error(request->logger, "Failed to receive data. %s", strerror(errno));
+                    goto fail;
+                }
+            }
+            else if (!sockaddr_equals(&request->connection->server_addr.sockaddr, &server_addr.sockaddr)) {
+                handle_unexpected_peer(request, &server_addr);
+                continue;
+            }
         }
-        if (is_first_receive) {
-            request->connection->server_addr.sockaddr = server_addr.sockaddr;
-            request->connection->server_addr.socklen = server_addr.socklen;
-        }
-        if (!sockaddr_equals(&request->connection->server_addr.sockaddr, &server_addr.sockaddr)) {
-            handle_unexpected_peer(request, &server_addr);
+        
+        if (is_timeout) {
+            if (retransmissions > request->retries) {
+                logger_log_error(request->logger, "Transfer timed out after %d retransmissions.", request->retries);
+                //TODO: send an error packet
+                //send_error(request, TFTP_ERROR_NOT_DEFINED, "Transfer timed out.");
+                goto fail;
+            }
+            retransmissions++;
+            logger_log_debug(request->logger, "Timeout occurred. Retransmission no %d of the packets in window [%d, %d]..", retransmissions, window_begin, (uint16_t) (next_sequence_number - 1));
+            if (request->options.use_adaptive_timeout) {
+                adaptive_timeout_cancel_timer(&adaptive_timeout);
+                adaptive_timeout_backoff(&adaptive_timeout);
+                rto = timespec_to_double(adaptive_timeout.rto);
+                logger_log_trace(request->logger, "Adaptive timeout: RTO set to %lld.%.9ld seconds via exponential backoff.", adaptive_timeout.rto.tv_sec, adaptive_timeout.rto.tv_nsec);
+            }
+            clock_gettime(CLOCK_MONOTONIC, &start_time);
+            for (uint16_t i = window_begin; is_in_range(i, window_begin, next_sequence_number - 1); i++) {
+                uint16_t packet_index = (i - 1) % request->options.window_size;
+                size_t offset = packet_index * data_packet_size;
+                struct tftp_data_packet *packet = (struct tftp_data_packet *)((uint8_t *)data_packets + offset);
+                size_t packet_size = (i == next_sequence_number - 1) ? last_packet_size : sizeof(*packet) + request->options.block_size;
+                
+                ssize_t ret = sendto(request->connection->sockfd,
+                                     packet,
+                                     packet_size,
+                                     0,
+                                     (struct sockaddr *)&request->connection->server_addr.sockaddr,
+                                     request->connection->server_addr.socklen);
+                if (ret == -1) {
+                    logger_log_error(request->logger, "Failed to retransmit data packet for block %d. %s", i, strerror(errno));
+                    goto fail;
+                }
+                if (ret < (ssize_t) packet_size) {
+                    logger_log_warn(request->logger, "Could not send whole packet. The file transfer failed but the server will not be able to detect it.");
+                    // TODO handle tsize option
+                    goto fail;
+                }
+                logger_log_trace(request->logger, "Retransmitted DATA packet <block=%d, size=%zu bytes>.", i, packet_size - sizeof(*packet));
+            }
             continue;
         }
+        
         enum tftp_opcode opcode = tftp_get_opcode_unsafe(request->packet_recv_buffer);
         switch (opcode) {
-            case TFTP_OPCODE_OACK:
-                if (!is_first_receive) {
-                    break;  // ignore out of order OACK packets
-                }
-                if (!handle_oack_packet(request, bytes_received)) {
-                    break;
-                }
-                break;
             case TFTP_OPCODE_ACK:
                 struct tftp_ack_packet *ack_packet = (struct tftp_ack_packet *) request->packet_recv_buffer;
                 uint16_t block_number = ntohs(ack_packet->block_number);
-                if (is_waiting_oack && block_number == 0) {
-                    is_waiting_oack = false;
-                    request->options.block_size = tftp_default_blksize;
-                    request->options.timeout_s = default_timeout_s;
-                    request->options.use_adaptive_timeout = false;
-                    request->options.use_tsize = false;
-                }
-                else if (!is_in_range(block_number, window_begin, next_sequence_number - 1)) {
+                if (!is_in_range(block_number, window_begin, next_sequence_number - 1)) {
                     logger_log_trace(request->logger, "Received unexpected ACK <block=%d> not in window [%d, %d]. Ignoring packet.", block_number, window_begin, next_sequence_number - 1);
                     break;
                 }
                 logger_log_trace(request->logger, "Received ACK <block=%d>", block_number);
                 window_begin = block_number + 1;
-                // TODO: stop_timer
-                //       if window_begin is not equals to next_seq_num:
-                //          start_timer
-                if (end_of_file && block_number == next_sequence_number - 1) {
-                    free(data_packets);
-                    return true;
+                if (window_begin != next_sequence_number) {
+                    clock_gettime(CLOCK_MONOTONIC, &start_time);
+                }
+                transfer_completed = end_of_file && block_number == next_sequence_number - 1;
+                retransmissions = 0;
+                if (request->options.use_adaptive_timeout && is_in_range(block_number, adaptive_timeout.starting_block_number, next_sequence_number - 1)) {
+                    adaptive_timeout_stop_timer(&adaptive_timeout);
+                    rto = timespec_to_double(adaptive_timeout.rto);
+                    logger_log_trace(request->logger, "Adaptive timeout: RTO set to %lld.%.9ld seconds.", adaptive_timeout.rto.tv_sec, adaptive_timeout.rto.tv_nsec);
                 }
                 break;
             case TFTP_OPCODE_ERROR:
                 log_error_packet_received(request->logger, (struct tftp_error_packet *) request->packet_recv_buffer, bytes_received);
-                request->server_may_not_support_options = (is_first_receive && request->use_options);
                 goto fail;
             default:
                 logger_log_error(request->logger, "Unexpected opcode %d", opcode);
                 goto fail;
         }
-        is_first_receive = false;
     }
     free(data_packets);
     return true;
@@ -711,7 +760,6 @@ fail:
 }
 
 static bool handle_oack_packet(struct request request[static 1], ssize_t packet_size) {
-    // TODO if is first receive and read type directory was required abort operation
     struct tftp_oack_packet *oack_packet = (struct tftp_oack_packet *) request->packet_recv_buffer;
     struct tftp_option ackd_options[TFTP_OPTION_TOTAL_OPTIONS] = {};
     char ackd_options_str[tftp_option_formatted_string_max_size];
@@ -720,7 +768,7 @@ static bool handle_oack_packet(struct request request[static 1], ssize_t packet_
     uint16_t timeout = request->options.timeout_s;
     uint16_t window_size = request->options.window_size;
     tftp_parse_options(ackd_options, packet_size - sizeof *oack_packet, (char *) oack_packet->options_values);
-    if (request->options.use_adaptive_timeout) {
+    if (request->options.use_adaptive_timeout && request->request_type == REQUEST_GET) {
         request->options.use_adaptive_timeout = false;
         const char *option = (char *) oack_packet->options_values;
         const char *end_ptr = &((char *) oack_packet->options_values)[packet_size - sizeof *oack_packet - 1];
@@ -794,8 +842,8 @@ static bool handle_oack_packet(struct request request[static 1], ssize_t packet_
             return false;
         }
     }
-    if (!send_ack(request, 0)) {
-        return false;
+    if (request->options.options[TFTP_OPTION_READ_TYPE].is_active && !ackd_options[TFTP_OPTION_READ_TYPE].is_active) {
+        request->options.options[TFTP_OPTION_READ_TYPE].is_active = false;
     }
     return true;
 }
@@ -1012,9 +1060,9 @@ static bool send_error_packet(struct request request[static 1],
 
 static ssize_t receive_packet(struct request request[static 1], struct server_sockaddr server_addr[static 1]) {
     auto total_attempts = 1 + request->retries;
-    uint8_t retransmits = 0;
+    uint8_t retransmissions = 0;
     ssize_t bytes_received = 0;
-    while (retransmits < total_attempts) {
+    while (retransmissions < total_attempts) {
         bytes_received = recvfrom(request->connection->sockfd,
                                   request->packet_recv_buffer,
                                   request->packet_recv_buffer_size,
@@ -1028,15 +1076,15 @@ static ssize_t receive_packet(struct request request[static 1], struct server_so
             logger_log_error(request->logger, "Failed to receive data. %s", strerror(errno));
             return RECEIVE_PACKET_ERROR;
         }
-        if (retransmits == request->retries) {
-            logger_log_error(request->logger, "Transfer timed out after %d of %d retransmissions.", retransmits, request->retries);
+        if (retransmissions == request->retries) {
+            logger_log_error(request->logger, "Transfer timed out after %d of %d retransmissions.", retransmissions, request->retries);
             return RECEIVE_PACKET_TIMEOUT;
         }
         logger_log_warn(request->logger, "Receive timed out. Retransmitting last packet.");
         if (!retransmit_last_packet_sent(request)) {
             return RECEIVE_PACKET_ERROR;
         }
-        retransmits++;
+        retransmissions++;
     }
     return bytes_received;
 }
@@ -1062,7 +1110,8 @@ static inline void log_error_packet_received(struct logger logger[static 1],
 }
 
 static inline size_t tftp_packet_buffer_size(uint16_t required_block_size) {
-    constexpr size_t min_buffer_size = tftp_oack_packet_max_size;
+    //constexpr size_t min_buffer_size = tftp_oack_packet_max_size;
+    constexpr size_t min_buffer_size = 516; // data_packet size + default_block_size since it is handled poorly
     size_t required_buffer_size = sizeof(struct tftp_data_packet) + required_block_size;
     return required_buffer_size < min_buffer_size ? min_buffer_size : required_buffer_size;
 }

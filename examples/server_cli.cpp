@@ -22,6 +22,7 @@ For more details, refer to RFC1350.
 */
 
 namespace TFTP::Server {
+    
     class CLIParser final : public TFTP::CLIParser {
     public:
         explicit CLIParser(const std::shared_ptr<cli_args>& args) : TFTP::CLIParser("TFTP Server") {
@@ -29,74 +30,84 @@ namespace TFTP::Server {
             const auto default_workers = (processor_count > 1) ? processor_count - 1 : 1;
             const auto max_worker_sessions = std::min(32u, (65535 / default_workers) + (65535 % default_workers != 0));
             
-            get_option("--help")->group("Basic Options");
+            const std::string BasicOptionsStr = "Basic Options";
+            const std::string NetworkSettingsStr = "Network Settings";
+            const std::string DebuggingAndSimulationStr = "Debugging and Simulation";
+            
+            get_option("--help")->group(BasicOptionsStr);
             add_option("directory", root, "Specify root directory for file storage")
-                ->group("Basic Options")
+                ->group(BasicOptionsStr)
                 ->default_val("current directory")
                 ->check(CLI::ExistingDirectory)
                 ->option_text("ROOT");
             add_flag("--enable-write-requests", args->enable_write_requests, "Enable write requests")
                 ->default_val(false)
-                ->group("Basic Options");
+                ->default_str("")
+                ->group(BasicOptionsStr);
             add_flag("--enable-list-requests", args->enable_list_requests, "Enable list requests")
                 ->default_val(false)
-                ->group("Basic Options");
+                ->default_str("")
+                ->group(BasicOptionsStr);
             add_flag("--enable-adaptive-timeout", args->enable_adaptive_timeout, "Enable adaptive timeout based on network delays option")
                 ->default_val(false)
-                ->group("Basic Options");
+                ->default_str("")
+                ->group(BasicOptionsStr);
             add_option("-w,--workers", args->workers, "Set the number of worker threads")
-                ->group("Basic Options")
+                ->group(BasicOptionsStr)
                 ->default_val(std::to_string(default_workers))
                 ->check(CLI::Range(1, 65535))
                 ->option_text("COUNT");
             add_option("-m,--max-sessions-per-worker", args->max_worker_sessions, "Define max sessions per worker")
-                ->group("Basic Options")
+                ->group(BasicOptionsStr)
                 ->default_val(std::to_string(max_worker_sessions))
                 ->check(CLI::Range(1, 65535))
                 ->option_text("SESSIONS");
             
             // Network Settings Group
             add_option("-H,--host", host, "Address to bind the server to")
-                ->group("Network Settings")
+                ->group(NetworkSettingsStr)
                 ->default_val("::")
                 ->option_text("ADDRESS");
             add_option("-p,--port", port, "Port number for server to listen on")
-                ->group("Network Settings")
+                ->group(NetworkSettingsStr)
                 ->default_val("6969")
                 ->check(CLI::Range(0, 65535))
                 ->option_text("PORT");
             add_option("-r,--retries", args->retries, "Number of retransmissions attempts before giving up")
-                ->group("Network Settings")
+                ->group(NetworkSettingsStr)
                 ->default_val("5")
                 ->check(CLI::Range(0, 255))
                 ->option_text("RETRIES");
             add_option("-t,--timeout", args->timeout_s, "Timeout in seconds before retransmission")
-                ->group("Network Settings")
+                ->group(NetworkSettingsStr)
                 ->default_val("2")
                 ->check(CLI::Range(1, 255))
                 ->option_text("SECONDS");
             
             // Debugging and Simulation Group
             add_option("-l,--loss-probability", args->loss_probability, "Simulated packet loss probability")
-                ->group("Debugging and Simulation")
+                ->group(DebuggingAndSimulationStr)
                 ->default_val("0.0")
                 ->check(CLI::Range(0.0, 1.0))
                 ->option_text("PROBABILITY");
+            add_flag("--disable-fixed-seed", args->disable_fixed_seed, "Disable fixed seed for random number generation during packet loss simulation")
+                ->group(DebuggingAndSimulationStr);
             add_option("-v,--log-level", args->verbose_level, "Log verbosity level")
-                ->group("Debugging and Simulation")
+                ->group(DebuggingAndSimulationStr)
                 ->transform(CLI::CheckedTransformer(log_level_map, CLI::ignore_case))
                 ->default_val("info")
                 ->option_text("LEVEL")
                 ->description("Verbosity logging level");
                 
-            final_callback([&, args]() {
+            final_callback([this, args]() {
                 args->host = strdup(host.c_str());
                 args->port = strdup(port.c_str());
                 if (!count("directory")) {
-                    root = std::filesystem::current_path().string();
-                    if (!std::filesystem::exists(root)) {
+                    const auto root_path = std::filesystem::current_path();
+                    if (!std::filesystem::exists(root_path)) {
                         throw std::runtime_error("Root directory does not exist");
                     }
+                    root = root_path.string();
                 }
                 args->root = strdup(root.c_str());
             });

@@ -37,14 +37,14 @@ namespace TFTP {
             
             const auto column_width = 4 + std::ranges::max(
                 parsers
-                | std::views::transform([](CLI::App *parser) { return parser->get_options(); })
+                | std::views::transform([](const auto parser) { return parser->get_options(); })
                 | std::views::join
                 | std::views::transform([](const auto &option) {
                     return std::format("  {} {}", option->get_name(true, true), option->get_option_text()).length();
                 }));
             get_formatter()->column_width(column_width);
-            for (auto parser: parsers) {
-                for (auto option: parser->get_options()) {
+            for (const auto parser: parsers) {
+                for (const auto option: parser->get_options()) {
                     if (option->get_expected_min() && !option->get_default_str().empty()) {
                         option->description(
                             std::format("{} (default: {})", option->get_description(), option->get_default_str()));
@@ -60,7 +60,7 @@ namespace TFTP {
                             continue;
                         }
                         const auto padding_length = column_width - option->get_option_text().length() - 2;
-                        auto padding = std::string(padding_length, ' ');
+                        const auto padding = std::string(padding_length, ' ');
                         if (option->get_single_name() == "host") {
                             footer += std::format("  {}{}IPv4 or IPv6 address in standard format\n", option->get_option_text(), padding);
                             continue;
@@ -86,7 +86,7 @@ namespace TFTP {
                         type_name = std::regex_replace(type_name, std::regex(R"(\S*:?INT)"), "Integer number");
                         type_name = std::regex_replace(type_name, std::regex(R"(\S*:?FLOAT)"), "Decimal number");
                         type_name = std::regex_replace(type_name, std::regex(R"(\[(-?[0-9.]+) - (-?[0-9.]+)\])"), "range [$1, $2]");
-                        type_name = std::regex_replace(type_name, std::regex( R"(ENUM:value in \{([a-zA-Z0-9_]+)->[0-9]+, ?([a-zA-Z0-9_]+)->[0-9]+\}.*)"), "Enum value in: {$1, $2}");
+                        type_name = std::regex_replace(type_name, std::regex(R"(ENUM:value in \{([a-zA-Z0-9_]+)->[0-9]+, ?([a-zA-Z0-9_]+)->[0-9]+\}.*)"), "Enum value in: {$1, $2}");
                         footer += std::format("  {}{}{}\n", option->get_option_text(), padding, type_name);
                     }
                     parser->footer(footer);

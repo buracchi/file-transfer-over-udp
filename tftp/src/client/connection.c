@@ -6,7 +6,7 @@
 
 #include "../utils/inet.h"
 
-static constexpr struct addrinfo hints_ipv4 = {
+constexpr static const struct addrinfo hints_ipv4 = {
     .ai_flags = AI_NUMERICSERV | AI_ADDRCONFIG,
     .ai_family = AF_INET,
     .ai_socktype = SOCK_DGRAM,
@@ -15,7 +15,7 @@ static constexpr struct addrinfo hints_ipv4 = {
     .ai_next = nullptr
 };
 
-static constexpr struct addrinfo hints_ipv6 = {
+constexpr static const struct addrinfo hints_ipv6 = {
     .ai_flags = AI_NUMERICSERV | AI_ADDRCONFIG,
     .ai_family = AF_INET6,
     .ai_socktype = SOCK_DGRAM,

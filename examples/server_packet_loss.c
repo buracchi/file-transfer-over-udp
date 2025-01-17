@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <threads.h>
+#include <time.h>
 
 #include <logger.h>
 #include <string.h>
@@ -25,9 +26,13 @@ static int devNull = -1;
 
 _Noreturn static int packet_discard_thread(void *);
 
-void packet_loss_init(struct logger logger[static 1], double probability, int n) {
+void packet_loss_init(struct logger logger[static 1], double probability, int n, bool disable_fixed_seed) {
     thrd_t thread;
-    srand(0);
+    if (!disable_fixed_seed) {
+        srand(0);
+    } else {
+        srand((unsigned)time(nullptr));
+    }
     global_logger = logger;
     packet_loss_probability = probability;
     if (!dispatcher_init(&global_dispatcher, n, logger)) {
@@ -81,6 +86,21 @@ bool __wrap_dispatcher_submit_recvmsg(struct dispatcher dispatcher[static 1],
             flags);
     }
     return __real_dispatcher_submit_recvmsg(dispatcher, event, fd, msghdr, flags);
+}
+
+
+ssize_t __real_recvmsg(int sockfd, struct msghdr *message, int flags);
+
+ssize_t __wrap_recvmsg(int sockfd, struct msghdr *message, int flags) {
+    const ssize_t ret = __real_recvmsg(sockfd, message, flags);
+    if (ret < 0) {
+        return ret;
+    }
+    if ((rand() / (double) RAND_MAX) < packet_loss_probability) {
+        logger_log_debug(global_logger, "Received packet was discarded to simulate packet loss.");
+        return __wrap_recvmsg(sockfd, message, flags);
+    }
+    return ret;
 }
 
 

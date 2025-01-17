@@ -13,6 +13,7 @@
 
 #include "session.h"
 #include "worker_pool.h"
+#include "../utils/time.h"
 #include "../utils/utils.h"
 
 static bool parse_request_metadata(struct tftp_peer_message request_args[static 1],
@@ -65,17 +66,14 @@ bool tftp_server_start(struct tftp_server server[static 1]) {
         .session_stats_callback = server->session_stats_callback,
     };
     const bool metrics_enabled = server->stats.metrics_callback != nullptr;
-    if (metrics_enabled) {
-        const struct timeval timeout = { .tv_sec = server->stats.interval, };
-        if (setsockopt(server->listener.file_descriptor, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
-            logger_log_error(server->logger, "Failed to set socket receive timeout. %s", strerror_rbs(errno));
-            return false;
-        }
-    }
-    else {
+    if (!metrics_enabled) {
         logger_log_warn(server->logger, "No callback specified for server statistics logging, will continue without.");
     }
     logger_log_info(server->logger, "Server starting.");
+    
+    struct timespec start_time;
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    
     while (!server->should_stop) {
         struct worker_job *job = worker_pool_get_job(server->worker_pool);
         tftp_session_init(&job->session, job->job_id, &info, job->dispatcher, server->logger);
@@ -91,12 +89,29 @@ bool tftp_server_start(struct tftp_server server[static 1]) {
         server->listener.msghdr.msg_iov[0].iov_base = job->session.request_args.buffer;
         server->listener.msghdr.msg_iov[0].iov_len = sizeof job->session.request_args.buffer;
         
-        *bytes_recvd = recvmsg(server->listener.file_descriptor, &server->listener.msghdr, MSG_TRUNC);
-        
+        bool is_timeout = false;
+        if (metrics_enabled) {
+            struct timespec now;
+            clock_gettime(CLOCK_MONOTONIC, &now);
+            double remaining_time = server->stats.interval - (timespec_to_double(now) - timespec_to_double(start_time));
+            if (remaining_time <= 0) {
+                is_timeout = true;
+            }
+            else {
+                const struct timeval timeout = double_to_timeval(remaining_time);
+                if (setsockopt(server->listener.file_descriptor, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
+                    logger_log_error(server->logger, "Failed to set socket receive timeout. %s", strerror_rbs(errno));
+                    return false;
+                }
+            }
+        }
+        if (!is_timeout) {
+            *bytes_recvd = recvmsg(server->listener.file_descriptor, &server->listener.msghdr, MSG_TRUNC);
+        }
         enum revc_result {
             SUCCESS, TIMEOUT, INTERUPT, ERROR
         } result = *bytes_recvd >= 0 ? SUCCESS :
-                   metrics_enabled && (errno == EAGAIN || errno == EWOULDBLOCK) ? TIMEOUT :
+                   is_timeout || (metrics_enabled && (errno == EAGAIN || errno == EWOULDBLOCK)) ? TIMEOUT :
                    (errno == EINTR) ? INTERUPT :
                    ERROR;
         
@@ -126,6 +141,7 @@ bool tftp_server_start(struct tftp_server server[static 1]) {
             case TIMEOUT:
                 logger_log_debug(server->logger, "Running the metrics callback.");
                 server->stats.metrics_callback(&server->stats);
+                clock_gettime(CLOCK_MONOTONIC, &start_time);
                 break;
             case INTERUPT:
                 logger_log_trace(server->logger, "Received interrupt signal.");

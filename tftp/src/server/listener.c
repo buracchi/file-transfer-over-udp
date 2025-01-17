@@ -8,7 +8,7 @@
 #include "../utils/inet.h"
 #include "../utils/utils.h"
 
-static constexpr struct addrinfo hints_ipv4 = {
+constexpr static const struct addrinfo hints_ipv4 = {
     .ai_flags = AI_PASSIVE | AI_NUMERICSERV | AI_ADDRCONFIG,
     .ai_family = AF_INET,
     .ai_socktype = SOCK_DGRAM,
@@ -17,7 +17,7 @@ static constexpr struct addrinfo hints_ipv4 = {
     .ai_next = nullptr
 };
 
-static constexpr struct addrinfo hints_ipv6 = {
+constexpr static const struct addrinfo hints_ipv6 = {
     .ai_flags = AI_PASSIVE | AI_NUMERICSERV | AI_ADDRCONFIG,
     .ai_family = AF_INET6,
     .ai_socktype = SOCK_DGRAM,
@@ -73,11 +73,11 @@ bool tftp_server_listener_init(struct tftp_server_listener listener[static 1],
             logger_log_error(logger, "Could not create a socket for the server. %s", strerror_rbs(errno));
             goto fail;
         }
-        if (setsockopt(listener->file_descriptor, SOL_SOCKET, SO_REUSEADDR, &(int) {true}, sizeof(int)) == -1 ||
-            setsockopt(listener->file_descriptor, IPPROTO_IP, IP_RECVORIGDSTADDR, &(int) {true}, sizeof(int)) == -1 ||
-            (is_host_ipv6 &&
-            (setsockopt(listener->file_descriptor, IPPROTO_IPV6, IPV6_RECVORIGDSTADDR, &(int) {true}, sizeof(int)) == -1 ||
-             setsockopt(listener->file_descriptor, IPPROTO_IPV6, IPV6_V6ONLY, &(int) {false}, sizeof(int)) == -1))) {
+        bool setsockopt_err = setsockopt(listener->file_descriptor, SOL_SOCKET, SO_REUSEADDR, &(int) {true}, sizeof(int)) == -1;
+        setsockopt_err |= (!is_host_ipv6 && setsockopt(listener->file_descriptor, IPPROTO_IP, IP_RECVORIGDSTADDR, &(int) {true}, sizeof(int)) == -1);
+        setsockopt_err |= (is_host_ipv6 && setsockopt(listener->file_descriptor, IPPROTO_IPV6, IPV6_RECVORIGDSTADDR, &(int) {true}, sizeof(int)) == -1);
+        setsockopt_err |= (is_host_ipv6 && setsockopt(listener->file_descriptor, IPPROTO_IPV6, IPV6_V6ONLY, &(int) {false}, sizeof(int)) == -1);
+        if (setsockopt_err) {
             logger_log_error(logger, "Could not set listener socket options for the server. %s", strerror_rbs(errno));
             goto fail2;
         }

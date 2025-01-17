@@ -54,8 +54,11 @@ static bool parse_mode(enum tftp_mode *mode, const char mode_str[static 1]) {
     return false;
 }
 
-bool parse_options(struct session_options options[static 1], int file_descriptor, bool is_adaptive_timeout_enabled) {
+bool parse_options(struct session_options options[static 1], int file_descriptor, bool is_adaptive_timeout_enabled, bool is_list_request_enabled) {
     tftp_parse_options(options->recognized_options, options->options_str_size, options->options_str);
+    if (!is_list_request_enabled) {
+        options->recognized_options[TFTP_OPTION_READ_TYPE].is_active = false;
+    }
     if (is_adaptive_timeout_enabled) {
         const char *option = options->options_str;
         const char *end_ptr = &options->options_str[options->options_str_size - 1];

@@ -36,7 +36,7 @@ bool session_options_init(struct session_options session_options[static 1],
                           bool adaptive_timeout[static 1],
                           struct tftp_session_stats_error error[static 1]);
 
-bool parse_options(struct session_options options[static 1], int file_descriptor, bool is_adaptive_timeout_enabled);
+bool parse_options(struct session_options options[static 1], int file_descriptor, bool is_adaptive_timeout_enabled, bool is_list_request_enabled);
 
 enum tftp_read_type session_options_get_read_type(struct session_options options[static 1]);
 

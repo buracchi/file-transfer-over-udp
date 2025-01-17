@@ -1,4 +1,4 @@
-# File transfer over UDP
+# TFTP
 
 [![Ubuntu](https://github.com/buracchi/file-transfer-over-udp/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/buracchi/file-transfer-over-udp/actions/workflows/ubuntu.yml)
 

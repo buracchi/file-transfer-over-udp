@@ -3,6 +3,6 @@
 
 #include <logger.h>
 
-void packet_loss_init(struct logger logger[static 1], double probability);
+void packet_loss_init(struct logger logger[static 1], double probability, bool disable_fixed_seed);
 
 #endif // PACKET_LOSS_H

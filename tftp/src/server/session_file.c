@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
+#include <unistd.h>
 
 #include <tftp.h>
-#include <unistd.h>
 
 static inline const char *get_full_path(const char filename[static 1], const char root[static 1]);
 
